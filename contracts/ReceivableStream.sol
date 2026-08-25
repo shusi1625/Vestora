@@ -14,6 +14,7 @@ contract ReceivableStream is ERC721 {
         uint256 depositedAmount;
         uint256 startTime;
         uint256 endTime;
+        uint256 withdrawnAmount;
     }
 
     mapping(uint256 => Stream) private _streams;
@@ -45,7 +46,7 @@ contract ReceivableStream is ERC721 {
         require(endTime > startTime, "invalid time range");
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        
+
         streamId = _nextStreamId;
         _nextStreamId += 1;
 
@@ -54,7 +55,8 @@ contract ReceivableStream is ERC721 {
             token: token,
             depositedAmount: amount,
             startTime: startTime,
-            endTime: endTime
+            endTime: endTime,
+            withdrawnAmount: 0
         });
 
         _safeMint(recipient, streamId);
@@ -78,5 +80,38 @@ contract ReceivableStream is ERC721 {
         require(_ownerOf(streamId) != address(0), "stream not found");
 
         return _streams[streamId];
+    }
+
+    function vestedAmount(uint256 streamId) public view returns (uint256) {
+        require(_ownerOf(streamId) != address(0), "stream not found");
+
+        Stream memory stream = _streams[streamId];
+
+        //시작 전
+        if (block.timestamp <= stream.startTime) {
+            return 0;
+        }
+        //종료 후
+        if (block.timestamp >= stream.endTime) {
+            return stream.depositedAmount;
+        }
+        //진행 중
+        uint256 elapsed = block.timestamp - stream.startTime;
+        uint256 duration = stream.endTime - stream.startTime;
+
+        return (stream.depositedAmount * elapsed) / duration;
+    }
+
+    function claimableAmount(uint256 streamId) public view returns (uint256) {
+        require(_ownerOf(streamId) != address(0), "stream not found");
+
+        Stream memory stream = _streams[streamId];
+        uint256 vested = vestedAmount(streamId);
+
+        if (vested <= stream.withdrawnAmount) {
+            return 0;
+        }
+
+        return vested - stream.withdrawnAmount;
     }
 }

@@ -4,15 +4,17 @@ import { describe, it } from "node:test";
 import { network } from "hardhat";
 
 describe("ReceivableStream", async function () {
-    const { viem } = await network.create();
+    const { viem, networkHelpers } = await network.create();
     const [sender, recipient, anotherRecipient] = await viem.getWalletClients();
 
     //helper 함수
     async function createDefaultStream(stream: any, to = recipient.account.address) {
         const token = await viem.deployContract("MockUSDC");
         const amount = 1_000_000n;
-        const startTime = 1000n;
-        const endTime = 2000n;
+        
+        const now = BigInt(await networkHelpers.time.latest());
+        const startTime = now + 100n;
+        const endTime = now + 1100n;
 
         await token.write.mint([sender.account.address, amount]);
         await token.write.approve([stream.address, amount]);
@@ -177,5 +179,34 @@ describe("ReceivableStream", async function () {
             ]),
         );
     });
-    
+
+    //8~10. 스트림 시작 전, 중, 후에 따른 vestedAmount, claimableAmount 확인
+    it("returns zero vested amount before the stream starts", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        await createDefaultStream(stream);
+
+        assert.equal(await stream.read.vestedAmount([1n]), 0n);
+        assert.equal(await stream.read.claimableAmount([1n]), 0n);
+    });
+    it("calculates vested amount while the stream is active", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        const { amount, startTime } = await createDefaultStream(stream);
+
+        await networkHelpers.time.increaseTo(Number(startTime + 500n));
+
+        assert.equal(await stream.read.vestedAmount([1n]), amount / 2n);
+        assert.equal(await stream.read.claimableAmount([1n]), amount / 2n);
+    });
+    it("returns the full amount after the stream ends", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        const { amount, endTime } = await createDefaultStream(stream);
+
+        await networkHelpers.time.increaseTo(Number(endTime));
+
+        assert.equal(await stream.read.vestedAmount([1n]), amount);
+        assert.equal(await stream.read.claimableAmount([1n]), amount);
+    });
 });
