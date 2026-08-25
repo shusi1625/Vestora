@@ -4,24 +4,73 @@ pragma solidity ^0.8.28;
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 contract ReceivableStream is ERC721 {
+    struct Stream {
+        address sender;
+        address token;
+        uint256 depositedAmount;
+        uint256 startTime;
+        uint256 endTime;
+    }
+
+    mapping(uint256 => Stream) private _streams;
+    
     uint256 private _nextStreamId = 1;
 
-    event StreamCreated(uint256 indexed streamId, address indexed recipient);
+    event StreamCreated(
+        uint256 indexed streamId,
+        address indexed sender,
+        address indexed recipient,
+        address token,
+        uint256 depositedAmount,
+        uint256 startTime,
+        uint256 endTime
+    );
 
     constructor() ERC721("Vestora Receivable", "vRCV") {}
 
-    function createStream(address recipient) external returns (uint256 streamId) {
+    function createStream(
+        address recipient,
+        address token,
+        uint256 amount,
+        uint256 startTime,
+        uint256 endTime
+    ) external returns (uint256 streamId) {
         require(recipient != address(0), "invalid recipient");
+        require(token != address(0), "invalid token");
+        require(amount > 0, "invalid amount");
+        require(endTime > startTime, "invalid time range");
 
         streamId = _nextStreamId;
         _nextStreamId += 1;
 
+        _streams[streamId] = Stream({
+            sender: msg.sender,
+            token: token,
+            depositedAmount: amount,
+            startTime: startTime,
+            endTime: endTime
+        });
+
         _safeMint(recipient, streamId);
 
-        emit StreamCreated(streamId, recipient);
+        emit StreamCreated(
+            streamId,
+            msg.sender,
+            recipient,
+            token,
+            amount,
+            startTime,
+            endTime
+        );
     }
 
     function nextStreamId() external view returns (uint256) {
         return _nextStreamId;
+    }
+
+    function getStream(uint256 streamId) external view returns (Stream memory) {
+        require(_ownerOf(streamId) != address(0), "stream not found");
+
+        return _streams[streamId];
     }
 }
