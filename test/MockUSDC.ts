@@ -7,7 +7,7 @@ describe("MockUSDC", async function () {
     const { viem } = await network.create();
     const [owner, user] = await viem.getWalletClients();
   
-    //토큰 기본 정보 확인
+    //ERC-20 metadata 확인
     it("has token metadata", async function () {
       const token = await viem.deployContract("MockUSDC");
   
