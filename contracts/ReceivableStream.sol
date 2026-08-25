@@ -2,8 +2,12 @@
 pragma solidity ^0.8.28;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract ReceivableStream is ERC721 {
+    using SafeERC20 for IERC20;
+
     struct Stream {
         address sender;
         address token;
@@ -13,7 +17,7 @@ contract ReceivableStream is ERC721 {
     }
 
     mapping(uint256 => Stream) private _streams;
-    
+
     uint256 private _nextStreamId = 1;
 
     event StreamCreated(
@@ -40,6 +44,8 @@ contract ReceivableStream is ERC721 {
         require(amount > 0, "invalid amount");
         require(endTime > startTime, "invalid time range");
 
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        
         streamId = _nextStreamId;
         _nextStreamId += 1;
 

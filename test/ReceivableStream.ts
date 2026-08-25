@@ -9,23 +9,26 @@ describe("ReceivableStream", async function () {
 
     //helper 함수
     async function createDefaultStream(stream: any, to = recipient.account.address) {
-        const tokenAddress = sender.account.address;
+        const token = await viem.deployContract("MockUSDC");
         const amount = 1_000_000n;
         const startTime = 1000n;
         const endTime = 2000n;
 
+        await token.write.mint([sender.account.address, amount]);
+        await token.write.approve([stream.address, amount]);
+
         await stream.write.createStream([
             to,
-            tokenAddress,
+            token.address,
             amount,
             startTime,
             endTime,
         ]);
 
-        return { tokenAddress, amount, startTime, endTime };
+        return { token, amount, startTime, endTime };
     }
 
-    //ERC-721 metadata 확인
+    //0. ERC-721 metadata 확인
     it("has NFT metadata", async function () {
         const stream = await viem.deployContract("ReceivableStream");
 
@@ -33,7 +36,7 @@ describe("ReceivableStream", async function () {
         assert.equal(await stream.read.symbol(), "vRCV");
     });
 
-    //mint 동작 확인
+    //1. mint 동작 확인
     it("mints a receivable NFT to the recipient", async function () {
         const stream = await viem.deployContract("ReceivableStream");
 
@@ -46,7 +49,7 @@ describe("ReceivableStream", async function () {
         assert.equal(await stream.read.nextStreamId(), 2n);
     });
 
-    //스트림 id 증가 확인
+    //2. 스트림 id 증가 확인
     it("increments stream ids for each created stream", async function () {
         const stream = await viem.deployContract("ReceivableStream");
 
@@ -65,7 +68,33 @@ describe("ReceivableStream", async function () {
         assert.equal(await stream.read.nextStreamId(), 3n);
     });
 
-    //invalid parameter 실패 확인
+    //3. getStream 동작 확인
+    it("stores stream data", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        const { token, amount, startTime, endTime } =
+            await createDefaultStream(stream);
+
+        const stored = await stream.read.getStream([1n]);
+
+        assert.equal(stored.sender.toLowerCase(), sender.account.address.toLowerCase());
+        assert.equal(stored.token.toLowerCase(), token.address.toLowerCase());
+        assert.equal(stored.depositedAmount, amount);
+        assert.equal(stored.startTime, startTime);
+        assert.equal(stored.endTime, endTime);
+    });
+
+    //4. 토큰 예치 확인
+    it("escrows the ERC-20 tokens in the stream contract", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        const { token, amount } = await createDefaultStream(stream);
+
+        assert.equal(await token.read.balanceOf([stream.address]), amount);
+        assert.equal(await token.read.balanceOf([sender.account.address]), 0n);
+    });
+    
+    //5. invalid parameter 실패 확인
     it("rejects invalid stream parameters", async function () {
         const stream = await viem.deployContract("ReceivableStream");
 
@@ -110,20 +139,43 @@ describe("ReceivableStream", async function () {
         );
     });
 
-    //getStream 동작 확인
-    it("stores stream data", async function () {
+    //6. approve 없으면 스트림 생성 실패 확인
+    it("rejects stream creation without token approval", async function () {
         const stream = await viem.deployContract("ReceivableStream");
+        const token = await viem.deployContract("MockUSDC");
 
-        const { tokenAddress, amount, startTime, endTime } =
-            await createDefaultStream(stream);
+        const amount = 1_000_000n;
+        await token.write.mint([sender.account.address, amount]);
 
-        const stored = await stream.read.getStream([1n]);
-
-        assert.equal(stored.sender.toLowerCase(), sender.account.address.toLowerCase());
-        assert.equal(stored.token.toLowerCase(), tokenAddress.toLowerCase());
-        assert.equal(stored.depositedAmount, amount);
-        assert.equal(stored.startTime, startTime);
-        assert.equal(stored.endTime, endTime);
+        await assert.rejects(
+                stream.write.createStream([
+                recipient.account.address,
+                token.address,
+                amount,
+                1000n,
+                2000n,
+            ]),
+        );
     });
 
+    //7. sender 잔액 부족시 스트림 생성 실패 확인
+    it("rejects stream creation when sender balance is insufficient", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+        const token = await viem.deployContract("MockUSDC");
+
+        const amount = 1_000_000n;
+
+        await token.write.approve([stream.address, amount]);
+
+        await assert.rejects(
+            stream.write.createStream([
+                recipient.account.address,
+                token.address,
+                amount,
+                1000n,
+                2000n,
+            ]),
+        );
+    });
+    
 });
