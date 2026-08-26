@@ -30,6 +30,11 @@ contract ReceivableStream is ERC721 {
         uint256 startTime,
         uint256 endTime
     );
+    event StreamClaimed(
+        uint256 indexed streamId,
+        address indexed recipient,
+        uint256 amount
+    );
 
     constructor() ERC721("Vestora Receivable", "vRCV") {}
 
@@ -113,5 +118,23 @@ contract ReceivableStream is ERC721 {
         }
 
         return vested - stream.withdrawnAmount;
+    }
+
+    function claim(uint256 streamId) external returns (uint256 amount) {
+        require(_ownerOf(streamId) != address(0), "stream not found");
+
+        address recipient = ownerOf(streamId);
+        require(recipient == msg.sender, "not stream owner");
+
+        amount = claimableAmount(streamId);
+        require(amount > 0, "nothing to claim");
+
+        Stream storage stream = _streams[streamId];
+
+        stream.withdrawnAmount += amount;
+
+        IERC20(stream.token).safeTransfer(recipient, amount);
+
+        emit StreamClaimed(streamId, recipient, amount);
     }
 }

@@ -11,7 +11,7 @@ describe("ReceivableStream", async function () {
     async function createDefaultStream(stream: any, to = recipient.account.address) {
         const token = await viem.deployContract("MockUSDC");
         const amount = 1_000_000n;
-        
+
         const now = BigInt(await networkHelpers.time.latest());
         const startTime = now + 100n;
         const endTime = now + 1100n;
@@ -28,6 +28,23 @@ describe("ReceivableStream", async function () {
         ]);
 
         return { token, amount, startTime, endTime };
+    }
+
+    function vestedAt(
+        amount: bigint,
+        startTime: bigint,
+        endTime: bigint,
+        currentTime: bigint,
+    ) {
+        if (currentTime <= startTime) {
+            return 0n;
+        }
+
+        if (currentTime >= endTime) {
+            return amount;
+        }
+
+        return (amount * (currentTime - startTime)) / (endTime - startTime);
     }
 
     //0. ERC-721 metadata 확인
@@ -192,12 +209,16 @@ describe("ReceivableStream", async function () {
     it("calculates vested amount while the stream is active", async function () {
         const stream = await viem.deployContract("ReceivableStream");
 
-        const { amount, startTime } = await createDefaultStream(stream);
+        const { amount, startTime, endTime } = await createDefaultStream(stream);
 
-        await networkHelpers.time.increaseTo(Number(startTime + 500n));
+        const currentTime = startTime + (endTime - startTime) / 2n;
+        const expected = vestedAt(amount, startTime, endTime, currentTime);
 
-        assert.equal(await stream.read.vestedAmount([1n]), amount / 2n);
-        assert.equal(await stream.read.claimableAmount([1n]), amount / 2n);
+        await networkHelpers.time.increaseTo(Number(currentTime));
+
+        assert.equal(expected, amount / 2n);
+        assert.equal(await stream.read.vestedAmount([1n]), expected);
+        assert.equal(await stream.read.claimableAmount([1n]), expected);
     });
     it("returns the full amount after the stream ends", async function () {
         const stream = await viem.deployContract("ReceivableStream");
@@ -208,5 +229,117 @@ describe("ReceivableStream", async function () {
 
         assert.equal(await stream.read.vestedAmount([1n]), amount);
         assert.equal(await stream.read.claimableAmount([1n]), amount);
+    });
+
+    //11. NFT 소유자의 claim 동작 확인
+    it("lets the NFT owner claim vested tokens", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        const { token, amount, startTime, endTime } = await createDefaultStream(stream);
+
+        const currentTime = startTime + (endTime - startTime) / 2n;
+        const expected = vestedAt(amount, startTime, endTime, currentTime);
+
+        await networkHelpers.time.increaseTo(Number(currentTime));
+
+        const claimable = await stream.read.claimableAmount([1n]);
+        assert.equal(claimable, expected);
+
+        await stream.write.claim([1n], { account: recipient.account });
+
+        const claimedAt = BigInt(await networkHelpers.time.latest());
+        const claimedAmount = vestedAt(amount, startTime, endTime, claimedAt);
+
+        assert.equal(await token.read.balanceOf([recipient.account.address]), claimedAmount);
+
+        const stored = await stream.read.getStream([1n]);
+        assert.equal(stored.withdrawnAmount, claimedAmount);
+    });
+
+    //12. NFT 소유자가 아닌 경우 claim 실패 확인 
+    it("rejects claim from a non-owner", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        const { amount, startTime, endTime } = await createDefaultStream(stream);
+
+        const currentTime = startTime + (endTime - startTime) / 2n;
+        const expected = vestedAt(amount, startTime, endTime, currentTime);
+
+        await networkHelpers.time.increaseTo(Number(currentTime));
+
+        assert.equal(await stream.read.claimableAmount([1n]), expected);
+
+        await assert.rejects(
+            stream.write.claim([1n]),
+        );
+    });
+
+    //13. claimable amount이 0인 경우 claim 실패 확인
+    it("rejects claim when nothing is vested", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        await createDefaultStream(stream);
+
+        await assert.rejects(
+            stream.write.claim([1n], { account: recipient.account }),
+        );
+    });
+
+    //14. 중복 claim으로 초과 지급 여부 확인
+    it("only lets the owner claim newly vested tokens", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        const { token, amount, startTime, endTime } = await createDefaultStream(stream);
+
+        const firstClaimTime = startTime + (endTime - startTime) / 2n;
+        const firstClaimAmount = vestedAt(amount, startTime, endTime, firstClaimTime);
+
+        await networkHelpers.time.increaseTo(Number(firstClaimTime));
+        await stream.write.claim([1n], { account: recipient.account });
+
+        const firstClaimedAt = BigInt(await networkHelpers.time.latest());
+        const firstClaimedAmount = vestedAt(amount, startTime, endTime, firstClaimedAt);
+        const firstBalance = await token.read.balanceOf([recipient.account.address]);
+        assert.equal(firstClaimAmount, amount / 2n);
+        assert.equal(firstBalance, firstClaimedAmount);
+
+        await networkHelpers.time.increaseTo(Number(endTime));
+        await stream.write.claim([1n], { account: recipient.account });
+
+        assert.equal(await token.read.balanceOf([recipient.account.address]), amount);
+
+        const stored = await stream.read.getStream([1n]);
+        assert.equal(stored.withdrawnAmount, amount);
+    });
+
+    //15. NFT 이전 후 claim 동작 확인
+    it("moves claim rights with the receivable NFT", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        const { token, amount, startTime, endTime } = await createDefaultStream(stream);
+
+        await stream.write.transferFrom(
+            [recipient.account.address, anotherRecipient.account.address, 1n],
+            { account: recipient.account },
+        );
+
+        const claimTime = startTime + (endTime - startTime) / 2n;
+        const claimAmount = vestedAt(amount, startTime, endTime, claimTime);
+
+        await networkHelpers.time.increaseTo(Number(claimTime));
+
+        await assert.rejects(
+            stream.write.claim([1n], { account: recipient.account }),
+        );
+
+        await stream.write.claim([1n], { account: anotherRecipient.account });
+
+        const claimedAt = BigInt(await networkHelpers.time.latest());
+        const claimedAmount = vestedAt(amount, startTime, endTime, claimedAt);
+
+        assert.equal(
+            await token.read.balanceOf([anotherRecipient.account.address]),
+            claimedAmount,
+        );
     });
 });
