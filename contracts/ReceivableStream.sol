@@ -4,8 +4,9 @@ pragma solidity ^0.8.28;
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract ReceivableStream is ERC721 {
+contract ReceivableStream is ERC721, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     struct Stream {
@@ -98,39 +99,26 @@ contract ReceivableStream is ERC721 {
     }
 
     function getStream(uint256 streamId) external view returns (Stream memory) {
-        require(_ownerOf(streamId) != address(0), "stream not found");
+        _requireStreamExists(streamId);
 
         return _streams[streamId];
     }
 
     function vestedAmount(uint256 streamId) public view returns (uint256) {
-        require(_ownerOf(streamId) != address(0), "stream not found");
+        _requireStreamExists(streamId);
 
         Stream memory stream = _streams[streamId];
-   
         uint256 currentTime = stream.canceled ? stream.canceledAt : block.timestamp;
 
-        //시작 전
-        if (currentTime <= stream.startTime) {
-            return 0;
-        }
-        //종료 후
-        if (currentTime >= stream.endTime) {
-            return stream.depositedAmount;
-        }
-
-        //진행 중
-        uint256 elapsed = currentTime - stream.startTime;
-        uint256 duration = stream.endTime - stream.startTime;
-
-        return (stream.depositedAmount * elapsed) / duration;
+        return _vestedAmountAt(stream, currentTime);
     }
 
     function claimableAmount(uint256 streamId) public view returns (uint256) {
-        require(_ownerOf(streamId) != address(0), "stream not found");
+        _requireStreamExists(streamId);
 
         Stream memory stream = _streams[streamId];
-        uint256 vested = vestedAmount(streamId);
+        uint256 currentTime = stream.canceled ? stream.canceledAt : block.timestamp;
+        uint256 vested = _vestedAmountAt(stream, currentTime);
 
         if (vested <= stream.withdrawnAmount) {
             return 0;
@@ -139,8 +127,8 @@ contract ReceivableStream is ERC721 {
         return vested - stream.withdrawnAmount;
     }
 
-    function claim(uint256 streamId) external returns (uint256 amount) {
-        require(_ownerOf(streamId) != address(0), "stream not found");
+    function claim(uint256 streamId) external nonReentrant returns (uint256 amount) {
+        _requireStreamExists(streamId);
 
         address recipient = ownerOf(streamId);
         require(recipient == msg.sender, "not stream owner");
@@ -157,8 +145,8 @@ contract ReceivableStream is ERC721 {
         emit StreamClaimed(streamId, recipient, amount);
     }
 
-    function cancel(uint256 streamId) external returns (uint256 senderRefund) {
-        require(_ownerOf(streamId) != address(0), "stream not found");
+    function cancel(uint256 streamId) external nonReentrant returns (uint256 senderRefund) {
+        _requireStreamExists(streamId);
 
         Stream storage stream = _streams[streamId];
 
@@ -166,11 +154,12 @@ contract ReceivableStream is ERC721 {
         require(stream.cancelable, "stream not cancelable");
         require(!stream.canceled, "stream already canceled");
 
-        uint256 vested = vestedAmount(streamId);
+        uint256 canceledAt = block.timestamp;
+        uint256 vested = _vestedAmountAt(stream, canceledAt);
         senderRefund = stream.depositedAmount - vested;
 
         stream.canceled = true;
-        stream.canceledAt = block.timestamp;
+        stream.canceledAt = canceledAt;
 
         if (senderRefund > 0) {
             IERC20(stream.token).safeTransfer(stream.sender, senderRefund);
@@ -183,5 +172,27 @@ contract ReceivableStream is ERC721 {
             vested,
             senderRefund
         );
+    }
+
+    function _requireStreamExists(uint256 streamId) private view {
+        require(_ownerOf(streamId) != address(0), "stream not found");
+    }
+
+    function _vestedAmountAt(
+        Stream memory stream,
+        uint256 currentTime
+    ) private pure returns (uint256) {
+        if (currentTime <= stream.startTime) {
+            return 0;
+        }
+
+        if (currentTime >= stream.endTime) {
+            return stream.depositedAmount;
+        }
+
+        uint256 elapsed = currentTime - stream.startTime;
+        uint256 duration = stream.endTime - stream.startTime;
+
+        return (stream.depositedAmount * elapsed) / duration;
     }
 }

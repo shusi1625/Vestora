@@ -409,7 +409,56 @@ describe("ReceivableStream", async function () {
         assert.equal(stored.canceled, true);
     });
 
-    //19. cancel 후 vestedAmount가 고정되는지 확인
+    //19. 시작 전 cancel 시 sender가 전액 환불받는지 확인
+    it("refunds the full amount when canceled before the stream starts", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        const { token, amount } =
+            await createDefaultStream(stream, recipient.account.address, true);
+
+        const senderBefore = await token.read.balanceOf([sender.account.address]);
+
+        await stream.write.cancel([1n]);
+
+        const stored = await stream.read.getStream([1n]);
+        const senderAfter = await token.read.balanceOf([sender.account.address]);
+
+        assert.equal(senderAfter - senderBefore, amount);
+        assert.equal(await stream.read.vestedAmount([1n]), 0n);
+        assert.equal(await stream.read.claimableAmount([1n]), 0n);
+        assert.equal(stored.canceled, true);
+
+        await assert.rejects(
+            stream.write.claim([1n], { account: recipient.account }),
+        );
+    });
+
+    //20. 종료 후 cancel 시 sender 환불이 0이고 NFT 소유자가 전액 claim 가능한지 확인
+    it("refunds nothing when canceled after the stream fully vests", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        const { token, amount, endTime } =
+            await createDefaultStream(stream, recipient.account.address, true);
+
+        await networkHelpers.time.increaseTo(Number(endTime));
+
+        const senderBefore = await token.read.balanceOf([sender.account.address]);
+
+        await stream.write.cancel([1n]);
+
+        const senderAfter = await token.read.balanceOf([sender.account.address]);
+
+        assert.equal(senderAfter - senderBefore, 0n);
+        assert.equal(await stream.read.vestedAmount([1n]), amount);
+        assert.equal(await stream.read.claimableAmount([1n]), amount);
+
+        await stream.write.claim([1n], { account: recipient.account });
+
+        assert.equal(await token.read.balanceOf([recipient.account.address]), amount);
+        assert.equal(await token.read.balanceOf([stream.address]), 0n);
+    });
+
+    //21. cancel 후 vestedAmount가 고정되는지 확인
     it("freezes vested amount after cancellation", async function () {
         const stream = await viem.deployContract("ReceivableStream");
 
@@ -435,7 +484,7 @@ describe("ReceivableStream", async function () {
         assert.equal(await stream.read.claimableAmount([1n]), vestedAtCancel);
     });
 
-    //20. cancel 후 NFT 소유자가 vested 금액 claim 가능 여부 확인
+    //22. cancel 후 NFT 소유자가 vested 금액 claim 가능 여부 확인
     it("lets the NFT owner claim vested tokens after cancellation", async function () {
         const stream = await viem.deployContract("ReceivableStream");
 
@@ -461,7 +510,67 @@ describe("ReceivableStream", async function () {
         assert.equal(stored.withdrawnAmount, expectedClaim);
     });
 
-    //21. 이미 cancel된 스트림에 대해 cancel 동작 실패 확인
+    //23. partial claim + cancel + final claim 정산 보존 확인
+    it("preserves the deposited amount across partial claim, cancellation, and final claim", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        const { token, amount, startTime, endTime } =
+            await createDefaultStream(stream, recipient.account.address, true);
+
+        const firstClaimTime = startTime + (endTime - startTime) / 4n;
+
+        await networkHelpers.time.increaseTo(Number(firstClaimTime));
+        await stream.write.claim([1n], { account: recipient.account });
+
+        const firstClaimedAt = BigInt(await networkHelpers.time.latest());
+        const firstClaimedAmount = vestedAt(
+            amount,
+            startTime,
+            endTime,
+            firstClaimedAt,
+        );
+
+        assert.equal(
+            await token.read.balanceOf([recipient.account.address]),
+            firstClaimedAmount,
+        );
+
+        const cancelTime = startTime + (endTime - startTime) / 2n;
+
+        await networkHelpers.time.increaseTo(Number(cancelTime));
+
+        const senderBeforeCancel = await token.read.balanceOf([sender.account.address]);
+
+        await stream.write.cancel([1n]);
+
+        const storedAfterCancel = await stream.read.getStream([1n]);
+        const vestedAtCancel = vestedAt(
+            amount,
+            startTime,
+            endTime,
+            storedAfterCancel.canceledAt,
+        );
+        const expectedRefund = amount - vestedAtCancel;
+        const expectedFinalClaim = vestedAtCancel - storedAfterCancel.withdrawnAmount;
+        const senderAfterCancel = await token.read.balanceOf([sender.account.address]);
+
+        assert.equal(senderAfterCancel - senderBeforeCancel, expectedRefund);
+        assert.equal(await stream.read.claimableAmount([1n]), expectedFinalClaim);
+
+        await stream.write.claim([1n], { account: recipient.account });
+
+        const recipientFinalBalance = await token.read.balanceOf([
+            recipient.account.address,
+        ]);
+        const contractFinalBalance = await token.read.balanceOf([stream.address]);
+        const senderRefund = senderAfterCancel - senderBeforeCancel;
+
+        assert.equal(recipientFinalBalance, vestedAtCancel);
+        assert.equal(recipientFinalBalance + senderRefund, amount);
+        assert.equal(contractFinalBalance, 0n);
+    });
+
+    //24. 이미 cancel된 스트림에 대해 cancel 동작 실패 확인
     it("rejects canceling an already canceled stream", async function () {
         const stream = await viem.deployContract("ReceivableStream");
 
