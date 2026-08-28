@@ -8,7 +8,11 @@ describe("ReceivableStream", async function () {
     const [sender, recipient, anotherRecipient] = await viem.getWalletClients();
 
     //helper 함수
-    async function createDefaultStream(stream: any, to = recipient.account.address) {
+    async function createDefaultStream(
+        stream: any,
+        to = recipient.account.address, 
+        cancelable = false,
+    ) {
         const token = await viem.deployContract("MockUSDC");
         const amount = 1_000_000n;
 
@@ -25,6 +29,7 @@ describe("ReceivableStream", async function () {
             amount,
             startTime,
             endTime,
+            cancelable,
         ]);
 
         return { token, amount, startTime, endTime };
@@ -101,6 +106,9 @@ describe("ReceivableStream", async function () {
         assert.equal(stored.depositedAmount, amount);
         assert.equal(stored.startTime, startTime);
         assert.equal(stored.endTime, endTime);
+        assert.equal(stored.cancelable, false);
+        assert.equal(stored.canceled, false);
+        assert.equal(stored.canceledAt, 0n);
     });
 
     //4. 토큰 예치 확인
@@ -124,6 +132,7 @@ describe("ReceivableStream", async function () {
                 1_000_000n,
                 1000n,
                 2000n,
+                false,
             ]),
         );
 
@@ -134,6 +143,7 @@ describe("ReceivableStream", async function () {
                 1_000_000n,
                 1000n,
                 2000n,
+                false,
             ]),
         );
 
@@ -144,6 +154,7 @@ describe("ReceivableStream", async function () {
                 0n,
                 1000n,
                 2000n,
+                false,
             ]),
         );
 
@@ -154,6 +165,7 @@ describe("ReceivableStream", async function () {
                 1_000_000n,
                 2000n,
                 1000n,
+                false,
             ]),
         );
     });
@@ -167,12 +179,13 @@ describe("ReceivableStream", async function () {
         await token.write.mint([sender.account.address, amount]);
 
         await assert.rejects(
-                stream.write.createStream([
+            stream.write.createStream([
                 recipient.account.address,
                 token.address,
                 amount,
                 1000n,
                 2000n,
+                false,
             ]),
         );
     });
@@ -193,6 +206,7 @@ describe("ReceivableStream", async function () {
                 amount,
                 1000n,
                 2000n,
+                false,
             ]),
         );
     });
@@ -340,6 +354,127 @@ describe("ReceivableStream", async function () {
         assert.equal(
             await token.read.balanceOf([anotherRecipient.account.address]),
             claimedAmount,
+        );
+    });
+
+    //16. uncancelable stream의 cancel 동작 실패 확인
+    it("rejects canceling an uncancelable stream", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        await createDefaultStream(stream);
+
+        await assert.rejects(
+            stream.write.cancel([1n]),
+        );
+    });
+
+    //17. sender가 아닌 경우 cancel 동작 실패 확인
+    it("rejects cancel from a non-sender", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        await createDefaultStream(stream, recipient.account.address, true);
+
+        await assert.rejects(
+            stream.write.cancel([1n], { account: recipient.account }),
+        );
+    });
+
+    //18. cancel 시 unvested 금액 반환 여부 확인
+    it("refunds unvested tokens to the sender when canceled", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        const { token, amount, startTime, endTime } =
+            await createDefaultStream(stream, recipient.account.address, true);
+
+        const cancelTime = startTime + (endTime - startTime) / 2n;
+
+        await networkHelpers.time.increaseTo(Number(cancelTime));
+
+        const senderBefore = await token.read.balanceOf([sender.account.address]);
+
+        await stream.write.cancel([1n]);
+
+        const stored = await stream.read.getStream([1n]);
+        const expectedVested = vestedAt(
+            amount,
+            startTime,
+            endTime,
+            stored.canceledAt,
+        );
+        const expectedRefund = amount - expectedVested;
+
+        const senderAfter = await token.read.balanceOf([sender.account.address]);
+
+        assert.equal(senderAfter - senderBefore, expectedRefund);
+        assert.equal(stored.canceled, true);
+    });
+
+    //19. cancel 후 vestedAmount가 고정되는지 확인
+    it("freezes vested amount after cancellation", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        const { amount, startTime, endTime } =
+            await createDefaultStream(stream, recipient.account.address, true);
+
+        const cancelTime = startTime + (endTime - startTime) / 2n;
+
+        await networkHelpers.time.increaseTo(Number(cancelTime));
+        await stream.write.cancel([1n]);
+
+        const stored = await stream.read.getStream([1n]);
+        const vestedAtCancel = vestedAt(
+            amount,
+            startTime,
+            endTime,
+            stored.canceledAt,
+        );
+
+        await networkHelpers.time.increaseTo(Number(endTime));
+
+        assert.equal(await stream.read.vestedAmount([1n]), vestedAtCancel);
+        assert.equal(await stream.read.claimableAmount([1n]), vestedAtCancel);
+    });
+
+    //20. cancel 후 NFT 소유자가 vested 금액 claim 가능 여부 확인
+    it("lets the NFT owner claim vested tokens after cancellation", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        const { token, amount, startTime, endTime } =
+            await createDefaultStream(stream, recipient.account.address, true);
+
+        const cancelTime = startTime + (endTime - startTime) / 2n;
+
+        await networkHelpers.time.increaseTo(Number(cancelTime));
+        await stream.write.cancel([1n]);
+
+        const canceledAt = BigInt(await networkHelpers.time.latest());
+        const expectedClaim = vestedAt(amount, startTime, endTime, canceledAt);
+
+        await stream.write.claim([1n], { account: recipient.account });
+
+        assert.equal(
+            await token.read.balanceOf([recipient.account.address]),
+            expectedClaim,
+        );
+
+        const stored = await stream.read.getStream([1n]);
+        assert.equal(stored.withdrawnAmount, expectedClaim);
+    });
+
+    //21. 이미 cancel된 스트림에 대해 cancel 동작 실패 확인
+    it("rejects canceling an already canceled stream", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+
+        const { startTime, endTime } =
+            await createDefaultStream(stream, recipient.account.address, true);
+
+        const cancelTime = startTime + (endTime - startTime) / 2n;
+
+        await networkHelpers.time.increaseTo(Number(cancelTime));
+        await stream.write.cancel([1n]);
+
+        await assert.rejects(
+            stream.write.cancel([1n]),
         );
     });
 });

@@ -15,6 +15,9 @@ contract ReceivableStream is ERC721 {
         uint256 startTime;
         uint256 endTime;
         uint256 withdrawnAmount;
+        bool cancelable;
+        bool canceled;
+        uint256 canceledAt;
     }
 
     mapping(uint256 => Stream) private _streams;
@@ -28,12 +31,20 @@ contract ReceivableStream is ERC721 {
         address token,
         uint256 depositedAmount,
         uint256 startTime,
-        uint256 endTime
+        uint256 endTime,
+        bool cancelable
     );
     event StreamClaimed(
         uint256 indexed streamId,
         address indexed recipient,
         uint256 amount
+    );
+    event StreamCanceled(
+        uint256 indexed streamId,
+        address indexed sender,
+        address indexed recipient,
+        uint256 vestedAmount,
+        uint256 senderRefund
     );
 
     constructor() ERC721("Vestora Receivable", "vRCV") {}
@@ -43,7 +54,8 @@ contract ReceivableStream is ERC721 {
         address token,
         uint256 amount,
         uint256 startTime,
-        uint256 endTime
+        uint256 endTime,
+        bool cancelable
     ) external returns (uint256 streamId) {
         require(recipient != address(0), "invalid recipient");
         require(token != address(0), "invalid token");
@@ -61,7 +73,10 @@ contract ReceivableStream is ERC721 {
             depositedAmount: amount,
             startTime: startTime,
             endTime: endTime,
-            withdrawnAmount: 0
+            withdrawnAmount: 0,
+            cancelable: cancelable,
+            canceled: false,
+            canceledAt: 0
         });
 
         _safeMint(recipient, streamId);
@@ -73,7 +88,8 @@ contract ReceivableStream is ERC721 {
             token,
             amount,
             startTime,
-            endTime
+            endTime,
+            cancelable
         );
     }
 
@@ -91,17 +107,20 @@ contract ReceivableStream is ERC721 {
         require(_ownerOf(streamId) != address(0), "stream not found");
 
         Stream memory stream = _streams[streamId];
+   
+        uint256 currentTime = stream.canceled ? stream.canceledAt : block.timestamp;
 
         //시작 전
-        if (block.timestamp <= stream.startTime) {
+        if (currentTime <= stream.startTime) {
             return 0;
         }
         //종료 후
-        if (block.timestamp >= stream.endTime) {
+        if (currentTime >= stream.endTime) {
             return stream.depositedAmount;
         }
+
         //진행 중
-        uint256 elapsed = block.timestamp - stream.startTime;
+        uint256 elapsed = currentTime - stream.startTime;
         uint256 duration = stream.endTime - stream.startTime;
 
         return (stream.depositedAmount * elapsed) / duration;
@@ -136,5 +155,33 @@ contract ReceivableStream is ERC721 {
         IERC20(stream.token).safeTransfer(recipient, amount);
 
         emit StreamClaimed(streamId, recipient, amount);
+    }
+
+    function cancel(uint256 streamId) external returns (uint256 senderRefund) {
+        require(_ownerOf(streamId) != address(0), "stream not found");
+
+        Stream storage stream = _streams[streamId];
+
+        require(stream.sender == msg.sender, "not stream sender");
+        require(stream.cancelable, "stream not cancelable");
+        require(!stream.canceled, "stream already canceled");
+
+        uint256 vested = vestedAmount(streamId);
+        senderRefund = stream.depositedAmount - vested;
+
+        stream.canceled = true;
+        stream.canceledAt = block.timestamp;
+
+        if (senderRefund > 0) {
+            IERC20(stream.token).safeTransfer(stream.sender, senderRefund);
+        }
+
+        emit StreamCanceled(
+            streamId,
+            stream.sender,
+            ownerOf(streamId),
+            vested,
+            senderRefund
+        );
     }
 }
