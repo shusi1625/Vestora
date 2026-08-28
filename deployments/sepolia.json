@@ -1,0 +1,7 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "mockUSDC": "0x0Be84c36624AAa119D63497886629E21738Efd31",
+  "receivableStream": "0xD689c4DFe4a8b44a75692421Abb3756fE93dFc59",
+  "receivableMarketplace": "0xe190C2C25388F68417546D76f30A26909213E8c3"
+}
