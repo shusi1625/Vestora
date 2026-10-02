@@ -43,9 +43,8 @@ function vestedAt(
 const depositAmount = 1_000_000n;
 const salePrice = 400_000n;
 
-const now = BigInt(await networkHelpers.time.latest());
-const startTime = now + 100n;
-const endTime = now + 1100n;
+const startDelay = 0n;
+const duration = 300n;
 
 console.log("Sender:", sender.account.address);
 console.log("Recipient:", recipient.account.address);
@@ -61,17 +60,28 @@ await mockUSDC.write.approve([receivableStream.address, depositAmount]);
 const streamId = await receivableStream.read.nextStreamId();
 
 console.log("Creating stream...");
-await receivableStream.write.createStream([
+await receivableStream.write.createStreamWithDuration([
     recipient.account.address,
     mockUSDC.address,
     depositAmount,
-    startTime,
-    endTime,
+    startDelay,
+    duration,
     false,
 ]);
 
 console.log("Stream created:", streamId.toString());
 console.log("NFT owner:", await receivableStream.read.ownerOf([streamId]));
+
+const stored = await receivableStream.read.getStream([streamId]);
+const storedDuration = stored.endTime - stored.startTime;
+const vestedRightAfterCreate = await receivableStream.read.vestedAmount([streamId]);
+const claimableRightAfterCreate = await receivableStream.read.claimableAmount([streamId]);
+
+console.log("Stored start time:", stored.startTime.toString());
+console.log("Stored end time:", stored.endTime.toString());
+console.log("Stored duration:", storedDuration.toString());
+console.log("Vested right after create:", vestedRightAfterCreate.toString());
+console.log("Claimable right after create:", claimableRightAfterCreate.toString());
 
 // listing 생성
 console.log("Approving Marketplace to transfer recipient NFT...");
@@ -118,7 +128,7 @@ console.log("NFT owner after buy:", await receivableStream.read.ownerOf([streamI
 console.log("Seller payment received:", (sellerAfterBuy - sellerBeforeBuy).toString());
 
 // buyer claim
-const claimTime = startTime + (endTime - startTime) / 2n;
+const claimTime = stored.startTime + (stored.endTime - stored.startTime) / 2n;
 
 console.log("Moving time to claim point...");
 const latestBeforeClaim = BigInt(await networkHelpers.time.latest());
@@ -144,8 +154,8 @@ await receivableStream.write.claim(
 const blockAfterClaim = await publicClient.getBlock();
 const expectedClaim = vestedAt(
     depositAmount,
-    startTime,
-    endTime,
+    stored.startTime,
+    stored.endTime,
     blockAfterClaim.timestamp,
 );
 

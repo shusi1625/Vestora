@@ -58,6 +58,47 @@ contract ReceivableStream is ERC721, ReentrancyGuard {
         uint256 endTime,
         bool cancelable
     ) external returns (uint256 streamId) {
+        return _createStream(
+            recipient, 
+            token, 
+            amount, 
+            startTime, 
+            endTime, 
+            cancelable
+        );
+    }
+
+    function createStreamWithDuration(
+        address recipient,
+        address token,
+        uint256 amount,
+        uint256 startDelay,
+        uint256 duration,
+        bool cancelable
+    ) external returns (uint256 streamId) {
+        require(duration > 0, "invalid duration");
+
+        uint256 startTime = block.timestamp + startDelay;
+        uint256 endTime = startTime + duration;
+
+        return _createStream(
+            recipient,
+            token,
+            amount,
+            startTime,
+            endTime,
+            cancelable
+        );
+    }
+    
+    function _createStream(
+        address recipient,
+        address token,
+        uint256 amount,
+        uint256 startTime,
+        uint256 endTime,
+        bool cancelable
+    ) private returns (uint256 streamId) {
         require(recipient != address(0), "invalid recipient");
         require(token != address(0), "invalid token");
         require(amount > 0, "invalid amount");

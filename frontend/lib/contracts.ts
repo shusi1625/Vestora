@@ -1,9 +1,9 @@
 import type { Address } from "viem";
 
 export const sepoliaContracts = {
-  mockUSDC: "0x0Be84c36624AAa119D63497886629E21738Efd31",
-  receivableStream: "0xD689c4DFe4a8b44a75692421Abb3756fE93dFc59",
-  receivableMarketplace: "0xe190C2C25388F68417546D76f30A26909213E8c3",
+  mockUSDC: "0x7BadaD2E8FBA41CAb32AA30dfecD03AA816E4517",
+  receivableStream: "0x92BA9C82c417a0F2805a0227cB16dead1865a202",
+  receivableMarketplace: "0x8a01A13FbEBF6f974F8956558065e70017156579",
 } as const satisfies Record<string, Address>;
 
 export const erc20Abi = [
@@ -75,6 +75,20 @@ export const receivableStreamAbi = [
       { name: "amount", type: "uint256" },
       { name: "startTime", type: "uint256" },
       { name: "endTime", type: "uint256" },
+      { name: "cancelable", type: "bool" },
+    ],
+    outputs: [{ name: "streamId", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "createStreamWithDuration",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "recipient", type: "address" },
+      { name: "token", type: "address" },
+      { name: "amount", type: "uint256" },
+      { name: "startDelay", type: "uint256" },
+      { name: "duration", type: "uint256" },
       { name: "cancelable", type: "bool" },
     ],
     outputs: [{ name: "streamId", type: "uint256" }],

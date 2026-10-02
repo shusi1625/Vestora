@@ -586,4 +586,59 @@ describe("ReceivableStream", async function () {
             stream.write.cancel([1n]),
         );
     });
+
+    //25. createStreamWithDuration 동작 확인
+    it("creates a stream from the transaction block timestamp and duration", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+        const token = await viem.deployContract("MockUSDC");
+        const publicClient = await viem.getPublicClient();
+
+        const amount = 1_000_000n;
+        const startDelay = 60n;
+        const duration = 300n;
+
+        await token.write.mint([sender.account.address, amount]);
+        await token.write.approve([stream.address, amount]);
+
+        const hash = await stream.write.createStreamWithDuration([
+            recipient.account.address,
+            token.address,
+            amount,
+            startDelay,
+            duration,
+            false,
+        ]);
+
+        const receipt = await publicClient.waitForTransactionReceipt({ hash });
+        const block = await publicClient.getBlock({
+            blockNumber: receipt.blockNumber,
+        });
+
+        const stored = await stream.read.getStream([1n]);
+
+        assert.equal(stored.startTime, block.timestamp + startDelay);
+        assert.equal(stored.endTime, block.timestamp + startDelay + duration);
+    });
+
+    //26. createStreamWithDuration에서 duration이 0인 경우 실패 확인
+    it("rejects duration-based stream creation with zero duration", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+        const token = await viem.deployContract("MockUSDC");
+
+        const amount = 1_000_000n;
+
+        await token.write.mint([sender.account.address, amount]);
+        await token.write.approve([stream.address, amount]);
+
+        await assert.rejects(
+            stream.write.createStreamWithDuration([
+                recipient.account.address,
+                token.address,
+                amount,
+                0n,
+                0n,
+                false,
+            ]),
+        );
+    });
 });

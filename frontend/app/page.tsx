@@ -301,8 +301,8 @@ export default function Home() {
     }
 
     const amount = parsePositiveTokenAmount(streamAmount);
-    const startDelay = Number(startDelayMinutes);
-    const duration = Number(durationMinutes);
+    const startDelay = BigInt(Math.floor(Number(startDelayMinutes) * 60));
+    const duration = BigInt(Math.floor(Number(durationMinutes) * 60));
 
     if (!amount || startDelay < 0 || duration <= 0) {
       setTxState({
@@ -326,22 +326,19 @@ export default function Home() {
       return;
     }
 
-    const now = Math.floor(Date.now() / 1000);
-    const startTime = BigInt(now + Math.floor(startDelay * 60));
-    const endTime = startTime + BigInt(Math.floor(duration * 60));
     const streamIdBeforeCreate = nextStreamId.data?.toString() ?? "";
 
     await runTransaction("Create Stream", () =>
       writeContractAsync({
         address: sepoliaContracts.receivableStream,
         abi: receivableStreamAbi,
-        functionName: "createStream",
+        functionName: "createStreamWithDuration",
         args: [
           recipient,
           sepoliaContracts.mockUSDC,
           amount,
-          startTime,
-          endTime,
+          startDelay,
+          duration,
           cancelable,
         ],
       }),

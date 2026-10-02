@@ -1,8 +1,8 @@
 import { network } from "hardhat";
 
-const MOCK_USDC_ADDRESS = "0x0Be84c36624AAa119D63497886629E21738Efd31";
-const RECEIVABLE_STREAM_ADDRESS = "0xD689c4DFe4a8b44a75692421Abb3756fE93dFc59";
-const MARKETPLACE_ADDRESS = "0xe190C2C25388F68417546D76f30A26909213E8c3";
+const MOCK_USDC_ADDRESS = "0x7BadaD2E8FBA41CAb32AA30dfecD03AA816E4517";
+const RECEIVABLE_STREAM_ADDRESS = "0x92BA9C82c417a0F2805a0227cB16dead1865a202";
+const MARKETPLACE_ADDRESS = "0x8a01A13FbEBF6f974F8956558065e70017156579";
 
 const { viem } = await network.create({
     network: "sepolia",
@@ -38,14 +38,11 @@ console.log("Deployer:", deployer.account.address);
 const depositAmount = 1_000_000n;
 const salePrice = 400_000n;
 
-const latestBlock = await publicClient.getBlock();
-const now = latestBlock.timestamp;
+const startDelay = 30n;
+const duration = 300n;
 
-const startTime = now + 30n;
-const endTime = now + 300n;
-
-console.log("Start time:", startTime.toString());
-console.log("End time:", endTime.toString());
+console.log("Start delay:", startDelay.toString());
+console.log("Duration:", duration.toString());
 
 //stream 생성
 console.log("Minting MockUSDC to deployer...");
@@ -62,18 +59,29 @@ const streamId = await receivableStream.read.nextStreamId();
 
 console.log("Creating stream...");
 await waitForTx(
-    await receivableStream.write.createStream([
+    await receivableStream.write.createStreamWithDuration([
         deployer.account.address,
         mockUSDC.address,
         depositAmount,
-        startTime,
-        endTime,
+        startDelay,
+        duration,
         false,
     ]),
 );
 
 console.log("Stream created:", streamId.toString());
 console.log("NFT owner:", await receivableStream.read.ownerOf([streamId]));
+
+const stored = await receivableStream.read.getStream([streamId]);
+const storedDuration = stored.endTime - stored.startTime;
+const vestedRightAfterCreate = await receivableStream.read.vestedAmount([streamId]);
+const claimableRightAfterCreate = await receivableStream.read.claimableAmount([streamId]);
+
+console.log("Stored start time:", stored.startTime.toString());
+console.log("Stored end time:", stored.endTime.toString());
+console.log("Stored duration:", storedDuration.toString());
+console.log("Vested right after create:", vestedRightAfterCreate.toString());
+console.log("Claimable right after create:", claimableRightAfterCreate.toString());
 
 //listing 생성
 console.log("Approving Marketplace to transfer NFT...");
