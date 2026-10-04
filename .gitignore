@@ -32,3 +32,7 @@
 
 # Snapshot cheatcodes output
 /snapshots
+
+# Workspace package outputs
+**/node_modules/
+**/dist/

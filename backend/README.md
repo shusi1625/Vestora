@@ -47,7 +47,25 @@ Expected health response:
 ## Endpoints
 
 - `GET /health`: API and PostgreSQL connectivity check
-- `GET /metrics`: Phase 2 placeholder metrics; indexer metrics are added in Phase 3
+- `GET /metrics`: indexer sync status and lag against Sepolia
+
+## Indexer
+
+Run a one-shot backfill from the last stored sync point:
+
+```powershell
+cd C:\GitHub\Vestora\backend
+pnpm indexer:once
+```
+
+Run the polling worker:
+
+```powershell
+cd C:\GitHub\Vestora\backend
+pnpm indexer:poll
+```
+
+The indexer stores decoded contract events in `stream_events`, using `tx_hash + log_index` as the idempotency boundary. The current sync cursor is stored in `sync_state`.
 
 ## Boundary
 

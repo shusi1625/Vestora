@@ -24,7 +24,21 @@
   "scripts": {
     "test": "hardhat test",
     "build": "hardhat compile",
-    "hardhat": "hardhat"
+    "hardhat": "hardhat",
+    "contracts:compile": "hardhat compile",
+    "contracts:test": "hardhat test",
+    "frontend:build": "yarn --cwd frontend build",
+    "frontend:dev": "yarn --cwd frontend dev",
+    "backend:dev": "pnpm --dir backend dev",
+    "backend:build": "pnpm --dir backend build",
+    "backend:typecheck": "pnpm --dir backend typecheck",
+    "backend:compose:up": "pnpm --dir backend compose:up",
+    "backend:compose:down": "pnpm --dir backend compose:down",
+    "backend:prisma:generate": "pnpm --dir backend prisma:generate",
+    "backend:db:migrate": "pnpm --dir backend db:migrate",
+    "backend:health": "pnpm --dir backend health",
+    "backend:indexer:once": "pnpm --dir backend indexer:once",
+    "backend:indexer:poll": "pnpm --dir backend indexer:poll"
   },
   "type": "module",
   "dependencies": {

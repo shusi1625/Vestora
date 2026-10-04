@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vestora-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vestora}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vestora}
+      POSTGRES_DB: ${POSTGRES_DB:-vestora}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - vestora-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vestora} -d ${POSTGRES_DB:-vestora}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  vestora-postgres-data:

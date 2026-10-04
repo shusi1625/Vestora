@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SyncState {
+  id                 String   @id @default("sepolia")
+  chainId            Int      @map("chain_id")
+  latestIndexedBlock BigInt   @default(0) @map("latest_indexed_block")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("sync_state")
+}
+
+model IndexedEvent {
+  id              String   @id @default(cuid())
+  chainId         Int      @map("chain_id")
+  blockNumber     BigInt   @map("block_number")
+  transactionHash String   @map("transaction_hash")
+  logIndex        Int      @map("log_index")
+  contractAddress String   @map("contract_address")
+  eventName       String   @map("event_name")
+  payload         Json?
+  blockTimestamp  DateTime? @map("block_timestamp")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@unique([transactionHash, logIndex])
+  @@index([chainId, blockNumber])
+  @@index([eventName])
+  @@map("indexed_events")
+}
+
+model StreamEvent {
+  id              String   @id @default(cuid())
+  chainId         Int      @map("chain_id")
+  contractAddress String   @map("contract_address")
+  eventName       String   @map("event_name")
+  blockNumber     BigInt   @map("block_number")
+  blockHash       String   @map("block_hash")
+  transactionHash String   @map("tx_hash")
+  logIndex        Int      @map("log_index")
+  streamId        BigInt?  @map("stream_id")
+  payload         Json
+  blockTimestamp  DateTime @map("block_timestamp")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@unique([transactionHash, logIndex])
+  @@index([chainId, blockNumber])
+  @@index([eventName])
+  @@index([streamId])
+  @@map("stream_events")
+}

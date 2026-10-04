@@ -1,0 +1,35 @@
+{
+  "name": "@vestora/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/src/server.js",
+    "prisma:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "compose:up": "docker compose up -d",
+    "compose:down": "docker compose down",
+    "health": "tsx scripts/health-check.ts",
+    "indexer:once": "tsx scripts/indexer-once.ts",
+    "indexer:poll": "tsx src/indexer/worker.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.3.0",
+    "@prisma/client": "6.19.3",
+    "dotenv": "^18.0.5",
+    "fastify": "^5.12.5",
+    "viem": "^2.57.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "prisma": "6.19.3",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3"
+  }
+}
