@@ -67,6 +67,24 @@ pnpm indexer:poll
 
 The indexer stores decoded contract events in `stream_events`, using `tx_hash + log_index` as the idempotency boundary. The current sync cursor is stored in `sync_state`.
 
+## Projections
+
+Rebuild query-optimized read models from `stream_events`:
+
+```powershell
+cd C:\GitHub\Vestora\backend
+pnpm projections:rebuild
+```
+
+The rebuild script refreshes:
+
+- `streams`
+- `listings`
+- `claims`
+- `trades`
+
+These tables are read models for dashboards and APIs. They are not settlement authority.
+
 ## Boundary
 
 This backend reads and shapes data for dashboards. It must not hold user private keys or execute user settlement actions such as claim, buy, or cancel.

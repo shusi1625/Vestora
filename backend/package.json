@@ -17,7 +17,8 @@
     "compose:down": "docker compose down",
     "health": "tsx scripts/health-check.ts",
     "indexer:once": "tsx scripts/indexer-once.ts",
-    "indexer:poll": "tsx src/indexer/worker.ts"
+    "indexer:poll": "tsx src/indexer/worker.ts",
+    "projections:rebuild": "tsx scripts/rebuild-projections.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",

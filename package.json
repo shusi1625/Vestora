@@ -38,7 +38,8 @@
     "backend:db:migrate": "pnpm --dir backend db:migrate",
     "backend:health": "pnpm --dir backend health",
     "backend:indexer:once": "pnpm --dir backend indexer:once",
-    "backend:indexer:poll": "pnpm --dir backend indexer:poll"
+    "backend:indexer:poll": "pnpm --dir backend indexer:poll",
+    "backend:projections:rebuild": "pnpm --dir backend projections:rebuild"
   },
   "type": "module",
   "dependencies": {
