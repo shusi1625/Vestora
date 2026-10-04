@@ -1,6 +1,6 @@
 # Vestora Backend
 
-Phase 2 backend local foundation for Vestora.
+Backend API, indexer, and projection service for Vestora.
 
 The backend is the indexing and analytics layer. It is not the settlement authority. Smart contracts remain the source of truth for ownership, approvals, claimability, cancellation, and transfers.
 
@@ -48,6 +48,21 @@ Expected health response:
 
 - `GET /health`: API and PostgreSQL connectivity check
 - `GET /metrics`: indexer sync status and lag against Sepolia
+- `GET /streams`: projected stream list
+- `GET /streams/:streamId`: projected stream detail with claims
+- `GET /listings`: projected marketplace listings
+- `GET /users/:address/streams`: streams where the user is sender, initial recipient, or projected current owner
+- `GET /users/:address/trades`: marketplace trade history for the user
+- `GET /market/stats`: aggregate stream, listing, and trade stats
+
+API ownership fields are projections derived from indexed ERC-721 `Transfer` events. Transaction-critical UI actions should recheck the contract directly, especially `ownerOf(streamId)`.
+
+Run an API smoke check without starting a separate server process:
+
+```powershell
+cd C:\GitHub\Vestora\backend
+pnpm api:smoke
+```
 
 ## Indexer
 

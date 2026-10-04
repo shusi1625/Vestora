@@ -20,7 +20,8 @@
     "indexer:poll": "tsx src/indexer/worker.ts",
     "projections:rebuild": "tsx scripts/rebuild-projections.ts",
     "ownership:reconcile": "tsx scripts/reconcile-ownership.ts",
-    "ownership:smoke-projection": "tsx scripts/smoke-ownership-projection.ts"
+    "ownership:smoke-projection": "tsx scripts/smoke-ownership-projection.ts",
+    "api:smoke": "tsx scripts/smoke-api.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",

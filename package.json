@@ -41,7 +41,8 @@
     "backend:indexer:poll": "pnpm --dir backend indexer:poll",
     "backend:projections:rebuild": "pnpm --dir backend projections:rebuild",
     "backend:ownership:reconcile": "pnpm --dir backend ownership:reconcile",
-    "backend:ownership:smoke-projection": "pnpm --dir backend ownership:smoke-projection"
+    "backend:ownership:smoke-projection": "pnpm --dir backend ownership:smoke-projection",
+    "backend:api:smoke": "pnpm --dir backend api:smoke"
   },
   "type": "module",
   "dependencies": {
