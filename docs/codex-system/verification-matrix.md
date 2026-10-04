@@ -21,6 +21,7 @@ From the repository root:
 - `pnpm backend:build`
 - `pnpm backend:indexer:once`
 - `pnpm backend:indexer:poll`
+- `pnpm backend:projections:rebuild`
 
 ## Area-Based Verification
 
@@ -29,6 +30,7 @@ From the repository root:
 | Contracts docs only | consistency with current contract behavior | inspect matching tests |
 | Contracts code | `pnpm contracts:compile` | `pnpm contracts:test` |
 | Marketplace behavior | targeted marketplace tests | full contract test suite |
+| Ownership consistency | external NFT transfer then claim test | Transfer indexing, projection rebuild, and ownerOf reconciliation smoke |
 | Frontend docs only | route/data-flow consistency | inspect matching frontend files |
 | Frontend code | `pnpm frontend:build` | manual smoke with wallet/testnet when needed |
 | Backend docs only | consistency with roadmap and API/DB draft | inspect backend files once present |
@@ -65,6 +67,13 @@ From the repository root:
 - active listings are queryable
 - wallet-related streams/trades are queryable
 - claim/trade history is queryable by stream
+
+### Phase 4.5 Ownership Consistency
+
+- external ERC-721 transfer moves claim rights
+- Transfer events update projected current owner
+- external transfer invalidates active listing projection
+- `ownerOf(streamId)` reconciliation can detect projection mismatch
 
 ### Phase 5 Backend API
 

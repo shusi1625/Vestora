@@ -337,6 +337,11 @@ describe("ReceivableStream", async function () {
             { account: recipient.account },
         );
 
+        assert.equal(
+            (await stream.read.ownerOf([1n])).toLowerCase(),
+            anotherRecipient.account.address.toLowerCase(),
+        );
+
         const claimTime = startTime + (endTime - startTime) / 2n;
         const claimAmount = vestedAt(amount, startTime, endTime, claimTime);
 
@@ -351,6 +356,10 @@ describe("ReceivableStream", async function () {
         const claimedAt = BigInt(await networkHelpers.time.latest());
         const claimedAmount = vestedAt(amount, startTime, endTime, claimedAt);
 
+        assert.equal(
+            await token.read.balanceOf([recipient.account.address]),
+            0n,
+        );
         assert.equal(
             await token.read.balanceOf([anotherRecipient.account.address]),
             claimedAmount,

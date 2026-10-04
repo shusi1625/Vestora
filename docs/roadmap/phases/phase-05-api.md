@@ -1,5 +1,15 @@
 # Phase 5: Backend API
 
+## Prerequisite
+
+Complete Phase 4.5 Ownership Consistency before exposing ownership-sensitive APIs.
+
+The API may use projection DB values for fast reads, but ownership-sensitive responses must be clear that:
+
+- `streams.current_owner` is an indexed projection
+- `ownerOf(streamId)` remains the source of truth
+- transaction-critical frontend actions should recheck on-chain state
+
 ## Goal
 
 Let the frontend fetch marketplace and dashboard data without repeated RPC reads.

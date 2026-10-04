@@ -13,6 +13,7 @@ export type IndexedContract = {
 };
 
 export const receivableStreamEventAbi = parseAbi([
+  "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
   "event StreamCreated(uint256 indexed streamId, address indexed sender, address indexed recipient, address token, uint256 depositedAmount, uint256 startTime, uint256 endTime, bool cancelable)",
   "event StreamClaimed(uint256 indexed streamId, address indexed recipient, uint256 amount)",
   "event StreamCanceled(uint256 indexed streamId, address indexed sender, address indexed recipient, uint256 vestedAmount, uint256 senderRefund)",

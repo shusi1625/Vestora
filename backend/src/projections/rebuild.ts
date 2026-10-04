@@ -6,11 +6,36 @@ type ProjectionRebuildResult = {
   processedEvents: number;
   streams: number;
   activeListings: number;
+  invalidatedListings: number;
   claims: number;
   trades: number;
 };
 
 type EventPayload = Record<string, unknown>;
+
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+function purchaseTransferKey(transactionHash: string, streamId: bigint) {
+  return `${transactionHash.toLowerCase()}:${streamId.toString()}`;
+}
+
+function collectMarketplacePurchaseKeys(
+  events: Array<{
+    eventName: string;
+    transactionHash: string;
+    streamId: bigint | null;
+  }>,
+) {
+  const keys = new Set<string>();
+
+  for (const event of events) {
+    if (event.eventName === "Purchased" && event.streamId !== null) {
+      keys.add(purchaseTransferKey(event.transactionHash, event.streamId));
+    }
+  }
+
+  return keys;
+}
 
 function asPayload(value: Prisma.JsonValue): EventPayload {
   if (value === null || Array.isArray(value) || typeof value !== "object") {
@@ -185,6 +210,55 @@ async function applyStreamCanceled(
   });
 }
 
+async function applyTransfer(
+  tx: Prisma.TransactionClient,
+  event: {
+    streamId: bigint | null;
+    blockTimestamp: Date;
+    transactionHash: string;
+    payload: Prisma.JsonValue;
+  },
+  marketplacePurchaseKeys: Set<string>,
+) {
+  if (event.streamId === null) {
+    throw new Error("Transfer event is missing tokenId");
+  }
+
+  const payload = asPayload(event.payload);
+  const from = requiredString(payload, "from");
+  const to = requiredString(payload, "to");
+
+  await tx.streamProjection.updateMany({
+    where: {
+      streamId: event.streamId,
+    },
+    data: {
+      currentOwner: to,
+    },
+  });
+
+  if (
+    from === ZERO_ADDRESS ||
+    marketplacePurchaseKeys.has(
+      purchaseTransferKey(event.transactionHash, event.streamId),
+    )
+  ) {
+    return;
+  }
+
+  await tx.listingProjection.updateMany({
+    where: {
+      streamId: event.streamId,
+      status: ListingStatus.ACTIVE,
+    },
+    data: {
+      status: ListingStatus.INVALIDATED,
+      invalidatedAt: event.blockTimestamp,
+      invalidatedTxHash: event.transactionHash,
+    },
+  });
+}
+
 async function applyListed(
   tx: Prisma.TransactionClient,
   event: {
@@ -219,10 +293,12 @@ async function applyListed(
       listedAt: event.blockTimestamp,
       soldAt: null,
       canceledAt: null,
+      invalidatedAt: null,
       buyer: null,
       listingTxHash: event.transactionHash,
       boughtTxHash: null,
       canceledTxHash: null,
+      invalidatedTxHash: null,
     },
   });
 }
@@ -293,24 +369,19 @@ async function applyPurchased(
       status: ListingStatus.SOLD,
       listedAt: event.blockTimestamp,
       soldAt: event.blockTimestamp,
+      invalidatedAt: null,
       buyer,
       listingTxHash: event.transactionHash,
       boughtTxHash: event.transactionHash,
+      invalidatedTxHash: null,
     },
     update: {
       status: ListingStatus.SOLD,
       soldAt: event.blockTimestamp,
+      invalidatedAt: null,
       buyer,
       boughtTxHash: event.transactionHash,
-    },
-  });
-
-  await tx.streamProjection.updateMany({
-    where: {
-      streamId: event.streamId,
-    },
-    data: {
-      currentOwner: buyer,
+      invalidatedTxHash: null,
     },
   });
 }
@@ -319,6 +390,7 @@ export async function rebuildProjections(): Promise<ProjectionRebuildResult> {
   const events = await prisma.streamEvent.findMany({
     orderBy: [{ blockNumber: "asc" }, { logIndex: "asc" }],
   });
+  const marketplacePurchaseKeys = collectMarketplacePurchaseKeys(events);
 
   await prisma.$transaction(
     async (tx) => {
@@ -326,6 +398,9 @@ export async function rebuildProjections(): Promise<ProjectionRebuildResult> {
 
       for (const event of events) {
         switch (event.eventName) {
+          case "Transfer":
+            await applyTransfer(tx, event, marketplacePurchaseKeys);
+            break;
           case "StreamCreated":
             await applyStreamCreated(tx, event);
             break;
@@ -352,21 +427,28 @@ export async function rebuildProjections(): Promise<ProjectionRebuildResult> {
     },
   );
 
-  const [streams, activeListings, claims, trades] = await Promise.all([
-    prisma.streamProjection.count(),
-    prisma.listingProjection.count({
-      where: {
-        status: ListingStatus.ACTIVE,
-      },
-    }),
-    prisma.claimProjection.count(),
-    prisma.tradeProjection.count(),
-  ]);
+  const [streams, activeListings, invalidatedListings, claims, trades] =
+    await Promise.all([
+      prisma.streamProjection.count(),
+      prisma.listingProjection.count({
+        where: {
+          status: ListingStatus.ACTIVE,
+        },
+      }),
+      prisma.listingProjection.count({
+        where: {
+          status: ListingStatus.INVALIDATED,
+        },
+      }),
+      prisma.claimProjection.count(),
+      prisma.tradeProjection.count(),
+    ]);
 
   return {
     processedEvents: events.length,
     streams,
     activeListings,
+    invalidatedListings,
     claims,
     trades,
   };

@@ -52,6 +52,20 @@ Recommended agents:
 - `backend_architect`
 - `verifier`
 
+## Phase 4.5 Ownership Consistency
+
+Primary docs:
+
+- `docs/roadmap/phases/phase-04-5-ownership-consistency.md`
+- `docs/architecture/onchain-offchain-boundary.md`
+- `docs/architecture/db-schema-draft.md`
+
+Recommended agents:
+
+- `contract_reviewer`
+- `backend_architect`
+- `verifier`
+
 ## Phase 5 API
 
 Primary docs:

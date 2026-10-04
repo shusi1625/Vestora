@@ -33,13 +33,15 @@ Initial projection tables:
 - `stream_id`
 - `seller`
 - `price`
-- `status`
+- `status` (`ACTIVE`, `SOLD`, `CANCELED`, `INVALIDATED`)
 - `listed_at`
 - `sold_at`
 - `canceled_at`
+- `invalidated_at`
 - `buyer`
 - `listing_tx_hash`
 - `bought_tx_hash`
+- `invalidated_tx_hash`
 
 ## stream_events
 
@@ -66,3 +68,7 @@ Use `tx_hash + log_index` as the idempotency boundary.
 ## Design Notes
 
 Use raw integer/string representations for token amounts. Format decimal display in the API or frontend with explicit token metadata.
+
+Ownership projection should be driven by ERC-721 `Transfer` events from `ReceivableStream`. Marketplace `Purchased` events should create trade history, but should not be the primary source for `streams.current_owner`.
+
+If indexed ownership and `ownerOf(streamId)` disagree, the on-chain value is authoritative. Prefer mismatch detection and logging before silent database overwrite.

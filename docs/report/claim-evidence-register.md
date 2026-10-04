@@ -10,6 +10,7 @@ Use this register to prevent the final report from sounding stronger than the ev
 | --- | --- | --- | --- |
 | Vestora treats streams as future receivable NFTs | contract behavior, UI values, architecture docs | roadmap and contract docs | draft |
 | Backend is indexing/analytics, not settlement | API/indexer implementation, architecture docs | architecture docs | draft |
+| Claim rights follow ERC-721 ownership, including external transfers | ownerOf-based claim test, Transfer indexing, projection rebuild, reconciliation evidence | `docs/report/ownership-consistency-implementation.md` | implemented |
 | Backend API improves listing load speed | RPC vs API measurement | missing | not measured |
 | Indexer is restart-safe and idempotent | sync_state and txHash+logIndex tests | missing | not implemented |
 | Buyer can judge value/risk before buy | UI feature and screenshot | missing | not implemented |

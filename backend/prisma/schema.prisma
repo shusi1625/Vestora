@@ -11,6 +11,7 @@ enum ListingStatus {
   ACTIVE
   CANCELED
   SOLD
+  INVALIDATED
 }
 
 model SyncState {
@@ -84,23 +85,39 @@ model StreamProjection {
 }
 
 model ListingProjection {
-  streamId      BigInt        @id @map("stream_id")
-  seller        String
-  price         String
-  status        ListingStatus
-  listedAt      DateTime      @map("listed_at")
-  soldAt        DateTime?     @map("sold_at")
-  canceledAt    DateTime?     @map("canceled_at")
-  buyer         String?
-  listingTxHash String        @map("listing_tx_hash")
-  boughtTxHash  String?       @map("bought_tx_hash")
-  canceledTxHash String?      @map("canceled_tx_hash")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
+  streamId          BigInt        @id @map("stream_id")
+  seller            String
+  price             String
+  status            ListingStatus
+  listedAt          DateTime      @map("listed_at")
+  soldAt            DateTime?     @map("sold_at")
+  canceledAt        DateTime?     @map("canceled_at")
+  invalidatedAt     DateTime?     @map("invalidated_at")
+  buyer             String?
+  listingTxHash     String        @map("listing_tx_hash")
+  boughtTxHash      String?       @map("bought_tx_hash")
+  canceledTxHash    String?       @map("canceled_tx_hash")
+  invalidatedTxHash String?       @map("invalidated_tx_hash")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
 
   @@index([seller])
   @@index([buyer])
   @@index([status])
   @@map("listings")
+}
+
+model OwnershipReconciliation {
+  id             String   @id @default(cuid())
+  streamId       BigInt   @map("stream_id")
+  projectedOwner String?  @map("projected_owner")
+  onchainOwner   String   @map("onchain_owner")
+  matched        Boolean
+  checkedAt      DateTime @default(now()) @map("checked_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([streamId])
+  @@index([matched])
+  @@map("ownership_reconciliations")
 }
 
 model ClaimProjection {

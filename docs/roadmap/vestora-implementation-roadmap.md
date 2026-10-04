@@ -79,12 +79,13 @@ The project should not be framed as a Sablier Lockup clone. Vestora's differenti
 2. Phase 2: backend local foundation
 3. Phase 3: event indexer
 4. Phase 4: PostgreSQL projection design
-5. Phase 5: backend API
-6. Phase 6: frontend/backend integration
-7. Phase 7: marketplace buyer protection
-8. Phase 8: gas and code-level optimization
-9. Phase 9: AWS deployment and operational metrics
-10. Phase 10: performance measurement and final report
+5. Phase 4.5: ownership consistency
+6. Phase 5: backend API
+7. Phase 6: frontend/backend integration
+8. Phase 7: marketplace buyer protection
+9. Phase 8: gas and code-level optimization
+10. Phase 9: AWS deployment and operational metrics
+11. Phase 10: performance measurement and final report
 
 ## Current Decisions
 
@@ -99,3 +100,4 @@ The project should not be framed as a Sablier Lockup clone. Vestora's differenti
 - API/indexer deployment candidates are AWS App Runner or ECS Fargate.
 - Metrics are collected through CloudWatch.
 - The Graph remains a long-term comparison or migration candidate.
+- External ERC-721 transfers are officially supported. The current `ownerOf(streamId)` is the current receivable owner, and backend projections must track or reconcile against that source of truth.

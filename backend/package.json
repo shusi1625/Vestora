@@ -18,7 +18,9 @@
     "health": "tsx scripts/health-check.ts",
     "indexer:once": "tsx scripts/indexer-once.ts",
     "indexer:poll": "tsx src/indexer/worker.ts",
-    "projections:rebuild": "tsx scripts/rebuild-projections.ts"
+    "projections:rebuild": "tsx scripts/rebuild-projections.ts",
+    "ownership:reconcile": "tsx scripts/reconcile-ownership.ts",
+    "ownership:smoke-projection": "tsx scripts/smoke-ownership-projection.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",

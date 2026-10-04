@@ -85,6 +85,17 @@ The rebuild script refreshes:
 
 These tables are read models for dashboards and APIs. They are not settlement authority.
 
+## Ownership Reconciliation
+
+Compare projected owners in PostgreSQL against on-chain `ownerOf(streamId)`:
+
+```powershell
+cd C:\GitHub\Vestora\backend
+pnpm ownership:reconcile
+```
+
+The command records each check in `ownership_reconciliations`. It does not overwrite projection data automatically; mismatches are evidence that the indexer or projection should be investigated.
+
 ## Boundary
 
 This backend reads and shapes data for dashboards. It must not hold user private keys or execute user settlement actions such as claim, buy, or cancel.

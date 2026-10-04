@@ -53,6 +53,15 @@ function extractStreamId(args: unknown) {
     return args.streamId;
   }
 
+  if (
+    args !== null &&
+    typeof args === "object" &&
+    "tokenId" in args &&
+    typeof args.tokenId === "bigint"
+  ) {
+    return args.tokenId;
+  }
+
   return null;
 }
 

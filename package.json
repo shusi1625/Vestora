@@ -39,7 +39,9 @@
     "backend:health": "pnpm --dir backend health",
     "backend:indexer:once": "pnpm --dir backend indexer:once",
     "backend:indexer:poll": "pnpm --dir backend indexer:poll",
-    "backend:projections:rebuild": "pnpm --dir backend projections:rebuild"
+    "backend:projections:rebuild": "pnpm --dir backend projections:rebuild",
+    "backend:ownership:reconcile": "pnpm --dir backend ownership:reconcile",
+    "backend:ownership:smoke-projection": "pnpm --dir backend ownership:smoke-projection"
   },
   "type": "module",
   "dependencies": {
