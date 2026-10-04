@@ -12,8 +12,15 @@ From the repository root:
 - `pnpm contracts:test`
 - `pnpm frontend:build`
 - `pnpm frontend:dev`
-
-Backend commands will be added after Phase 2.
+- `pnpm backend:compose:up`
+- `pnpm backend:prisma:generate`
+- `pnpm backend:db:migrate`
+- `pnpm backend:dev`
+- `pnpm backend:health`
+- `pnpm backend:typecheck`
+- `pnpm backend:build`
+- `pnpm backend:indexer:once`
+- `pnpm backend:indexer:poll`
 
 ## Area-Based Verification
 
