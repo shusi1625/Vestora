@@ -1,0 +1,3 @@
+[agents]
+# Keep concurrency modest at first. Add more only after the workflow proves useful.
+max_concurrent_threads_per_session = 4
