@@ -65,10 +65,16 @@ export type ApiListing = {
   invalidatedTxHash: string | null;
   updatedAt: string;
   computed: {
+    remainingReceivable: string | null;
+    claimableEstimate: string | null;
+    discountAmount: string | null;
     discountBps: number | null;
     expectedYieldBps: number | null;
+    priceToRemainingBps: number | null;
     listedForSeconds: number;
     freshness: "fresh" | "same_day" | "stale";
+    riskLabels: string[];
+    valuationBasis: string;
   };
   stream: ApiStreamSummary | null;
 };

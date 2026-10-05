@@ -21,6 +21,14 @@ function max(value: bigint, minimum: bigint) {
   return value < minimum ? minimum : value;
 }
 
+function sameAddress(left?: string | null, right?: string | null) {
+  if (!left || !right) {
+    return false;
+  }
+
+  return left.toLowerCase() === right.toLowerCase();
+}
+
 function vestedAmountAt(stream: StreamProjection, at: Date) {
   const amount = BigInt(stream.depositedAmount);
   const startTimeMs = stream.startTime.getTime();
@@ -63,10 +71,12 @@ export function streamComputedValues(
 ) {
   const depositedAmount = BigInt(stream.depositedAmount);
   const withdrawnAmount = BigInt(stream.withdrawnAmount);
-  const remainingAmount = max(depositedAmount - withdrawnAmount, 0n);
   const vestingTime = stream.canceledAt ?? estimateAt;
   const vestedAmount = vestedAmountAt(stream, vestingTime);
   const claimableAmount = max(vestedAmount - withdrawnAmount, 0n);
+  const remainingAmount = stream.canceledAt
+    ? claimableAmount
+    : max(depositedAmount - withdrawnAmount, 0n);
 
   return {
     vestedAmount: vestedAmount.toString(),
@@ -77,13 +87,64 @@ export function streamComputedValues(
   };
 }
 
+function listingRiskLabels(
+  listing: ListingProjection,
+  stream?: StreamProjection | null,
+  estimateAt = new Date(),
+) {
+  const labels: string[] = [];
+
+  if (listing.status !== "ACTIVE") {
+    labels.push(`listing_${listing.status.toLowerCase()}`);
+  }
+
+  if (!stream) {
+    return [...labels, "stream_not_indexed"];
+  }
+
+  const streamValues = streamComputedValues(stream, estimateAt);
+  const remainingAmount = BigInt(streamValues.remainingReceivable);
+  const price = BigInt(listing.price);
+  const listedForSeconds = Math.max(
+    Math.floor((estimateAt.getTime() - listing.listedAt.getTime()) / 1_000),
+    0,
+  );
+
+  if (stream.canceledAt) {
+    labels.push("canceled_stream");
+  }
+
+  if (stream.cancelable && !stream.canceledAt) {
+    labels.push("cancelable_stream");
+  }
+
+  if (!stream.currentOwner) {
+    labels.push("owner_unverified");
+  } else if (!sameAddress(stream.currentOwner, listing.seller)) {
+    labels.push("seller_not_current_owner");
+  }
+
+  if (streamValues.fullyClaimed || remainingAmount === 0n) {
+    labels.push("fully_claimed");
+  } else if (price > remainingAmount) {
+    labels.push("price_above_remaining_value");
+  }
+
+  if (listedForSeconds >= 86_400) {
+    labels.push("stale_listing");
+  }
+
+  return labels.length > 0 ? labels : ["standard"];
+}
+
 export function listingComputedValues(
   listing: ListingProjection,
   stream?: StreamProjection | null,
   estimateAt = new Date(),
 ) {
-  const remainingAmount = stream
-    ? BigInt(streamComputedValues(stream, estimateAt).remainingReceivable)
+  const streamValues = stream ? streamComputedValues(stream, estimateAt) : null;
+  const remainingAmount = streamValues
+    ? BigInt(streamValues.remainingReceivable)
     : null;
   const price = BigInt(listing.price);
   const discountAmount =
@@ -94,12 +155,19 @@ export function listingComputedValues(
   );
 
   return {
+    remainingReceivable:
+      remainingAmount === null ? null : remainingAmount.toString(),
+    claimableEstimate: streamValues?.claimableEstimate ?? null,
+    discountAmount:
+      discountAmount === null ? null : discountAmount.toString(),
     discountBps:
       remainingAmount === null || discountAmount === null
         ? null
         : basisPoints(discountAmount, remainingAmount),
     expectedYieldBps:
       discountAmount === null ? null : basisPoints(discountAmount, price),
+    priceToRemainingBps:
+      remainingAmount === null ? null : basisPoints(price, remainingAmount),
     listedForSeconds,
     freshness:
       listedForSeconds < 3_600
@@ -107,12 +175,15 @@ export function listingComputedValues(
         : listedForSeconds < 86_400
           ? "same_day"
           : "stale",
+    riskLabels: listingRiskLabels(listing, stream, estimateAt),
+    valuationBasis: "backend_projection_at_indexed_block",
   };
 }
 
 export function riskLabel(
   stream: StreamProjection,
   listing?: ListingProjection | null,
+  estimateAt = new Date(),
 ) {
   if (listing?.status === "INVALIDATED") {
     return "ownership_changed";
@@ -126,7 +197,7 @@ export function riskLabel(
     return "owner_unverified";
   }
 
-  if (streamComputedValues(stream).fullyClaimed) {
+  if (streamComputedValues(stream, estimateAt).fullyClaimed) {
     return "fully_claimed";
   }
 
@@ -160,7 +231,7 @@ export function serializeStream(
     createdTxHash: stream.createdTxHash,
     updatedAt: stream.updatedAt.toISOString(),
     computed,
-    riskLabel: riskLabel(stream, stream.listing),
+    riskLabel: riskLabel(stream, stream.listing, options.estimateAt),
     listing: stream.listing
       ? serializeListing(stream.listing, stream, options)
       : null,
@@ -210,7 +281,7 @@ export function serializeStreamSummary(
     endTime: stream.endTime.toISOString(),
     cancelable: stream.cancelable,
     canceledAt: toIso(stream.canceledAt),
-    riskLabel: riskLabel(stream),
+    riskLabel: riskLabel(stream, undefined, options.estimateAt),
   };
 }
 

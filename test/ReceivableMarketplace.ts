@@ -7,7 +7,7 @@ describe("ReceivableMarketplace", async function () {
     const { viem, networkHelpers } = await network.create();
     const [sender, recipient, anotherUser] = await viem.getWalletClients();
 
-    async function createListedStream() {
+    async function createListedStream(options: { cancelable?: boolean } = {}) {
         const stream = await viem.deployContract("ReceivableStream");
         const token = await viem.deployContract("MockUSDC");
         const marketplace = await viem.deployContract("ReceivableMarketplace", [
@@ -17,6 +17,7 @@ describe("ReceivableMarketplace", async function () {
 
         const amount = 1_000_000n;
         const price = 400_000n;
+        const cancelable = options.cancelable ?? false;
 
         const now = BigInt(await networkHelpers.time.latest());
         const startTime = now + 100n;
@@ -31,7 +32,7 @@ describe("ReceivableMarketplace", async function () {
             amount,
             startTime,
             endTime,
-            false,
+            cancelable,
         ]);
 
         await stream.write.approve(
@@ -314,6 +315,136 @@ describe("ReceivableMarketplace", async function () {
             "0x0000000000000000000000000000000000000000",
         );
         assert.equal(listing.price, 0n);
+    });
+
+    //12. 보호 조건이 맞는 경우 buyWithProtection 구매 성공 확인
+    it("lets a buyer purchase with protection when latest terms match", async function () {
+        const { stream, token, marketplace, amount, price } =
+            await createListedStream();
+
+        await token.write.mint([anotherUser.account.address, price]);
+        await token.write.approve(
+            [marketplace.address, price],
+            { account: anotherUser.account },
+        );
+
+        await marketplace.write.buyWithProtection(
+            [1n, price, amount, 0n, recipient.account.address],
+            { account: anotherUser.account },
+        );
+
+        assert.equal(
+            (await stream.read.ownerOf([1n])).toLowerCase(),
+            anotherUser.account.address.toLowerCase(),
+        );
+
+        assert.equal(
+            await token.read.balanceOf([recipient.account.address]),
+            price,
+        );
+    });
+
+    //13. 보호 조건의 최대 가격보다 listing 가격이 높은 경우 구매 실패
+    it("rejects protected buy when listing price exceeds max price", async function () {
+        const { marketplace, price } = await createListedStream();
+
+        await assert.rejects(
+            marketplace.write.buyWithProtection(
+                [1n, price - 1n, 0n, 0n, recipient.account.address],
+                { account: anotherUser.account },
+            ),
+        );
+    });
+
+    //14. 보호 조건의 seller가 현재 listing seller와 다른 경우 구매 실패
+    it("rejects protected buy when expected seller does not match", async function () {
+        const { marketplace, price } = await createListedStream();
+
+        await assert.rejects(
+            marketplace.write.buyWithProtection(
+                [1n, price, 0n, 0n, sender.account.address],
+                { account: anotherUser.account },
+            ),
+        );
+    });
+
+    //15. seller가 listing 후 claim하여 withdrawnAmount가 증가한 경우 구매 실패
+    it("rejects protected buy when the seller claimed after the buyer snapshot", async function () {
+        const { stream, token, marketplace, amount, price, startTime, endTime } =
+            await createListedStream();
+        const claimTime = startTime + (endTime - startTime) / 2n;
+
+        await networkHelpers.time.increaseTo(Number(claimTime));
+        await stream.write.claim(
+            [1n],
+            { account: recipient.account },
+        );
+
+        await token.write.mint([anotherUser.account.address, price]);
+        await token.write.approve(
+            [marketplace.address, price],
+            { account: anotherUser.account },
+        );
+
+        await assert.rejects(
+            marketplace.write.buyWithProtection(
+                [1n, price, amount, 0n, recipient.account.address],
+                { account: anotherUser.account },
+            ),
+        );
+
+        assert.equal(
+            (await stream.read.ownerOf([1n])).toLowerCase(),
+            recipient.account.address.toLowerCase(),
+        );
+
+        const listing = await marketplace.read.getListing([1n]) as {
+            seller: `0x${string}`;
+            price: bigint;
+        };
+
+        assert.equal(
+            listing.seller.toLowerCase(),
+            recipient.account.address.toLowerCase(),
+        );
+        assert.equal(listing.price, price);
+    });
+
+    //16. sender가 listing 후 stream을 취소하여 잔여 수취권이 줄어든 경우 구매 실패
+    it("rejects protected buy when cancellation lowers remaining receivable", async function () {
+        const { stream, token, marketplace, amount, price } =
+            await createListedStream({ cancelable: true });
+
+        await stream.write.cancel([1n]);
+
+        await token.write.mint([anotherUser.account.address, price]);
+        await token.write.approve(
+            [marketplace.address, price],
+            { account: anotherUser.account },
+        );
+
+        await assert.rejects(
+            marketplace.write.buyWithProtection(
+                [1n, price, amount, 0n, recipient.account.address],
+                { account: anotherUser.account },
+            ),
+        );
+
+        assert.equal(
+            (await stream.read.ownerOf([1n])).toLowerCase(),
+            recipient.account.address.toLowerCase(),
+        );
+
+        const listing = await marketplace.read.getListing([1n]) as {
+            seller: `0x${string}`;
+            price: bigint;
+        };
+
+        assert.equal(
+            listing.seller.toLowerCase(),
+            recipient.account.address.toLowerCase(),
+        );
+        assert.equal(listing.price, price);
     });
 
     //12. listing되지 않은 stream 구매 실패

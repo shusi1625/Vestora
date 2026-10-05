@@ -197,6 +197,19 @@ export const receivableMarketplaceAbi = [
   },
   {
     type: "function",
+    name: "buyWithProtection",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "streamId", type: "uint256" },
+      { name: "maxPrice", type: "uint256" },
+      { name: "minRemainingReceivable", type: "uint256" },
+      { name: "maxWithdrawnAmount", type: "uint256" },
+      { name: "expectedSeller", type: "address" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
     name: "getListing",
     stateMutability: "view",
     inputs: [{ name: "streamId", type: "uint256" }],

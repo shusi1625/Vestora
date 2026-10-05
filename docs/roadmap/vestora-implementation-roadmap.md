@@ -103,3 +103,5 @@ The project should not be framed as a Sablier Lockup clone. Vestora's differenti
 - The Graph remains a long-term comparison or migration candidate.
 - External ERC-721 transfers are officially supported. The current `ownerOf(streamId)` is the current receivable owner, and backend projections must track or reconcile against that source of truth.
 - Transaction UX separates wallet confirmation, transaction submission, block confirmation, on-chain refresh, and backend indexing. Backend estimates are read-model estimates and must show their indexed-block basis.
+- Marketplace pricing is free-market driven. Vestora does not set a canonical discount rate; it calculates remaining receivable, discount, implied yield, and risk labels so buyers can judge a listing.
+- Phase 7A adds frontend/API buyer protection through valuation disclosure and on-chain preflight. Phase 7B adds contract-level `buyWithProtection` constraints for max price, min remaining receivable, max withdrawn amount, and expected seller.

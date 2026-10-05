@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState, type ReactNode } from "react";
-import { isAddress, parseUnits, type Hex } from "viem";
+import { isAddress, parseUnits, type Address, type Hex } from "viem";
 import {
   useAccount,
   useChainId,
@@ -51,6 +51,23 @@ type TxState = {
   message: string;
   hash?: Hex;
   confirmedBlockNumber?: bigint;
+};
+
+type OnchainListing = {
+  seller: Address;
+  price: bigint;
+};
+
+type OnchainStream = {
+  sender: Address;
+  token: Address;
+  depositedAmount: bigint;
+  startTime: bigint;
+  endTime: bigint;
+  withdrawnAmount: bigint;
+  cancelable: boolean;
+  canceled: boolean;
+  canceledAt: bigint;
 };
 
 const zeroAddress = "0x0000000000000000000000000000000000000000";
@@ -112,6 +129,14 @@ function formatBps(value?: number | null) {
   return `${(value / 100).toFixed(2)}%`;
 }
 
+function formatRiskLabels(labels?: string[] | null) {
+  if (!labels?.length) {
+    return "-";
+  }
+
+  return labels.join(", ");
+}
+
 function parseBlockNumber(value?: string | null) {
   if (!value) {
     return undefined;
@@ -169,6 +194,8 @@ export default function Home() {
   const [streamIdInput, setStreamIdInput] = useState("1");
   const [listingPrice, setListingPrice] = useState("40");
   const [txState, setTxState] = useState<TxState>(initialTxState);
+  const [buyPreflightMessage, setBuyPreflightMessage] =
+    useState("Not checked yet.");
 
   const metaMaskConnector = connectors.find((connector) =>
     connector.name.toLowerCase().includes("metamask"),
@@ -373,6 +400,9 @@ export default function Home() {
         : transactionBackendIndexed
           ? "Indexed"
           : `Pending block ${txState.confirmedBlockNumber.toString()}`;
+
+  const selectedListingRiskLabels =
+    backendSelectedListing?.computed.riskLabels ?? [];
 
   async function refreshOnchainReads() {
     await Promise.all([
@@ -642,8 +672,136 @@ export default function Home() {
     );
   }
 
+  async function runBuyPreflight() {
+    if (!publicClient || !selectedStreamId) {
+      return undefined;
+    }
+
+    try {
+      setTxState({
+        label: "Buy Preflight",
+        status: "pending",
+        phase: "refreshing_onchain",
+        message: "Rechecking latest on-chain listing and stream value...",
+      });
+      setBuyPreflightMessage("Checking latest on-chain state...");
+
+      const [
+        latestListing,
+        latestOwner,
+        latestStream,
+        latestVestedAmount,
+        latestClaimableAmount,
+      ] = await Promise.all([
+        publicClient.readContract({
+          address: sepoliaContracts.receivableMarketplace,
+          abi: receivableMarketplaceAbi,
+          functionName: "getListing",
+          args: [selectedStreamId],
+        }) as Promise<OnchainListing>,
+        publicClient.readContract({
+          address: sepoliaContracts.receivableStream,
+          abi: receivableStreamAbi,
+          functionName: "ownerOf",
+          args: [selectedStreamId],
+        }) as Promise<Address>,
+        publicClient.readContract({
+          address: sepoliaContracts.receivableStream,
+          abi: receivableStreamAbi,
+          functionName: "getStream",
+          args: [selectedStreamId],
+        }) as Promise<OnchainStream>,
+        publicClient.readContract({
+          address: sepoliaContracts.receivableStream,
+          abi: receivableStreamAbi,
+          functionName: "vestedAmount",
+          args: [selectedStreamId],
+        }) as Promise<bigint>,
+        publicClient.readContract({
+          address: sepoliaContracts.receivableStream,
+          abi: receivableStreamAbi,
+          functionName: "claimableAmount",
+          args: [selectedStreamId],
+        }) as Promise<bigint>,
+      ]);
+
+      if (sameAddress(latestListing.seller, zeroAddress)) {
+        throw new Error("This stream is not currently listed.");
+      }
+
+      if (!sameAddress(latestOwner, latestListing.seller)) {
+        throw new Error("Listing seller no longer owns this receivable NFT.");
+      }
+
+      if (listing.data && latestListing.price !== listing.data.price) {
+        throw new Error("Listing price changed. Refresh before buying.");
+      }
+
+      const settlementCeiling = latestStream.canceled
+        ? latestVestedAmount
+        : latestStream.depositedAmount;
+      const remainingReceivable =
+        settlementCeiling > latestStream.withdrawnAmount
+          ? settlementCeiling - latestStream.withdrawnAmount
+          : BigInt(0);
+
+      if (remainingReceivable === BigInt(0)) {
+        throw new Error("No receivable value remains.");
+      }
+
+      if (latestListing.price > remainingReceivable) {
+        throw new Error(
+          "Listing price is above the latest remaining receivable value.",
+        );
+      }
+
+      const message = `OK. Remaining ${formatTokenAmount(
+        remainingReceivable,
+        decimals,
+      )}, claimable now ${formatTokenAmount(
+        latestClaimableAmount,
+        decimals,
+      )}.`;
+
+      setBuyPreflightMessage(message);
+      setTxState({
+        label: "Buy Preflight",
+        status: "success",
+        phase: "refreshing_onchain",
+        message,
+      });
+
+      return {
+        seller: latestListing.seller,
+        price: latestListing.price,
+        remainingReceivable,
+        withdrawnAmount: latestStream.withdrawnAmount,
+        claimableAmount: latestClaimableAmount,
+      };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Buy preflight failed.";
+
+      setBuyPreflightMessage(message);
+      setTxState({
+        label: "Buy Preflight",
+        status: "error",
+        phase: "error",
+        message,
+      });
+
+      return undefined;
+    }
+  }
+
   async function handleBuy() {
     if (!canWrite || !selectedStreamId || !listing.data) {
+      return;
+    }
+
+    const firstPreflight = await runBuyPreflight();
+
+    if (!firstPreflight) {
       return;
     }
 
@@ -652,7 +810,7 @@ export default function Home() {
         address: sepoliaContracts.mockUSDC,
         abi: erc20Abi,
         functionName: "approve",
-        args: [sepoliaContracts.receivableMarketplace, listing.data.price],
+        args: [sepoliaContracts.receivableMarketplace, firstPreflight.price],
       }),
     );
 
@@ -660,12 +818,24 @@ export default function Home() {
       return;
     }
 
+    const finalPreflight = await runBuyPreflight();
+
+    if (!finalPreflight) {
+      return;
+    }
+
     await runTransaction("Buy Receivable", () =>
       writeContractAsync({
         address: sepoliaContracts.receivableMarketplace,
         abi: receivableMarketplaceAbi,
-        functionName: "buy",
-        args: [selectedStreamId],
+        functionName: "buyWithProtection",
+        args: [
+          selectedStreamId,
+          finalPreflight.price,
+          finalPreflight.remainingReceivable,
+          finalPreflight.withdrawnAmount,
+          finalPreflight.seller,
+        ],
       }),
     );
   }
@@ -909,7 +1079,7 @@ export default function Home() {
                   key={item.streamId}
                   type="button"
                   onClick={() => setStreamIdInput(item.streamId)}
-                  className="grid gap-3 rounded-lg border border-zinc-800 bg-zinc-950 p-4 text-left hover:border-sky-500/60 md:grid-cols-[1fr_1fr_1fr_auto]"
+                  className="grid gap-3 rounded-lg border border-zinc-800 bg-zinc-950 p-4 text-left hover:border-sky-500/60 md:grid-cols-[1fr_1fr_1fr_1fr_auto]"
                 >
                   <div>
                     <p className="text-xs uppercase text-zinc-500">
@@ -931,9 +1101,17 @@ export default function Home() {
                     </p>
                     <p className="mt-1 text-sm text-zinc-200">
                       {formatApiTokenAmount(
-                        item.stream?.remainingReceivable,
+                        item.computed.remainingReceivable,
                       )}{" "}
                       / {formatBps(item.computed.expectedYieldBps)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase text-zinc-500">
+                      Risk
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-200">
+                      {formatRiskLabels(item.computed.riskLabels)}
                     </p>
                   </div>
                   <div className="flex items-center md:justify-end">
@@ -1217,6 +1395,28 @@ export default function Home() {
               <InfoRow
                 label="Listing price"
                 value={formatTokenAmount(listing.data?.price, decimals)}
+              />
+              <InfoRow
+                label="Backend remaining"
+                value={formatApiTokenAmount(
+                  backendSelectedListing?.computed.remainingReceivable,
+                )}
+              />
+              <InfoRow
+                label="Discount / yield"
+                value={`${formatBps(
+                  backendSelectedListing?.computed.discountBps,
+                )} / ${formatBps(
+                  backendSelectedListing?.computed.expectedYieldBps,
+                )}`}
+              />
+              <InfoRow
+                label="Risk labels"
+                value={formatRiskLabels(selectedListingRiskLabels)}
+              />
+              <InfoRow
+                label="Buy preflight"
+                value={buyPreflightMessage}
               />
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-400">Price</span>
