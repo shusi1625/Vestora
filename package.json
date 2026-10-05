@@ -27,6 +27,7 @@
     "hardhat": "hardhat",
     "contracts:compile": "hardhat compile",
     "contracts:test": "hardhat test",
+    "contracts:gas": "hardhat run scripts/measure-gas.ts",
     "frontend:build": "yarn --cwd frontend build",
     "frontend:dev": "yarn --cwd frontend dev",
     "backend:dev": "pnpm --dir backend dev",

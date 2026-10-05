@@ -12,6 +12,7 @@ Measure gas baseline and apply safe improvements.
 - `list`
 - `cancelListing`
 - `buy`
+- `buyWithProtection`
 
 ## Improvement Candidates
 
@@ -27,6 +28,13 @@ Measure gas baseline and apply safe improvements.
 - gas baseline table exists
 - before/after gas comparison exists
 - optimizations do not weaken security or readability
+
+## Current Baseline
+
+- Measurement command: `yarn contracts:gas`
+- Baseline table: `docs/report/gas-baseline.md`
+- Scope: target function transaction gas only; setup transactions are intentionally excluded.
+- Status: baseline measured, optimization candidates not yet applied.
 
 ## Codex Routing
 
