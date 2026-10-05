@@ -47,7 +47,7 @@ Expected health response:
 ## Endpoints
 
 - `GET /health`: API and PostgreSQL connectivity check
-- `GET /metrics`: indexer sync status and lag against Sepolia
+- `GET /metrics`: indexer sync status, API latency counters, and DB row-count metrics
 - `GET /streams`: projected stream list
 - `GET /streams/:streamId`: projected stream detail with claims
 - `GET /listings`: projected marketplace listings
@@ -81,6 +81,16 @@ pnpm indexer:poll
 ```
 
 The indexer stores decoded contract events in `stream_events`, using `tx_hash + log_index` as the idempotency boundary. The current sync cursor is stored in `sync_state`.
+
+## Metrics
+
+`GET /metrics` is intended for local and AWS operational evidence. It currently reports:
+
+- indexer sync state, indexed event counts, active contract addresses, and recent processed-events-per-minute estimate
+- API request count, 2xx/3xx/4xx/5xx buckets, error rate, p50/p95/p99 latency, and per-endpoint average latency since the API process started
+- PostgreSQL health-check latency and projection table row counts
+
+These metrics are observability evidence for the indexing/analytics layer. They are not settlement data; transaction-critical actions must still recheck the smart contracts.
 
 ## Projections
 

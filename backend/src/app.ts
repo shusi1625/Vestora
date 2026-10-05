@@ -3,9 +3,11 @@ import Fastify, { type FastifyInstance } from "fastify";
 import { performance } from "node:perf_hooks";
 
 import { ApiError, sendApiError, sendInternalError } from "./api/errors.js";
+import { getApiMetrics, recordApiResponse } from "./api/request-metrics.js";
 import { registerApiRoutes } from "./api/routes/index.js";
 import { env } from "./config/env.js";
 import { checkDatabaseConnection, prisma } from "./db/prisma.js";
+import { getDatabaseMetrics } from "./db/metrics.js";
 import { getIndexerMetrics } from "./indexer/metrics.js";
 
 const startedAt = Date.now();
@@ -30,14 +32,24 @@ export function buildApp(): FastifyInstance {
     const startedAtMs = requestStartTimes.get(request);
     const responseTimeMs =
       startedAtMs === undefined ? null : performance.now() - startedAtMs;
+    const roundedResponseTimeMs =
+      responseTimeMs === null ? null : Number(responseTimeMs.toFixed(2));
+
+    if (roundedResponseTimeMs !== null) {
+      recordApiResponse({
+        method: request.method,
+        url: request.url,
+        statusCode: reply.statusCode,
+        responseTimeMs: roundedResponseTimeMs,
+      });
+    }
 
     app.log.info(
       {
         method: request.method,
         url: request.url,
         statusCode: reply.statusCode,
-        responseTimeMs:
-          responseTimeMs === null ? null : Number(responseTimeMs.toFixed(2)),
+        responseTimeMs: roundedResponseTimeMs,
       },
       "api response",
     );
@@ -85,6 +97,8 @@ export function buildApp(): FastifyInstance {
       uptimeSeconds: Math.floor((Date.now() - startedAt) / 1000),
       phase: "event-indexer",
       indexer: await getIndexerMetrics(),
+      api: getApiMetrics(),
+      database: await getDatabaseMetrics(),
       timestamp: new Date().toISOString(),
     };
   });

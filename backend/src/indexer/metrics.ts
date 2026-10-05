@@ -1,6 +1,84 @@
 import { env } from "../config/env.js";
 import { prisma } from "../db/prisma.js";
 import { publicClient, getSafeBlockNumber } from "./chain.js";
+import { indexedContracts } from "./contracts.js";
+
+const EVENT_RATE_WINDOW_MINUTES = 5;
+
+async function getIndexedEventMetrics() {
+  const activeContractAddresses = indexedContracts.map((contract) =>
+    contract.address.toLowerCase(),
+  );
+  const windowStart = new Date(
+    Date.now() - EVENT_RATE_WINDOW_MINUTES * 60 * 1_000,
+  );
+  const where = {
+    chainId: env.sepoliaChainId,
+    blockNumber: {
+      gte: env.indexerStartBlock,
+    },
+    contractAddress: {
+      in: activeContractAddresses,
+    },
+  };
+  const [totalIndexedEvents, recentIndexedEvents, eventsByName, latestEvent] =
+    await Promise.all([
+      prisma.streamEvent.count({
+        where,
+      }),
+      prisma.streamEvent.count({
+        where: {
+          ...where,
+          createdAt: {
+            gte: windowStart,
+          },
+        },
+      }),
+      prisma.streamEvent.groupBy({
+        by: ["eventName"],
+        where,
+        _count: {
+          _all: true,
+        },
+        orderBy: {
+          eventName: "asc",
+        },
+      }),
+      prisma.streamEvent.findFirst({
+        where,
+        orderBy: [{ blockNumber: "desc" }, { logIndex: "desc" }],
+        select: {
+          eventName: true,
+          blockNumber: true,
+          transactionHash: true,
+          logIndex: true,
+          blockTimestamp: true,
+        },
+      }),
+    ]);
+
+  return {
+    activeContractAddresses,
+    totalIndexedEvents,
+    recentWindowMinutes: EVENT_RATE_WINDOW_MINUTES,
+    recentIndexedEvents,
+    processedEventsPerMinute: Number(
+      (recentIndexedEvents / EVENT_RATE_WINDOW_MINUTES).toFixed(2),
+    ),
+    eventsByName: Object.fromEntries(
+      eventsByName.map((event) => [event.eventName, event._count._all]),
+    ),
+    latestEvent: latestEvent
+      ? {
+          eventName: latestEvent.eventName,
+          blockNumber: latestEvent.blockNumber.toString(),
+          transactionHash: latestEvent.transactionHash,
+          logIndex: latestEvent.logIndex,
+          blockTimestamp: latestEvent.blockTimestamp.toISOString(),
+        }
+      : null,
+  };
+}
 
 export async function getIndexerMetrics() {
   const state = await prisma.syncState.findUnique({
@@ -41,6 +119,7 @@ export async function getIndexerMetrics() {
       latestIndexedBlockTimestamp,
       lagBlocks: lagBlocks.toString(),
       updatedAt: state?.updatedAt.toISOString() ?? null,
+      events: await getIndexedEventMetrics(),
     };
   } catch (error) {
     return {
@@ -54,6 +133,7 @@ export async function getIndexerMetrics() {
       latestIndexedBlockTimestamp: null,
       lagBlocks: null,
       updatedAt: state?.updatedAt.toISOString() ?? null,
+      events: await getIndexedEventMetrics(),
       error: error instanceof Error ? error.message : "unknown RPC error",
     };
   }
