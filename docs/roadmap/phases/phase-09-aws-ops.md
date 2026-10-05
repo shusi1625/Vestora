@@ -46,6 +46,25 @@ DB:
 - CloudWatch shows API and indexer logs
 - operational metrics can be used in the report
 
+## Current Local Preparation
+
+Implemented before real AWS resource creation:
+
+- backend container image definition: `backend/Dockerfile`
+- secret-safe container ignore rules: `backend/.dockerignore`
+- production environment template: `backend/.env.production.example`
+- deployment and verification runbook: `infra/aws-deployment-runbook.md`
+- local `/metrics` endpoint with indexer, API, and DB observability fields
+- API and indexer share the same image; the indexer uses command override `node dist/src/indexer/worker.js`
+
+Still requires explicit approval before execution:
+
+- ECR repository creation
+- RDS PostgreSQL creation
+- App Runner or ECS service creation
+- CloudWatch evidence capture
+- any real AWS cost-incurring command
+
 ## Codex Routing
 
 Use `ops_reviewer`. Do not create cloud resources without explicit user approval.

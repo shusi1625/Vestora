@@ -15,7 +15,7 @@ Use this register to prevent the final report from sounding stronger than the ev
 | Indexer is restart-safe and idempotent | sync_state and txHash+logIndex tests | missing | not implemented |
 | Buyer can judge value/risk before buy | UI feature and screenshot | missing | not implemented |
 | Gas optimization is evidence-backed | gas baseline and before/after table | template exists | not measured |
-| AWS provides operational evidence | deployed API/indexer, CloudWatch/RDS metrics | architecture docs | not deployed |
+| AWS provides operational evidence | deployed API/indexer, CloudWatch/RDS metrics | local metrics endpoint, backend Dockerfile, production env template, AWS runbook | draft |
 
 ## Status Values
 

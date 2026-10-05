@@ -92,6 +92,29 @@ The indexer stores decoded contract events in `stream_events`, using `tx_hash + 
 
 These metrics are observability evidence for the indexing/analytics layer. They are not settlement data; transaction-critical actions must still recheck the smart contracts.
 
+## Container Runtime
+
+Build the backend container from this directory:
+
+```powershell
+cd C:\GitHub\Vestora\backend
+docker build -t vestora-backend:local .
+```
+
+The default container command runs the API:
+
+```text
+node dist/src/server.js
+```
+
+Use the same image for the indexer worker by overriding the command:
+
+```text
+node dist/src/indexer/worker.js
+```
+
+For AWS deployment planning, see `infra/aws-deployment-runbook.md`.
+
 ## Projections
 
 Rebuild query-optimized read models from `stream_events`:
