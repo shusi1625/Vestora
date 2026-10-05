@@ -69,15 +69,15 @@ export const env = {
     process.env.SEPOLIA_RPC_URL ?? "https://ethereum-sepolia-rpc.publicnode.com",
   receivableStreamAddress:
     process.env.RECEIVABLE_STREAM_ADDRESS ??
-    "0x92BA9C82c417a0F2805a0227cB16dead1865a202",
+    "0x2b6beCf31c41c25f3A4eF73F6dAEEff85dB8eD1a",
   receivableMarketplaceAddress:
     process.env.RECEIVABLE_MARKETPLACE_ADDRESS ??
-    "0x8a01A13FbEBF6f974F8956558065e70017156579",
-  indexerSyncId: process.env.INDEXER_SYNC_ID ?? "sepolia",
+    "0x6184F4C3718447aBbe8B5Eb2bb73163C9Cfc49d7",
+  indexerSyncId: process.env.INDEXER_SYNC_ID ?? "sepolia-v4",
   indexerStartBlock: readBlockNumber(
     "INDEXER_START_BLOCK",
     process.env.INDEXER_START_BLOCK,
-    11831436n,
+    11849510n,
   ),
   indexerBatchSize: readPositiveInteger(
     "INDEXER_BATCH_SIZE",

@@ -1,8 +1,8 @@
 import { network } from "hardhat";
 
-const MOCK_USDC_ADDRESS = "0x7BadaD2E8FBA41CAb32AA30dfecD03AA816E4517";
-const RECEIVABLE_STREAM_ADDRESS = "0x92BA9C82c417a0F2805a0227cB16dead1865a202";
-const MARKETPLACE_ADDRESS = "0x8a01A13FbEBF6f974F8956558065e70017156579";
+const MOCK_USDC_ADDRESS = "0xD8E66a5bfbf8DEa75DfbDc0C1EE65612504Fb7F9";
+const RECEIVABLE_STREAM_ADDRESS = "0x2b6beCf31c41c25f3A4eF73F6dAEEff85dB8eD1a";
+const MARKETPLACE_ADDRESS = "0x6184F4C3718447aBbe8B5Eb2bb73163C9Cfc49d7";
 
 const { viem } = await network.create({
     network: "sepolia",
@@ -111,9 +111,15 @@ await waitForTx(
 
 const sellerBeforeBuy = await mockUSDC.read.balanceOf([deployer.account.address]);
 
-console.log("Buying receivable NFT...");
+console.log("Buying receivable NFT with protection...");
 await waitForTx(
-    await marketplace.write.buy([streamId]),
+    await marketplace.write.buyWithProtection([
+        streamId,
+        salePrice,
+        depositAmount,
+        0n,
+        deployer.account.address,
+    ]),
 );
 
 const sellerAfterBuy = await mockUSDC.read.balanceOf([deployer.account.address]);

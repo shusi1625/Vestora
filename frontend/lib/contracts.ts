@@ -1,9 +1,9 @@
 import type { Address } from "viem";
 
 export const sepoliaContracts = {
-  mockUSDC: "0x7BadaD2E8FBA41CAb32AA30dfecD03AA816E4517",
-  receivableStream: "0x92BA9C82c417a0F2805a0227cB16dead1865a202",
-  receivableMarketplace: "0x8a01A13FbEBF6f974F8956558065e70017156579",
+  mockUSDC: "0xD8E66a5bfbf8DEa75DfbDc0C1EE65612504Fb7F9",
+  receivableStream: "0x2b6beCf31c41c25f3A4eF73F6dAEEff85dB8eD1a",
+  receivableMarketplace: "0x6184F4C3718447aBbe8B5Eb2bb73163C9Cfc49d7",
 } as const satisfies Record<string, Address>;
 
 export const erc20Abi = [
