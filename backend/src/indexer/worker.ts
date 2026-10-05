@@ -1,5 +1,6 @@
 import { env } from "../config/env.js";
 import { prisma } from "../db/prisma.js";
+import { rebuildProjections } from "../projections/rebuild.js";
 import { runIndexerOnce } from "./service.js";
 
 let stopping = false;
@@ -12,11 +13,15 @@ async function runLoop() {
   while (!stopping) {
     try {
       const result = await runIndexerOnce();
+      const projection =
+        result.insertedEvents > 0 ? await rebuildProjections() : null;
+
       console.log(
         JSON.stringify({
           level: "info",
           message: "indexer cycle completed",
           result,
+          projection,
         }),
       );
     } catch (error) {

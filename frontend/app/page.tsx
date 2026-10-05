@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState, type ReactNode } from "react";
 import { isAddress, parseUnits, type Hex } from "viem";
 import {
@@ -13,6 +14,16 @@ import {
 } from "wagmi";
 import { sepolia } from "wagmi/chains";
 
+import {
+  fetchListings,
+  fetchMarketStats,
+  fetchMetrics,
+  fetchStream,
+  fetchUserStreams,
+  fetchUserTrades,
+  VestoraApiError,
+  type ListingStatus,
+} from "../lib/api";
 import {
   erc20Abi,
   receivableMarketplaceAbi,
@@ -29,8 +40,17 @@ import {
 type TxState = {
   label: string;
   status: "idle" | "pending" | "success" | "error";
+  phase:
+    | "idle"
+    | "wallet_confirmation"
+    | "submitted"
+    | "confirming"
+    | "refreshing_onchain"
+    | "indexing_pending"
+    | "error";
   message: string;
   hash?: Hex;
+  confirmedBlockNumber?: bigint;
 };
 
 const zeroAddress = "0x0000000000000000000000000000000000000000";
@@ -39,6 +59,7 @@ const decimals = 6;
 const initialTxState: TxState = {
   label: "",
   status: "idle",
+  phase: "idle",
   message: "No transaction yet.",
 };
 
@@ -60,6 +81,73 @@ function parsePositiveTokenAmount(value: string) {
     return parseUnits(value, decimals);
   } catch {
     return undefined;
+  }
+}
+
+function formatApiTokenAmount(value?: string | null) {
+  if (!value) {
+    return "-";
+  }
+
+  try {
+    return formatTokenAmount(BigInt(value), decimals);
+  } catch {
+    return "-";
+  }
+}
+
+function formatApiTimestamp(value?: string | null) {
+  if (!value) {
+    return "-";
+  }
+
+  return new Date(value).toLocaleString();
+}
+
+function formatBps(value?: number | null) {
+  if (value === undefined || value === null) {
+    return "-";
+  }
+
+  return `${(value / 100).toFixed(2)}%`;
+}
+
+function parseBlockNumber(value?: string | null) {
+  if (!value) {
+    return undefined;
+  }
+
+  try {
+    return BigInt(value);
+  } catch {
+    return undefined;
+  }
+}
+
+function shortenHash(hash?: Hex) {
+  if (!hash) {
+    return "-";
+  }
+
+  return `${hash.slice(0, 10)}...${hash.slice(-6)}`;
+}
+
+function txPhaseLabel(phase: TxState["phase"]) {
+  switch (phase) {
+    case "wallet_confirmation":
+      return "Waiting for wallet";
+    case "submitted":
+      return "Submitted";
+    case "confirming":
+      return "Waiting for block";
+    case "refreshing_onchain":
+      return "Refreshing on-chain";
+    case "indexing_pending":
+      return "Backend indexing";
+    case "error":
+      return "Error";
+    default:
+      return "Idle";
   }
 }
 
@@ -89,6 +177,47 @@ export default function Home() {
   const isSepolia = chainId === sepolia.id;
   const canWrite = Boolean(isConnected && isSepolia && address && publicClient);
   const selectedStreamId = parseStreamId(streamIdInput);
+  const selectedStreamIdText = selectedStreamId?.toString();
+
+  const marketStats = useQuery({
+    queryKey: ["market-stats"],
+    queryFn: fetchMarketStats,
+    refetchInterval: 15_000,
+  });
+
+  const indexerMetrics = useQuery({
+    queryKey: ["indexer-metrics"],
+    queryFn: fetchMetrics,
+    refetchInterval: 15_000,
+  });
+
+  const backendListings = useQuery({
+    queryKey: ["listings"],
+    queryFn: () => fetchListings(),
+    refetchInterval: 15_000,
+  });
+
+  const backendStream = useQuery({
+    queryKey: ["stream", selectedStreamIdText],
+    queryFn: () => fetchStream(selectedStreamIdText ?? ""),
+    enabled: Boolean(selectedStreamIdText),
+    retry: false,
+    refetchInterval: 15_000,
+  });
+
+  const userStreams = useQuery({
+    queryKey: ["user-streams", address?.toLowerCase()],
+    queryFn: () => fetchUserStreams(address ?? zeroAddress),
+    enabled: Boolean(address),
+    refetchInterval: 15_000,
+  });
+
+  const userTrades = useQuery({
+    queryKey: ["user-trades", address?.toLowerCase()],
+    queryFn: () => fetchUserTrades(address ?? zeroAddress),
+    enabled: Boolean(address),
+    refetchInterval: 15_000,
+  });
 
   const mockUsdcName = useReadContract({
     address: sepoliaContracts.mockUSDC,
@@ -202,8 +331,50 @@ export default function Home() {
   const isListed = Boolean(
     listing.data && !sameAddress(listing.data.seller, zeroAddress),
   );
+  const newestBackendReadAt = Math.max(
+    marketStats.dataUpdatedAt,
+    indexerMetrics.dataUpdatedAt,
+    backendListings.dataUpdatedAt,
+    backendStream.dataUpdatedAt,
+    userStreams.dataUpdatedAt,
+    userTrades.dataUpdatedAt,
+  );
+  const backendIsStale =
+    newestBackendReadAt > 0 && Date.now() - newestBackendReadAt > 30_000;
+  const backendStreamNotIndexed =
+    backendStream.error instanceof VestoraApiError &&
+    backendStream.error.status === 404;
+  const backendApiUnavailable =
+    marketStats.isError ||
+    indexerMetrics.isError ||
+    backendListings.isError ||
+    userStreams.isError ||
+    userTrades.isError ||
+    (backendStream.isError && !backendStreamNotIndexed);
+  const backendSelectedStream = backendStream.data?.data;
+  const backendSelectedListing =
+    backendSelectedStream?.listing ??
+    backendListings.data?.data.find(
+      (item) => item.streamId === selectedStreamIdText,
+    ) ??
+    null;
+  const latestIndexedBlock = parseBlockNumber(
+    indexerMetrics.data?.indexer.latestIndexedBlock,
+  );
+  const transactionBackendIndexed =
+    txState.confirmedBlockNumber !== undefined &&
+    latestIndexedBlock !== undefined &&
+    latestIndexedBlock >= txState.confirmedBlockNumber;
+  const transactionBackendIndexingStatus =
+    txState.confirmedBlockNumber === undefined
+      ? "No confirmed transaction"
+      : indexerMetrics.isError
+        ? "Indexer status unavailable"
+        : transactionBackendIndexed
+          ? "Indexed"
+          : `Pending block ${txState.confirmedBlockNumber.toString()}`;
 
-  async function refreshReads() {
+  async function refreshOnchainReads() {
     await Promise.all([
       mockUsdcBalance.refetch(),
       nextStreamId.refetch(),
@@ -215,11 +386,32 @@ export default function Home() {
     ]);
   }
 
+  async function refreshBackendReads() {
+    const readRefreshes: Promise<unknown>[] = [
+      marketStats.refetch(),
+      indexerMetrics.refetch(),
+      backendListings.refetch(),
+      userStreams.refetch(),
+      userTrades.refetch(),
+    ];
+
+    if (selectedStreamIdText) {
+      readRefreshes.push(backendStream.refetch());
+    }
+
+    await Promise.all(readRefreshes);
+  }
+
+  async function refreshReads() {
+    await Promise.all([refreshOnchainReads(), refreshBackendReads()]);
+  }
+
   async function runTransaction(label: string, action: () => Promise<Hex>) {
     if (!publicClient) {
       setTxState({
         label,
         status: "error",
+        phase: "error",
         message: "Public client is not ready.",
       });
       return false;
@@ -229,6 +421,7 @@ export default function Home() {
       setTxState({
         label,
         status: "pending",
+        phase: "wallet_confirmation",
         message: "Waiting for wallet confirmation...",
       });
 
@@ -237,24 +430,51 @@ export default function Home() {
       setTxState({
         label,
         status: "pending",
-        message: "Transaction submitted. Waiting for confirmation...",
+        phase: "submitted",
+        message: "Transaction submitted. Hash is available.",
         hash,
       });
 
-      await publicClient.waitForTransactionReceipt({ hash });
-      await refreshReads();
+      setTxState({
+        label,
+        status: "pending",
+        phase: "confirming",
+        message: "Waiting for block confirmation...",
+        hash,
+      });
+
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+      if (receipt.status !== "success") {
+        throw new Error("Transaction reverted.");
+      }
+
+      setTxState({
+        label,
+        status: "pending",
+        phase: "refreshing_onchain",
+        message: "Transaction confirmed. Refreshing on-chain reads...",
+        hash,
+        confirmedBlockNumber: receipt.blockNumber,
+      });
+
+      await refreshOnchainReads();
+      void refreshBackendReads();
 
       setTxState({
         label,
         status: "success",
-        message: "Transaction confirmed.",
+        phase: "indexing_pending",
+        message: "On-chain confirmed. Backend indexing may still be pending.",
         hash,
+        confirmedBlockNumber: receipt.blockNumber,
       });
       return true;
     } catch (error) {
       setTxState({
         label,
         status: "error",
+        phase: "error",
         message: error instanceof Error ? error.message : "Transaction failed.",
       });
       return false;
@@ -271,6 +491,7 @@ export default function Home() {
       setTxState({
         label: "Mint MockUSDC",
         status: "error",
+        phase: "error",
         message: "Enter a positive mint amount.",
       });
       return;
@@ -295,6 +516,7 @@ export default function Home() {
       setTxState({
         label: "Create Stream",
         status: "error",
+        phase: "error",
         message: "Enter a valid recipient address.",
       });
       return;
@@ -308,6 +530,7 @@ export default function Home() {
       setTxState({
         label: "Create Stream",
         status: "error",
+        phase: "error",
         message: "Enter a positive amount and duration.",
       });
       return;
@@ -375,6 +598,7 @@ export default function Home() {
       setTxState({
         label: "List Receivable",
         status: "error",
+        phase: "error",
         message: "Enter a positive listing price.",
       });
       return;
@@ -488,13 +712,37 @@ export default function Home() {
           </section>
         ) : null}
 
-        <section className="grid gap-4 md:grid-cols-3">
+        {backendApiUnavailable ? (
+          <section className="rounded-lg border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-100">
+            Backend API data is unavailable. Transaction buttons still use
+            on-chain reads, but marketplace and dashboard projections may be
+            missing until the API is reachable.
+          </section>
+        ) : null}
+
+        {backendStreamNotIndexed && selectedStreamIdText ? (
+          <section className="rounded-lg border border-sky-500/40 bg-sky-500/10 p-4 text-sm text-sky-100">
+            Stream #{selectedStreamIdText} is not indexed by the backend yet.
+            On-chain reads remain authoritative while the indexer catches up.
+          </section>
+        ) : null}
+
+        {backendIsStale ? (
+          <section className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
+            Backend projection data may be stale. Use Refresh before comparing
+            marketplace values or preparing a transaction.
+          </section>
+        ) : null}
+
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <InfoPanel title="Wallet">
             <InfoRow label="Connected" value={isConnected ? "Yes" : "No"} />
             <InfoRow label="Address" value={shortenAddress(address)} />
             <InfoRow
               label="Network"
-              value={isSepolia ? "Sepolia" : "Unsupported"}
+              value={
+                !isConnected ? "Not connected" : isSepolia ? "Sepolia" : "Unsupported"
+              }
             />
           </InfoPanel>
 
@@ -527,6 +775,54 @@ export default function Home() {
               value={shortenAddress(sepoliaContracts.receivableMarketplace)}
             />
           </InfoPanel>
+
+          <InfoPanel title="Backend API">
+            <InfoRow
+              label="Status"
+              value={
+                marketStats.isLoading
+                  ? "Loading"
+                  : backendApiUnavailable
+                    ? "Error"
+                    : "OK"
+              }
+            />
+            <InfoRow
+              label="Indexer"
+              value={indexerMetrics.data?.indexer.status ?? "-"}
+            />
+            <InfoRow
+              label="Lag blocks"
+              value={indexerMetrics.data?.indexer.lagBlocks ?? "-"}
+            />
+            <InfoRow
+              label="Streams"
+              value={marketStats.data?.data.streams.total ?? "-"}
+            />
+            <InfoRow
+              label="Listings"
+              value={marketStats.data?.data.listings.total ?? "-"}
+            />
+            <InfoRow
+              label="Trades"
+              value={marketStats.data?.data.trades.total ?? "-"}
+            />
+            <InfoRow
+              label="Last API read"
+              value={
+                newestBackendReadAt > 0
+                  ? new Date(newestBackendReadAt).toLocaleTimeString()
+                  : "-"
+              }
+            />
+            <InfoRow
+              label="Estimate basis"
+              value={formatApiTimestamp(
+                marketStats.data?.meta?.projection?.latestIndexedBlockTimestamp ??
+                  indexerMetrics.data?.indexer.latestIndexedBlockTimestamp,
+              )}
+            />
+          </InfoPanel>
         </section>
 
         <section className="rounded-lg border border-zinc-800 bg-zinc-900 p-5">
@@ -543,6 +839,18 @@ export default function Home() {
               {txState.label || "Idle"}
             </span>
           </div>
+          <div className="mt-4 grid gap-3 text-sm md:grid-cols-4">
+            <InfoRow label="Phase" value={txPhaseLabel(txState.phase)} />
+            <InfoRow label="Tx hash" value={shortenHash(txState.hash)} />
+            <InfoRow
+              label="Confirmed block"
+              value={txState.confirmedBlockNumber?.toString() ?? "-"}
+            />
+            <InfoRow
+              label="Backend indexing"
+              value={transactionBackendIndexingStatus}
+            />
+          </div>
           {txState.hash ? (
             <a
               href={`https://sepolia.etherscan.io/tx/${txState.hash}`}
@@ -554,6 +862,168 @@ export default function Home() {
             </a>
           ) : null}
         </section>
+
+        <section className="rounded-lg border border-zinc-800 bg-zinc-900 p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-medium">Backend Marketplace</h2>
+              <p className="mt-1 text-sm text-zinc-400">
+                Listings are loaded from the backend projection API. Recheck
+                on-chain ownership before buying.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={refreshReads}
+              className="rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-200 hover:border-zinc-500"
+            >
+              Refresh API
+            </button>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <InfoRow
+              label="Active value"
+              value={formatApiTokenAmount(
+                marketStats.data?.data.listings.activeValue,
+              )}
+            />
+            <InfoRow
+              label="Sold listings"
+              value={marketStats.data?.data.listings.byStatus.SOLD ?? "-"}
+            />
+            <InfoRow
+              label="Invalidated"
+              value={
+                marketStats.data?.data.listings.byStatus.INVALIDATED ?? "-"
+              }
+            />
+          </div>
+
+          <div className="mt-5 grid gap-3">
+            {backendListings.isLoading ? (
+              <p className="text-sm text-zinc-400">Loading listings...</p>
+            ) : backendListings.data?.data.length ? (
+              backendListings.data.data.map((item) => (
+                <button
+                  key={item.streamId}
+                  type="button"
+                  onClick={() => setStreamIdInput(item.streamId)}
+                  className="grid gap-3 rounded-lg border border-zinc-800 bg-zinc-950 p-4 text-left hover:border-sky-500/60 md:grid-cols-[1fr_1fr_1fr_auto]"
+                >
+                  <div>
+                    <p className="text-xs uppercase text-zinc-500">
+                      Stream #{item.streamId}
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-200">
+                      Seller {shortenAddress(item.seller)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase text-zinc-500">Price</p>
+                    <p className="mt-1 text-sm text-zinc-200">
+                      {formatApiTokenAmount(item.price)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase text-zinc-500">
+                      Remaining / Yield
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-200">
+                      {formatApiTokenAmount(
+                        item.stream?.remainingReceivable,
+                      )}{" "}
+                      / {formatBps(item.computed.expectedYieldBps)}
+                    </p>
+                  </div>
+                  <div className="flex items-center md:justify-end">
+                    <span
+                      className={`rounded-md px-3 py-1 text-xs font-medium ${listingStatusClassName(
+                        item.status,
+                      )}`}
+                    >
+                      {item.status}
+                    </span>
+                  </div>
+                </button>
+              ))
+            ) : (
+              <p className="text-sm text-zinc-400">
+                No projected listings returned by the backend API.
+              </p>
+            )}
+          </div>
+        </section>
+
+        {address ? (
+          <section className="rounded-lg border border-zinc-800 bg-zinc-900 p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-medium">Backend User Dashboard</h2>
+                <p className="mt-1 text-sm text-zinc-400">
+                  User streams and trades are loaded from the backend API.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm sm:min-w-64">
+                <InfoRow
+                  label="Streams"
+                  value={String(userStreams.data?.meta.count ?? "-")}
+                />
+                <InfoRow
+                  label="Trades"
+                  value={String(userTrades.data?.meta.count ?? "-")}
+                />
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 lg:grid-cols-2">
+              {userStreams.isLoading ? (
+                <p className="text-sm text-zinc-400">Loading user streams...</p>
+              ) : userStreams.data?.data.length ? (
+                userStreams.data.data.slice(0, 4).map((item) => (
+                  <button
+                    key={item.streamId}
+                    type="button"
+                    onClick={() => setStreamIdInput(item.streamId)}
+                    className="rounded-lg border border-zinc-800 bg-zinc-950 p-4 text-left hover:border-sky-500/60"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs uppercase text-zinc-500">
+                          Stream #{item.streamId}
+                        </p>
+                        <p className="mt-1 text-sm text-zinc-200">
+                          {item.userRoles?.join(", ") || "related"}
+                        </p>
+                      </div>
+                      <span className="rounded-md bg-zinc-800 px-2 py-1 text-xs text-zinc-300">
+                        {item.riskLabel}
+                      </span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                      <InfoRow
+                        label="Remaining"
+                        value={formatApiTokenAmount(
+                          item.computed.remainingReceivable,
+                        )}
+                      />
+                      <InfoRow
+                        label="Estimate"
+                        value={formatApiTokenAmount(
+                          item.computed.claimableEstimate,
+                        )}
+                      />
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <p className="text-sm text-zinc-400">
+                  No user streams returned by the backend API.
+                </p>
+              )}
+            </div>
+          </section>
+        ) : null}
 
         <section className="grid gap-4 lg:grid-cols-2">
           <ActionPanel title="1. Prepare MockUSDC">
@@ -656,8 +1126,53 @@ export default function Home() {
 
           <div className="mt-5 grid gap-4 lg:grid-cols-2">
             <InfoPanel title="3. Stream Details">
-              <InfoRow label="Owner" value={shortenAddress(streamOwner.data)} />
-              <InfoRow label="Sender" value={shortenAddress(stream.data?.sender)} />
+              <InfoRow
+                label="Backend owner"
+                value={shortenAddress(
+                  backendSelectedStream?.currentOwner ?? undefined,
+                )}
+              />
+              <InfoRow
+                label="Backend remaining"
+                value={formatApiTokenAmount(
+                  backendSelectedStream?.computed.remainingReceivable,
+                )}
+              />
+              <InfoRow
+                label="Backend estimate"
+                value={formatApiTokenAmount(
+                  backendSelectedStream?.computed.claimableEstimate,
+                )}
+              />
+              <InfoRow
+                label="Risk"
+                value={backendSelectedStream?.riskLabel ?? "-"}
+              />
+              <InfoRow
+                label="Estimate basis"
+                value={formatApiTimestamp(
+                  backendSelectedStream?.computed.estimateTimestamp,
+                )}
+              />
+              <InfoRow
+                label="Projection updated"
+                value={formatApiTimestamp(backendSelectedStream?.updatedAt)}
+              />
+              <InfoRow
+                label="Owner source"
+                value={
+                  backendSelectedStream?.ownership.sourceOfTruth ??
+                  "receivableStream.ownerOf(streamId)"
+                }
+              />
+              <InfoRow
+                label="On-chain owner"
+                value={shortenAddress(streamOwner.data)}
+              />
+              <InfoRow
+                label="On-chain sender"
+                value={shortenAddress(stream.data?.sender)}
+              />
               <InfoRow
                 label="Deposited"
                 value={formatTokenAmount(stream.data?.depositedAmount, decimals)}
@@ -677,8 +1192,12 @@ export default function Home() {
               <InfoRow label="Start" value={formatTimestamp(stream.data?.startTime)} />
               <InfoRow label="End" value={formatTimestamp(stream.data?.endTime)} />
               <InfoRow
-                label="Status"
+                label="On-chain status"
                 value={stream.data?.canceled ? "Canceled" : "Active or scheduled"}
+              />
+              <InfoRow
+                label="Backend listing"
+                value={backendSelectedListing?.status ?? "-"}
               />
               <button
                 type="button"
@@ -785,6 +1304,22 @@ function statusClassName(status: TxState["status"]) {
 
   if (status === "error") {
     return "bg-red-400/15 text-red-200";
+  }
+
+  return "bg-zinc-800 text-zinc-300";
+}
+
+function listingStatusClassName(status: ListingStatus) {
+  if (status === "ACTIVE") {
+    return "bg-emerald-400/15 text-emerald-200";
+  }
+
+  if (status === "SOLD") {
+    return "bg-sky-400/15 text-sky-200";
+  }
+
+  if (status === "INVALIDATED") {
+    return "bg-amber-400/15 text-amber-200";
   }
 
   return "bg-zinc-800 text-zinc-300";

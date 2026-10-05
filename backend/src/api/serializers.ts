@@ -9,6 +9,10 @@ type StreamWithOptionalRelations = StreamProjection & {
   listing?: ListingProjection | null;
 };
 
+type SerializeOptions = {
+  estimateAt?: Date;
+};
+
 function toIso(value: Date | null) {
   return value?.toISOString() ?? null;
 }
@@ -53,11 +57,14 @@ function basisPoints(numerator: bigint, denominator: bigint) {
   return Number((numerator * 10_000n) / denominator);
 }
 
-export function streamComputedValues(stream: StreamProjection, now = new Date()) {
+export function streamComputedValues(
+  stream: StreamProjection,
+  estimateAt = new Date(),
+) {
   const depositedAmount = BigInt(stream.depositedAmount);
   const withdrawnAmount = BigInt(stream.withdrawnAmount);
   const remainingAmount = max(depositedAmount - withdrawnAmount, 0n);
-  const vestingTime = stream.canceledAt ?? now;
+  const vestingTime = stream.canceledAt ?? estimateAt;
   const vestedAmount = vestedAmountAt(stream, vestingTime);
   const claimableAmount = max(vestedAmount - withdrawnAmount, 0n);
 
@@ -66,23 +73,23 @@ export function streamComputedValues(stream: StreamProjection, now = new Date())
     claimableEstimate: claimableAmount.toString(),
     remainingReceivable: remainingAmount.toString(),
     fullyClaimed: remainingAmount === 0n,
-    estimateTimestamp: now.toISOString(),
+    estimateTimestamp: estimateAt.toISOString(),
   };
 }
 
 export function listingComputedValues(
   listing: ListingProjection,
   stream?: StreamProjection | null,
-  now = new Date(),
+  estimateAt = new Date(),
 ) {
   const remainingAmount = stream
-    ? BigInt(streamComputedValues(stream, now).remainingReceivable)
+    ? BigInt(streamComputedValues(stream, estimateAt).remainingReceivable)
     : null;
   const price = BigInt(listing.price);
   const discountAmount =
     remainingAmount === null ? null : max(remainingAmount - price, 0n);
   const listedForSeconds = Math.max(
-    Math.floor((now.getTime() - listing.listedAt.getTime()) / 1_000),
+    Math.floor((estimateAt.getTime() - listing.listedAt.getTime()) / 1_000),
     0,
   );
 
@@ -126,8 +133,11 @@ export function riskLabel(
   return "standard";
 }
 
-export function serializeStream(stream: StreamWithOptionalRelations) {
-  const computed = streamComputedValues(stream);
+export function serializeStream(
+  stream: StreamWithOptionalRelations,
+  options: SerializeOptions = {},
+) {
+  const computed = streamComputedValues(stream, options.estimateAt);
 
   return {
     streamId: stream.streamId.toString(),
@@ -151,13 +161,16 @@ export function serializeStream(stream: StreamWithOptionalRelations) {
     updatedAt: stream.updatedAt.toISOString(),
     computed,
     riskLabel: riskLabel(stream, stream.listing),
-    listing: stream.listing ? serializeListing(stream.listing, stream) : null,
+    listing: stream.listing
+      ? serializeListing(stream.listing, stream, options)
+      : null,
   };
 }
 
 export function serializeListing(
   listing: ListingProjection,
   stream?: StreamProjection | null,
+  options: SerializeOptions = {},
 ) {
   return {
     streamId: listing.streamId.toString(),
@@ -174,12 +187,15 @@ export function serializeListing(
     canceledTxHash: listing.canceledTxHash,
     invalidatedTxHash: listing.invalidatedTxHash,
     updatedAt: listing.updatedAt.toISOString(),
-    computed: listingComputedValues(listing, stream),
-    stream: stream ? serializeStreamSummary(stream) : null,
+    computed: listingComputedValues(listing, stream, options.estimateAt),
+    stream: stream ? serializeStreamSummary(stream, options) : null,
   };
 }
 
-export function serializeStreamSummary(stream: StreamProjection) {
+export function serializeStreamSummary(
+  stream: StreamProjection,
+  options: SerializeOptions = {},
+) {
   return {
     streamId: stream.streamId.toString(),
     sender: stream.sender,
@@ -188,7 +204,8 @@ export function serializeStreamSummary(stream: StreamProjection) {
     token: stream.token,
     depositedAmount: stream.depositedAmount,
     withdrawnAmount: stream.withdrawnAmount,
-    remainingReceivable: streamComputedValues(stream).remainingReceivable,
+    remainingReceivable: streamComputedValues(stream, options.estimateAt)
+      .remainingReceivable,
     startTime: stream.startTime.toISOString(),
     endTime: stream.endTime.toISOString(),
     cancelable: stream.cancelable,

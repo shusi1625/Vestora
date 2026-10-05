@@ -82,10 +82,11 @@ The project should not be framed as a Sablier Lockup clone. Vestora's differenti
 5. Phase 4.5: ownership consistency
 6. Phase 5: backend API
 7. Phase 6: frontend/backend integration
-8. Phase 7: marketplace buyer protection
-9. Phase 8: gas and code-level optimization
-10. Phase 9: AWS deployment and operational metrics
-11. Phase 10: performance measurement and final report
+8. Phase 6.5: transaction state and backend sync semantics
+9. Phase 7: marketplace buyer protection
+10. Phase 8: gas and code-level optimization
+11. Phase 9: AWS deployment and operational metrics
+12. Phase 10: performance measurement and final report
 
 ## Current Decisions
 
@@ -101,3 +102,4 @@ The project should not be framed as a Sablier Lockup clone. Vestora's differenti
 - Metrics are collected through CloudWatch.
 - The Graph remains a long-term comparison or migration candidate.
 - External ERC-721 transfers are officially supported. The current `ownerOf(streamId)` is the current receivable owner, and backend projections must track or reconcile against that source of truth.
+- Transaction UX separates wallet confirmation, transaction submission, block confirmation, on-chain refresh, and backend indexing. Backend estimates are read-model estimates and must show their indexed-block basis.

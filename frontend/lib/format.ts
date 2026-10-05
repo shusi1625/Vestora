@@ -1,11 +1,16 @@
-import { formatUnits, type Address } from "viem";
+import { formatUnits, getAddress, type Address } from "viem";
 
 export function shortenAddress(address?: Address | string) {
   if (!address) {
     return "-";
   }
 
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  try {
+    const checksumAddress = getAddress(address);
+    return `${checksumAddress.slice(0, 6)}...${checksumAddress.slice(-4)}`;
+  } catch {
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  }
 }
 
 export function formatTokenAmount(

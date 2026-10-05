@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 
 import { prisma } from "../../db/prisma.js";
 import { serializeStream, serializeTrade } from "../serializers.js";
+import { getProjectionSyncContext, projectionSyncMeta } from "../sync-context.js";
 import { parseAddress } from "../validation.js";
 
 type AddressParams = {
@@ -35,6 +36,7 @@ export async function registerUserRoutes(app: FastifyInstance) {
     "/users/:address/streams",
     async (request) => {
       const address = parseAddress(request.params.address);
+      const syncContext = await getProjectionSyncContext();
       const streams = await prisma.streamProjection.findMany({
         where: {
           OR: [
@@ -66,15 +68,21 @@ export async function registerUserRoutes(app: FastifyInstance) {
 
       return {
         data: streams.map((stream) => ({
-          ...serializeStream({
-            ...stream,
-            listing: listingsByStreamId.get(stream.streamId.toString()) ?? null,
-          }),
+          ...serializeStream(
+            {
+              ...stream,
+              listing: listingsByStreamId.get(stream.streamId.toString()) ?? null,
+            },
+            {
+              estimateAt: syncContext.estimateAt,
+            },
+          ),
           userRoles: userRoles(stream, address),
         })),
         meta: {
           address,
           count: streams.length,
+          ...projectionSyncMeta(syncContext),
         },
       };
     },
