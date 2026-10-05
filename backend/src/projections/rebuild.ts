@@ -1,6 +1,8 @@
 import { ListingStatus, Prisma } from "@prisma/client";
 
+import { env } from "../config/env.js";
 import { prisma } from "../db/prisma.js";
+import { indexedContracts } from "../indexer/contracts.js";
 
 type ProjectionRebuildResult = {
   processedEvents: number;
@@ -387,7 +389,19 @@ async function applyPurchased(
 }
 
 export async function rebuildProjections(): Promise<ProjectionRebuildResult> {
+  const activeContractAddresses = indexedContracts.map((contract) =>
+    contract.address.toLowerCase(),
+  );
   const events = await prisma.streamEvent.findMany({
+    where: {
+      chainId: env.sepoliaChainId,
+      blockNumber: {
+        gte: env.indexerStartBlock,
+      },
+      contractAddress: {
+        in: activeContractAddresses,
+      },
+    },
     orderBy: [{ blockNumber: "asc" }, { logIndex: "asc" }],
   });
   const marketplacePurchaseKeys = collectMarketplacePurchaseKeys(events);
