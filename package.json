@@ -44,7 +44,8 @@
     "backend:projections:rebuild": "pnpm --dir backend projections:rebuild",
     "backend:ownership:reconcile": "pnpm --dir backend ownership:reconcile",
     "backend:ownership:smoke-projection": "pnpm --dir backend ownership:smoke-projection",
-    "backend:api:smoke": "pnpm --dir backend api:smoke"
+    "backend:api:smoke": "pnpm --dir backend api:smoke",
+    "backend:performance:measure": "pnpm --dir backend performance:measure"
   },
   "type": "module",
   "dependencies": {

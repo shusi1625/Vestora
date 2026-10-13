@@ -11,7 +11,7 @@ Use this register to prevent the final report from sounding stronger than the ev
 | Vestora treats streams as future receivable NFTs | contract behavior, UI values, architecture docs | roadmap and contract docs | draft |
 | Backend is indexing/analytics, not settlement | API/indexer implementation, architecture docs | architecture docs | draft |
 | Claim rights follow ERC-721 ownership, including external transfers | ownerOf-based claim test, Transfer indexing, projection rebuild, reconciliation evidence | `docs/report/ownership-consistency-implementation.md` | implemented |
-| Backend API improves listing load speed | RPC vs API measurement | missing | not measured |
+| Backend API improves listing load speed | RPC vs API measurement | `pnpm --dir backend performance:measure` harness added; local DB must be running before collecting results | not measured |
 | Indexer is restart-safe and idempotent | sync_state and txHash+logIndex tests | missing | not implemented |
 | Buyer can judge value/risk before buy | UI feature and screenshot | missing | not implemented |
 | Gas optimization is evidence-backed | gas baseline and before/after table | `yarn contracts:gas`, `yarn contracts:gas:production`, `docs/report/gas-baseline.md` | measured |

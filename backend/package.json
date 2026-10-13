@@ -21,7 +21,8 @@
     "projections:rebuild": "tsx scripts/rebuild-projections.ts",
     "ownership:reconcile": "tsx scripts/reconcile-ownership.ts",
     "ownership:smoke-projection": "tsx scripts/smoke-ownership-projection.ts",
-    "api:smoke": "tsx scripts/smoke-api.ts"
+    "api:smoke": "tsx scripts/smoke-api.ts",
+    "performance:measure": "tsx scripts/measure-performance.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",

@@ -31,6 +31,23 @@ Prove the project differentiation through architecture, measurements, and final 
 - operational and performance metrics can be shown in tables
 - technical differentiation is clear
 
+## Current Local Preparation
+
+Implemented before final measurement capture:
+
+- backend performance measurement harness: `backend/scripts/measure-performance.ts`
+- root script: `yarn backend:performance:measure`
+- backend script: `pnpm --dir backend performance:measure`
+- report measurement instructions: `docs/report/performance-measurement.md`
+
+Still requires a running local PostgreSQL environment before numeric results can be recorded:
+
+- `pnpm --dir backend compose:up`
+- `pnpm --dir backend db:migrate`
+- `pnpm --dir backend indexer:once`
+- `pnpm --dir backend projections:rebuild`
+- `pnpm --dir backend performance:measure`
+
 ## Codex Routing
 
 Use `report_reviewer` to separate verified evidence from claims and inference.
