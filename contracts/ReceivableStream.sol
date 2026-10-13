@@ -9,16 +9,28 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 contract ReceivableStream is ERC721, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
+    error InvalidRecipient();
+    error InvalidToken();
+    error InvalidAmount();
+    error InvalidTimeRange();
+    error InvalidDuration();
+    error StreamNotFound();
+    error NotStreamOwner();
+    error NothingToClaim();
+    error NotStreamSender();
+    error StreamNotCancelable();
+    error StreamAlreadyCanceled();
+
     struct Stream {
         address sender;
         address token;
         uint256 depositedAmount;
-        uint256 startTime;
-        uint256 endTime;
+        uint64 startTime;
+        uint64 endTime;
         uint256 withdrawnAmount;
         bool cancelable;
         bool canceled;
-        uint256 canceledAt;
+        uint64 canceledAt;
     }
 
     mapping(uint256 => Stream) private _streams;
@@ -76,7 +88,9 @@ contract ReceivableStream is ERC721, ReentrancyGuard {
         uint256 duration,
         bool cancelable
     ) external returns (uint256 streamId) {
-        require(duration > 0, "invalid duration");
+        if (duration == 0) {
+            revert InvalidDuration();
+        }
 
         uint256 startTime = block.timestamp + startDelay;
         uint256 endTime = startTime + duration;
@@ -99,22 +113,36 @@ contract ReceivableStream is ERC721, ReentrancyGuard {
         uint256 endTime,
         bool cancelable
     ) private returns (uint256 streamId) {
-        require(recipient != address(0), "invalid recipient");
-        require(token != address(0), "invalid token");
-        require(amount > 0, "invalid amount");
-        require(endTime > startTime, "invalid time range");
+        if (recipient == address(0)) {
+            revert InvalidRecipient();
+        }
+        if (token == address(0)) {
+            revert InvalidToken();
+        }
+        if (amount == 0) {
+            revert InvalidAmount();
+        }
+        if (endTime <= startTime) {
+            revert InvalidTimeRange();
+        }
+        if (endTime > type(uint64).max) {
+            revert InvalidTimeRange();
+        }
 
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        address sender = msg.sender;
+        IERC20(token).safeTransferFrom(sender, address(this), amount);
 
         streamId = _nextStreamId;
-        _nextStreamId += 1;
+        unchecked {
+            _nextStreamId = streamId + 1;
+        }
 
         _streams[streamId] = Stream({
-            sender: msg.sender,
+            sender: sender,
             token: token,
             depositedAmount: amount,
-            startTime: startTime,
-            endTime: endTime,
+            startTime: uint64(startTime),
+            endTime: uint64(endTime),
             withdrawnAmount: 0,
             cancelable: cancelable,
             canceled: false,
@@ -125,7 +153,7 @@ contract ReceivableStream is ERC721, ReentrancyGuard {
 
         emit StreamCreated(
             streamId,
-            msg.sender,
+            sender,
             recipient,
             token,
             amount,
@@ -140,44 +168,34 @@ contract ReceivableStream is ERC721, ReentrancyGuard {
     }
 
     function getStream(uint256 streamId) external view returns (Stream memory) {
-        _requireStreamExists(streamId);
+        _streamOf(streamId);
 
         return _streams[streamId];
     }
 
     function vestedAmount(uint256 streamId) public view returns (uint256) {
-        _requireStreamExists(streamId);
-
-        Stream memory stream = _streams[streamId];
+        Stream storage stream = _streamOf(streamId);
         uint256 currentTime = stream.canceled ? stream.canceledAt : block.timestamp;
 
         return _vestedAmountAt(stream, currentTime);
     }
 
     function claimableAmount(uint256 streamId) public view returns (uint256) {
-        _requireStreamExists(streamId);
-
-        Stream memory stream = _streams[streamId];
-        uint256 currentTime = stream.canceled ? stream.canceledAt : block.timestamp;
-        uint256 vested = _vestedAmountAt(stream, currentTime);
-
-        if (vested <= stream.withdrawnAmount) {
-            return 0;
-        }
-
-        return vested - stream.withdrawnAmount;
+        return _claimableAmount(_streamOf(streamId));
     }
 
     function claim(uint256 streamId) external nonReentrant returns (uint256 amount) {
-        _requireStreamExists(streamId);
+        Stream storage stream = _streamOf(streamId);
 
-        address recipient = ownerOf(streamId);
-        require(recipient == msg.sender, "not stream owner");
+        address recipient = _ownerOf(streamId);
+        if (recipient != msg.sender) {
+            revert NotStreamOwner();
+        }
 
-        amount = claimableAmount(streamId);
-        require(amount > 0, "nothing to claim");
-
-        Stream storage stream = _streams[streamId];
+        amount = _claimableAmount(stream);
+        if (amount == 0) {
+            revert NothingToClaim();
+        }
 
         stream.withdrawnAmount += amount;
 
@@ -187,42 +205,68 @@ contract ReceivableStream is ERC721, ReentrancyGuard {
     }
 
     function cancel(uint256 streamId) external nonReentrant returns (uint256 senderRefund) {
-        _requireStreamExists(streamId);
+        Stream storage stream = _streamOf(streamId);
 
-        Stream storage stream = _streams[streamId];
+        address sender = stream.sender;
+        if (sender != msg.sender) {
+            revert NotStreamSender();
+        }
+        if (!stream.cancelable) {
+            revert StreamNotCancelable();
+        }
+        if (stream.canceled) {
+            revert StreamAlreadyCanceled();
+        }
 
-        require(stream.sender == msg.sender, "not stream sender");
-        require(stream.cancelable, "stream not cancelable");
-        require(!stream.canceled, "stream already canceled");
+        uint256 depositedAmount = stream.depositedAmount;
+        address token = stream.token;
 
-        uint256 canceledAt = block.timestamp;
+        uint64 canceledAt = uint64(block.timestamp);
         uint256 vested = _vestedAmountAt(stream, canceledAt);
-        senderRefund = stream.depositedAmount - vested;
+        senderRefund = depositedAmount - vested;
 
         stream.canceled = true;
         stream.canceledAt = canceledAt;
 
         if (senderRefund > 0) {
-            IERC20(stream.token).safeTransfer(stream.sender, senderRefund);
+            IERC20(token).safeTransfer(sender, senderRefund);
         }
 
         emit StreamCanceled(
             streamId,
-            stream.sender,
-            ownerOf(streamId),
+            sender,
+            _ownerOf(streamId),
             vested,
             senderRefund
         );
     }
 
-    function _requireStreamExists(uint256 streamId) private view {
-        require(_ownerOf(streamId) != address(0), "stream not found");
+    function _streamOf(uint256 streamId) private view returns (Stream storage stream) {
+        if (_ownerOf(streamId) == address(0)) {
+            revert StreamNotFound();
+        }
+
+        return _streams[streamId];
+    }
+
+    function _claimableAmount(
+        Stream storage stream
+    ) private view returns (uint256) {
+        uint256 currentTime = stream.canceled ? stream.canceledAt : block.timestamp;
+        uint256 vested = _vestedAmountAt(stream, currentTime);
+        uint256 withdrawnAmount = stream.withdrawnAmount;
+
+        if (vested <= withdrawnAmount) {
+            return 0;
+        }
+
+        return vested - withdrawnAmount;
     }
 
     function _vestedAmountAt(
-        Stream memory stream,
+        Stream storage stream,
         uint256 currentTime
-    ) private pure returns (uint256) {
+    ) private view returns (uint256) {
         if (currentTime <= stream.startTime) {
             return 0;
         }

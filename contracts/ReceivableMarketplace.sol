@@ -11,12 +11,12 @@ interface IReceivableStream is IERC721 {
         address sender;
         address token;
         uint256 depositedAmount;
-        uint256 startTime;
-        uint256 endTime;
+        uint64 startTime;
+        uint64 endTime;
         uint256 withdrawnAmount;
         bool cancelable;
         bool canceled;
-        uint256 canceledAt;
+        uint64 canceledAt;
     }
 
     function getStream(uint256 streamId) external view returns (Stream memory);
@@ -25,6 +25,21 @@ interface IReceivableStream is IERC721 {
 
 contract ReceivableMarketplace is ReentrancyGuard {
     using SafeERC20 for IERC20;
+
+    error InvalidReceivableNft();
+    error InvalidPaymentToken();
+    error InvalidPrice();
+    error InvalidExpectedSeller();
+    error NotNftOwner();
+    error AlreadyListed();
+    error MarketplaceNotApproved();
+    error NotListed();
+    error NotSeller();
+    error PriceExceedsMaximum();
+    error UnexpectedSeller();
+    error SellerNoLongerOwnsNft();
+    error WithdrawnExceedsMaximum();
+    error RemainingBelowMinimum();
 
     IReceivableStream public immutable receivableNft;
     IERC20 public immutable paymentToken;
@@ -55,28 +70,35 @@ contract ReceivableMarketplace is ReentrancyGuard {
     );
 
     constructor(address receivableNft_, address paymentToken_) {
-        require(receivableNft_ != address(0), "invalid NFT");
-        require(paymentToken_ != address(0), "invalid payment token");
+        if (receivableNft_ == address(0)) {
+            revert InvalidReceivableNft();
+        }
+        if (paymentToken_ == address(0)) {
+            revert InvalidPaymentToken();
+        }
 
         receivableNft = IReceivableStream(receivableNft_);
         paymentToken = IERC20(paymentToken_);
     }
 
     function list(uint256 streamId, uint256 price) external {
-        require(price > 0, "invalid price");
-        require(receivableNft.ownerOf(streamId) == msg.sender, "not NFT owner");
-        require(_listings[streamId].seller == address(0), "already listed");
+        if (price == 0) {
+            revert InvalidPrice();
+        }
+        if (receivableNft.ownerOf(streamId) != msg.sender) {
+            revert NotNftOwner();
+        }
+        if (_listings[streamId].seller != address(0)) {
+            revert AlreadyListed();
+        }
 
         address approved = receivableNft.getApproved(streamId);
-        bool approvedForAll = receivableNft.isApprovedForAll(
-            msg.sender,
-            address(this)
-        );
-
-        require(
-            approved == address(this) || approvedForAll,
-            "marketplace not approved"
-        );
+        if (
+            approved != address(this)
+                && !receivableNft.isApprovedForAll(msg.sender, address(this))
+        ) {
+            revert MarketplaceNotApproved();
+        }
 
         _listings[streamId] = Listing({
             seller: msg.sender,
@@ -89,8 +111,12 @@ contract ReceivableMarketplace is ReentrancyGuard {
     function cancelListing(uint256 streamId) external {
         Listing memory listing = _listings[streamId];
 
-        require(listing.seller != address(0), "not listed");
-        require(listing.seller == msg.sender, "not seller");
+        if (listing.seller == address(0)) {
+            revert NotListed();
+        }
+        if (listing.seller != msg.sender) {
+            revert NotSeller();
+        }
 
         delete _listings[streamId];
 
@@ -102,13 +128,9 @@ contract ReceivableMarketplace is ReentrancyGuard {
     }
 
     function buy(uint256 streamId) external nonReentrant {
-        _buy(
-            streamId,
-            type(uint256).max,
-            0,
-            type(uint256).max,
-            address(0)
-        );
+        Listing memory listing = _requireActiveListing(streamId);
+        _requireSellerOwnership(streamId, listing.seller);
+        _settlePurchase(streamId, listing);
     }
 
     function buyWithProtection(
@@ -118,52 +140,59 @@ contract ReceivableMarketplace is ReentrancyGuard {
         uint256 maxWithdrawnAmount,
         address expectedSeller
     ) external nonReentrant {
-        require(expectedSeller != address(0), "invalid expected seller");
-
-        _buy(
-            streamId,
-            maxPrice,
-            minRemainingReceivable,
-            maxWithdrawnAmount,
-            expectedSeller
-        );
-    }
-
-    function _buy(
-        uint256 streamId,
-        uint256 maxPrice,
-        uint256 minRemainingReceivable,
-        uint256 maxWithdrawnAmount,
-        address expectedSeller
-    ) private {
-        Listing memory listing = _listings[streamId];
-
-        require(listing.seller != address(0), "not listed");
-        require(listing.price <= maxPrice, "price exceeds maximum");
-
-        if (expectedSeller != address(0)) {
-            require(listing.seller == expectedSeller, "unexpected seller");
+        if (expectedSeller == address(0)) {
+            revert InvalidExpectedSeller();
         }
 
-        require(
-            receivableNft.ownerOf(streamId) == listing.seller,
-            "seller no longer owns NFT"
-        );
+        Listing memory listing = _requireActiveListing(streamId);
+
+        if (listing.price > maxPrice) {
+            revert PriceExceedsMaximum();
+        }
+        if (listing.seller != expectedSeller) {
+            revert UnexpectedSeller();
+        }
+
+        _requireSellerOwnership(streamId, listing.seller);
 
         IReceivableStream.Stream memory stream = receivableNft.getStream(
             streamId
         );
 
-        require(
-            stream.withdrawnAmount <= maxWithdrawnAmount,
-            "withdrawn exceeds maximum"
-        );
+        if (stream.withdrawnAmount > maxWithdrawnAmount) {
+            revert WithdrawnExceedsMaximum();
+        }
 
-        require(
-            _remainingReceivable(streamId, stream) >= minRemainingReceivable,
-            "remaining below minimum"
-        );
+        if (_remainingReceivable(streamId, stream) < minRemainingReceivable) {
+            revert RemainingBelowMinimum();
+        }
 
+        _settlePurchase(streamId, listing);
+    }
+
+    function _requireActiveListing(
+        uint256 streamId
+    ) private view returns (Listing memory listing) {
+        listing = _listings[streamId];
+
+        if (listing.seller == address(0)) {
+            revert NotListed();
+        }
+    }
+
+    function _requireSellerOwnership(
+        uint256 streamId,
+        address seller
+    ) private view {
+        if (receivableNft.ownerOf(streamId) != seller) {
+            revert SellerNoLongerOwnsNft();
+        }
+    }
+
+    function _settlePurchase(
+        uint256 streamId,
+        Listing memory listing
+    ) private {
         delete _listings[streamId];
 
         paymentToken.safeTransferFrom(
