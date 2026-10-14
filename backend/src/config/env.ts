@@ -84,6 +84,26 @@ export const env = {
     process.env.INDEXER_BATCH_SIZE,
     2_000,
   ),
+  indexerMaxBlocksPerCycle: readPositiveInteger(
+    "INDEXER_MAX_BLOCKS_PER_CYCLE",
+    process.env.INDEXER_MAX_BLOCKS_PER_CYCLE,
+    1_000,
+  ),
+  indexerProgressLogIntervalBatches: readPositiveInteger(
+    "INDEXER_PROGRESS_LOG_INTERVAL_BATCHES",
+    process.env.INDEXER_PROGRESS_LOG_INTERVAL_BATCHES,
+    50,
+  ),
+  indexerMetricsCacheTtlMs: readPositiveInteger(
+    "INDEXER_METRICS_CACHE_TTL_MS",
+    process.env.INDEXER_METRICS_CACHE_TTL_MS,
+    10_000,
+  ),
+  indexerRpcConcurrency: readPositiveInteger(
+    "INDEXER_RPC_CONCURRENCY",
+    process.env.INDEXER_RPC_CONCURRENCY,
+    1,
+  ),
   indexerConfirmations: readBlockNumber(
     "INDEXER_CONFIRMATIONS",
     process.env.INDEXER_CONFIRMATIONS,

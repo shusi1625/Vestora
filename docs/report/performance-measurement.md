@@ -12,6 +12,10 @@ Collect evidence that backend projections improve dashboard and marketplace usab
 - API p50/p95/p99 latency
 - indexer lag
 - transaction confirmed to UI reflected time
+- indexer backfill blocks per second
+- `eth_getLogs` calls per indexed range
+- projection rebuild or update duration
+- metrics endpoint latency before and after cache
 
 ## Recording Format
 
@@ -55,3 +59,7 @@ The direct RPC scenarios are event-log query measurements from the active indexe
 ## Evidence Rule
 
 Do not include claims in the final report unless they are backed by a measurement, screenshot, log, or reproducible command.
+
+## Related Operations Record
+
+- `docs/report/aws-indexer-operations-and-bottleneck.md`

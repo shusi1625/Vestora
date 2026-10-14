@@ -82,6 +82,13 @@ pnpm indexer:poll
 
 The indexer stores decoded contract events in `stream_events`, using `tx_hash + log_index` as the idempotency boundary. The current sync cursor is stored in `sync_state`.
 
+Indexer performance settings:
+
+- `INDEXER_BATCH_SIZE`: block range per `eth_getLogs` request
+- `INDEXER_MAX_BLOCKS_PER_CYCLE`: maximum blocks scanned by one `runIndexerOnce()` cycle
+- `INDEXER_PROGRESS_LOG_INTERVAL_BATCHES`: batch interval for CloudWatch-friendly progress logs
+- `INDEXER_RPC_CONCURRENCY`: reserved setting for limited parallel RPC reads; keep `1` until measured
+
 ## Metrics
 
 `GET /metrics` is intended for local and AWS operational evidence. It currently reports:
@@ -89,6 +96,7 @@ The indexer stores decoded contract events in `stream_events`, using `tx_hash + 
 - indexer sync state, indexed event counts, active contract addresses, and recent processed-events-per-minute estimate
 - API request count, 2xx/3xx/4xx/5xx buckets, error rate, p50/p95/p99 latency, and per-endpoint average latency since the API process started
 - PostgreSQL health-check latency and projection table row counts
+- operational metrics cache status for indexer and database metrics
 
 These metrics are observability evidence for the indexing/analytics layer. They are not settlement data; transaction-critical actions must still recheck the smart contracts.
 
