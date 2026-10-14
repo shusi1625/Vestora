@@ -168,3 +168,50 @@ Local event-range test used publicNode, a separate verification sync ID and loca
 3. The 10000-to-5000 getLogs reduction over 50000 blocks is arithmetic, not proof of a 2x speedup. Measure timestamp calls, retries and projection cost before choosing limited parallelism, incremental projection or separate live/backfill workers.
 
 Rollback candidates are API revision 1 and indexer revision 2; any rollback requires explicit approval, preserves the cursor and must avoid overlapping indexer writers. No rollback was performed.
+
+## Controlled Read Comparison (2026-10-15)
+
+Runner: `backend/scripts/compare-indexer-reads.ts`. Raw evidence: [phase95-read-comparison.json](phase95-read-comparison.json).
+
+Fixed range 11849510-11849619 (110 blocks), batch 10, publicNode Sepolia RPC, local PostgreSQL schema `phase95_benchmark`, three runs per strategy. Order was separate/merged, merged/separate, separate/merged. Each run inserted the same five events from an empty event table; timestamp lookup caching, decoding, persistence and cursor logic remained identical. This isolates the read strategy rather than replaying an entire historical release.
+
+| Per-run metric (mean unless noted) | Separate addresses | Merged addresses |
+| --- | ---: | ---: |
+| Logical getLogs calls (every run) | 22 | 11 |
+| Cycle total ms (excludes projection) | 1626.80 | 854.42 |
+| getLogs duration ms | 1310.18 | 619.77 |
+| DB writes ms | 51.80 | 52.91 |
+| Separate full projection rebuild ms | 36.00 | 28.72 |
+| Logical timestamp / head calls | 3 / 1 | 3 / 1 |
+
+Observed cycle reduction: 47.48%, about 1.90x throughput for this small sample. Logical getLogs calls decreased 50%; DB work did not decrease. These are not production percentiles or proof of the same speedup on Alchemy/AWS. Provider caching, first-run warmup and network variability were not eliminated; alternating order only reduces order bias. Three samples per strategy are insufficient for tail-latency claims.
+
+The runner's `getLogsCalls` is the strategy-level counter. The inherited production `rpcCalls` remains 11 in both modes because it sees 11 batch-level wrapper invocations. Neither counter measures wire-level retries or billable requests; getBlockNumber can also be cached by viem.
+
+All six runs matched normalized event hashes and stream/listing/trade projection hashes, excluding generated IDs and ingestion timestamps. No claim event exists in this interval, so claim projection correctness is not proved by this fixture. AWS's `sepolia-v4` cursor was not read or written by the benchmark; the runner refuses non-loopback DBs, other schema names and operational sync IDs. Local public schema was untouched.
+
+### Reproduce
+
+Run from the repository root. The migration and cleanup target a disposable local schema. The runner clears that schema's event/cursor tables before each run and replaces its projections, so never store unrelated test data there.
+
+```powershell
+$env:DATABASE_URL="postgresql://vestora:vestora@127.0.0.1:5433/vestora?schema=phase95_benchmark"
+$env:SEPOLIA_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com"
+$env:INDEXER_SYNC_ID="phase95-benchmark"
+$env:INDEXER_START_BLOCK="11849510"
+$env:INDEXER_BATCH_SIZE="10"
+$env:INDEXER_MAX_BLOCKS_PER_CYCLE="110"
+corepack pnpm --dir backend db:deploy
+$env:INDEXER_COMPARISON_OUTPUT="$PWD/docs/report/phase95-read-comparison.json"
+corepack pnpm --dir backend exec tsx scripts/compare-indexer-reads.ts
+```
+
+Use a dedicated terminal, then close it so benchmark environment overrides cannot leak into normal operations. This example contains local disposable credentials only.
+
+## Next Optimization Decision
+
+1. **Limited RPC concurrency first, as a measured opt-in experiment.** In the merged samples, getLogs accounts for about 73% of cycle time, versus about 6% DB writes. Test concurrency 2 against 1 on a larger fixed interval under the actual provider limits before enabling it in AWS. Fetching can overlap, but writes/cursor commits must remain block-ordered; failed ranges must never be skipped. Record retries, throttling and wire-level requests, not only logical calls.
+2. **Incremental projection second.** Five events rebuild in about 29ms here; this does not demonstrate a current bottleneck, but full replay cost grows with history. Benchmark synthetic event-volume scaling and implement atomic projection checkpoints plus replay equivalence before replacing full rebuild. Also cover restart after event insertion but before successful rebuild.
+3. **Separate live tail/backfill last, gated by freshness requirements.** Current operating lag reached zero and bounded cycles already expose partial progress. Introduce separate cursors/workers only if catch-up prevents the required live freshness; out-of-order projection correctness and a single authoritative read-model checkpoint must be designed first. Moving this earlier requires measured persistent freshness failures.
+
+This is an evidence-based implementation order, not a claim that any of these three optimizations is already deployed. End-to-end browser create/list/claim latency still requires wallet interaction and remains open.
