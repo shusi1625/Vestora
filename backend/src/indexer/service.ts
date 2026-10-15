@@ -4,6 +4,7 @@ import { type Address } from "viem";
 
 import { env } from "../config/env.js";
 import { prisma } from "../db/prisma.js";
+import { withWriterTransaction } from "../db/writer.js";
 import { publicClient, getSafeBlockNumber } from "./chain.js";
 import { indexedContracts } from "./contracts.js";
 import {
@@ -80,8 +81,8 @@ async function getNextFromBlock() {
   return state.latestIndexedBlock + 1n;
 }
 
-async function updateSyncState(blockNumber: bigint) {
-  await prisma.syncState.upsert({
+async function updateSyncState(tx: Prisma.TransactionClient, blockNumber: bigint, timestamp: Date) {
+  await tx.syncState.upsert({
     where: {
       id: env.indexerSyncId,
     },
@@ -89,10 +90,12 @@ async function updateSyncState(blockNumber: bigint) {
       id: env.indexerSyncId,
       chainId: env.sepoliaChainId,
       latestIndexedBlock: blockNumber,
+      latestIndexedBlockTimestamp: timestamp,
     },
     update: {
       chainId: env.sepoliaChainId,
       latestIndexedBlock: blockNumber,
+      latestIndexedBlockTimestamp: timestamp,
     },
   });
 }
@@ -140,30 +143,29 @@ async function readAndDecodeRange(fromBlock: bigint, toBlock: bigint) {
   return {
     rawLogs: logs.length,
     events: data,
+    checkpointTimestamp: await getBlockTimestamp(toBlock, timestamps),
     rpcCalls: 1,
     getLogsDurationMs,
   };
 }
 
 async function indexBlockRange(fromBlock: bigint, toBlock: bigint) {
-  const { rawLogs, events, rpcCalls, getLogsDurationMs } =
+  const { rawLogs, events, checkpointTimestamp, rpcCalls, getLogsDurationMs } =
     await readAndDecodeRange(fromBlock, toBlock);
 
-  if (events.length === 0) {
-    return {
-      rawLogs,
-      decodedEvents: 0,
-      insertedEvents: 0,
-      rpcCalls,
-      getLogsDurationMs,
-      dbWriteDurationMs: 0,
-    };
-  }
-
   const dbWriteStartedAt = performance.now();
-  const result = await prisma.streamEvent.createMany({
-    data: events,
-    skipDuplicates: true,
+  const result = await withWriterTransaction(async (tx) => {
+    const state = await tx.syncState.findUnique({ where: { id: env.indexerSyncId } });
+    const expectedFrom = state && state.latestIndexedBlock >= env.indexerStartBlock
+      ? state.latestIndexedBlock + 1n : env.indexerStartBlock;
+    if (expectedFrom !== fromBlock) {
+      throw new Error("Ingestion checkpoint changed during RPC fetch; retry the cycle");
+    }
+    const inserted = events.length > 0
+      ? await tx.streamEvent.createMany({ data: events, skipDuplicates: true })
+      : { count: 0 };
+    await updateSyncState(tx, toBlock, checkpointTimestamp);
+    return inserted;
   });
   const dbWriteDurationMs = performance.now() - dbWriteStartedAt;
 
@@ -235,10 +237,6 @@ export async function runIndexerOnce() {
     rpcCalls += batchResult.rpcCalls;
     getLogsDurationMs += batchResult.getLogsDurationMs;
     dbWriteDurationMs += batchResult.dbWriteDurationMs;
-
-    const syncStateWriteStartedAt = performance.now();
-    await updateSyncState(batchEnd);
-    dbWriteDurationMs += performance.now() - syncStateWriteStartedAt;
 
     if (
       batches === 1 ||

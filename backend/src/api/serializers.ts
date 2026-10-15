@@ -10,7 +10,7 @@ type StreamWithOptionalRelations = StreamProjection & {
 };
 
 type SerializeOptions = {
-  estimateAt?: Date;
+  estimateAt?: Date | null;
 };
 
 function toIso(value: Date | null) {
@@ -67,30 +67,30 @@ function basisPoints(numerator: bigint, denominator: bigint) {
 
 export function streamComputedValues(
   stream: StreamProjection,
-  estimateAt = new Date(),
+  estimateAt: Date | null = null,
 ) {
   const depositedAmount = BigInt(stream.depositedAmount);
   const withdrawnAmount = BigInt(stream.withdrawnAmount);
   const vestingTime = stream.canceledAt ?? estimateAt;
-  const vestedAmount = vestedAmountAt(stream, vestingTime);
-  const claimableAmount = max(vestedAmount - withdrawnAmount, 0n);
+  const vestedAmount = vestingTime ? vestedAmountAt(stream, vestingTime) : null;
+  const claimableAmount = vestedAmount === null ? null : max(vestedAmount - withdrawnAmount, 0n);
   const remainingAmount = stream.canceledAt
     ? claimableAmount
     : max(depositedAmount - withdrawnAmount, 0n);
 
   return {
-    vestedAmount: vestedAmount.toString(),
-    claimableEstimate: claimableAmount.toString(),
-    remainingReceivable: remainingAmount.toString(),
-    fullyClaimed: remainingAmount === 0n,
-    estimateTimestamp: estimateAt.toISOString(),
+    vestedAmount: estimateAt ? vestedAmount?.toString() ?? null : null,
+    claimableEstimate: estimateAt ? claimableAmount?.toString() ?? null : null,
+    remainingReceivable: remainingAmount?.toString() ?? null,
+    fullyClaimed: remainingAmount === null ? null : remainingAmount === 0n,
+    estimateTimestamp: estimateAt?.toISOString() ?? null,
   };
 }
 
 function listingRiskLabels(
   listing: ListingProjection,
   stream?: StreamProjection | null,
-  estimateAt = new Date(),
+  estimateAt: Date | null = null,
 ) {
   const labels: string[] = [];
 
@@ -103,12 +103,13 @@ function listingRiskLabels(
   }
 
   const streamValues = streamComputedValues(stream, estimateAt);
-  const remainingAmount = BigInt(streamValues.remainingReceivable);
+  const remainingAmount = streamValues.remainingReceivable === null ? null : BigInt(streamValues.remainingReceivable);
   const price = BigInt(listing.price);
-  const listedForSeconds = Math.max(
+  const listedForSeconds = estimateAt ? Math.max(
     Math.floor((estimateAt.getTime() - listing.listedAt.getTime()) / 1_000),
     0,
-  );
+  ) : null;
+  if (!estimateAt) labels.push("estimate_unavailable");
 
   if (stream.canceledAt) {
     labels.push("canceled_stream");
@@ -126,11 +127,11 @@ function listingRiskLabels(
 
   if (streamValues.fullyClaimed || remainingAmount === 0n) {
     labels.push("fully_claimed");
-  } else if (price > remainingAmount) {
+  } else if (remainingAmount !== null && price > remainingAmount) {
     labels.push("price_above_remaining_value");
   }
 
-  if (listedForSeconds >= 86_400) {
+  if (listedForSeconds !== null && listedForSeconds >= 86_400) {
     labels.push("stale_listing");
   }
 
@@ -140,19 +141,19 @@ function listingRiskLabels(
 export function listingComputedValues(
   listing: ListingProjection,
   stream?: StreamProjection | null,
-  estimateAt = new Date(),
+  estimateAt: Date | null = null,
 ) {
   const streamValues = stream ? streamComputedValues(stream, estimateAt) : null;
-  const remainingAmount = streamValues
+  const remainingAmount = streamValues?.remainingReceivable != null
     ? BigInt(streamValues.remainingReceivable)
     : null;
   const price = BigInt(listing.price);
   const discountAmount =
     remainingAmount === null ? null : max(remainingAmount - price, 0n);
-  const listedForSeconds = Math.max(
+  const listedForSeconds = estimateAt ? Math.max(
     Math.floor((estimateAt.getTime() - listing.listedAt.getTime()) / 1_000),
     0,
-  );
+  ) : null;
 
   return {
     remainingReceivable:
@@ -165,25 +166,25 @@ export function listingComputedValues(
         ? null
         : basisPoints(discountAmount, remainingAmount),
     expectedYieldBps:
-      discountAmount === null ? null : basisPoints(discountAmount, price),
+      remainingAmount === null ? null : basisPoints(remainingAmount - price, price),
     priceToRemainingBps:
       remainingAmount === null ? null : basisPoints(price, remainingAmount),
     listedForSeconds,
     freshness:
-      listedForSeconds < 3_600
+      listedForSeconds === null ? "unavailable" : listedForSeconds < 3_600
         ? "fresh"
         : listedForSeconds < 86_400
           ? "same_day"
           : "stale",
     riskLabels: listingRiskLabels(listing, stream, estimateAt),
-    valuationBasis: "backend_projection_at_indexed_block",
+    valuationBasis: "backend_projection_at_projected_block",
   };
 }
 
 export function riskLabel(
   stream: StreamProjection,
   listing?: ListingProjection | null,
-  estimateAt = new Date(),
+  estimateAt: Date | null = null,
 ) {
   if (listing?.status === "INVALIDATED") {
     return "ownership_changed";

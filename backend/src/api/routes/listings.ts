@@ -1,10 +1,9 @@
 import { ListingStatus } from "@prisma/client";
 import type { FastifyInstance } from "fastify";
 
-import { prisma } from "../../db/prisma.js";
 import { badRequest } from "../errors.js";
 import { serializeListing } from "../serializers.js";
-import { getProjectionSyncContext, projectionSyncMeta } from "../sync-context.js";
+import { withProjectionSnapshot, projectionSyncMeta } from "../sync-context.js";
 
 type ListingQuery = {
   status?: string;
@@ -32,7 +31,7 @@ function parseListingStatus(status: string | undefined) {
 export async function registerListingRoutes(app: FastifyInstance) {
   app.get<{ Querystring: ListingQuery }>("/listings", async (request) => {
     const status = parseListingStatus(request.query.status);
-    const syncContext = await getProjectionSyncContext();
+    return withProjectionSnapshot(async (prisma, syncContext) => {
     const listings = await prisma.listingProjection.findMany({
       where: {
         status,
@@ -67,5 +66,6 @@ export async function registerListingRoutes(app: FastifyInstance) {
         ...projectionSyncMeta(syncContext),
       },
     };
+    });
   });
 }

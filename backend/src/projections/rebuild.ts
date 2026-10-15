@@ -2,6 +2,8 @@ import { ListingStatus, Prisma } from "@prisma/client";
 
 import { env } from "../config/env.js";
 import { prisma } from "../db/prisma.js";
+import { withWriterTransaction } from "../db/writer.js";
+import { publicClient } from "../indexer/chain.js";
 import { indexedContracts } from "../indexer/contracts.js";
 
 type ProjectionRebuildResult = {
@@ -389,14 +391,32 @@ async function applyPurchased(
 }
 
 export async function rebuildProjections(): Promise<ProjectionRebuildResult> {
+  // Legacy checkpoints need a verified chain timestamp, never a wall-clock fallback.
+  const previous = await prisma.syncState.findUnique({ where: { id: env.indexerSyncId } });
+  if (!previous || previous.latestIndexedBlock < env.indexerStartBlock) {
+    throw new Error("No ingested checkpoint is available for projection rebuild");
+  }
+  const verifiedTimestamp = previous.latestIndexedBlockTimestamp ?? new Date(
+    Number((await publicClient.getBlock({ blockNumber: previous.latestIndexedBlock })).timestamp) * 1000,
+  );
+  return withWriterTransaction(async (tx) => {
+  const checkpoint = await tx.syncState.findUniqueOrThrow({ where: { id: env.indexerSyncId } });
+  if (checkpoint.latestIndexedBlock !== previous.latestIndexedBlock) {
+    throw new Error("Ingestion advanced before rebuild lock; retry with a fresh checkpoint");
+  }
+  const timestamp = checkpoint.latestIndexedBlockTimestamp ?? verifiedTimestamp;
+  if (!checkpoint.latestIndexedBlockTimestamp) {
+    await tx.syncState.update({ where: { id: env.indexerSyncId }, data: { latestIndexedBlockTimestamp: timestamp } });
+  }
   const activeContractAddresses = indexedContracts.map((contract) =>
     contract.address.toLowerCase(),
   );
-  const events = await prisma.streamEvent.findMany({
+  const events = await tx.streamEvent.findMany({
     where: {
       chainId: env.sepoliaChainId,
       blockNumber: {
         gte: env.indexerStartBlock,
+        lte: checkpoint.latestIndexedBlock,
       },
       contractAddress: {
         in: activeContractAddresses,
@@ -406,8 +426,6 @@ export async function rebuildProjections(): Promise<ProjectionRebuildResult> {
   });
   const marketplacePurchaseKeys = collectMarketplacePurchaseKeys(events);
 
-  await prisma.$transaction(
-    async (tx) => {
       await clearProjectionTables(tx);
 
       for (const event of events) {
@@ -435,27 +453,37 @@ export async function rebuildProjections(): Promise<ProjectionRebuildResult> {
             break;
         }
       }
+  const appliedAt = new Date();
+  await tx.streamEvent.updateMany({
+    where: {
+      chainId: env.sepoliaChainId,
+      contractAddress: { in: activeContractAddresses },
+      blockNumber: { gte: env.indexerStartBlock, lte: checkpoint.latestIndexedBlock },
+      firstProjectedAt: null,
     },
-    {
-      timeout: 30_000,
-    },
-  );
+    data: { firstProjectedAt: appliedAt },
+  });
+  await tx.projectionState.upsert({
+    where: { id: env.indexerSyncId },
+    create: { id: env.indexerSyncId, latestProjectedBlock: checkpoint.latestIndexedBlock, latestProjectedBlockTimestamp: timestamp, appliedAt },
+    update: { latestProjectedBlock: checkpoint.latestIndexedBlock, latestProjectedBlockTimestamp: timestamp, appliedAt },
+  });
 
   const [streams, activeListings, invalidatedListings, claims, trades] =
     await Promise.all([
-      prisma.streamProjection.count(),
-      prisma.listingProjection.count({
+      tx.streamProjection.count(),
+      tx.listingProjection.count({
         where: {
           status: ListingStatus.ACTIVE,
         },
       }),
-      prisma.listingProjection.count({
+      tx.listingProjection.count({
         where: {
           status: ListingStatus.INVALIDATED,
         },
       }),
-      prisma.claimProjection.count(),
-      prisma.tradeProjection.count(),
+      tx.claimProjection.count(),
+      tx.tradeProjection.count(),
     ]);
 
   return {
@@ -466,4 +494,20 @@ export async function rebuildProjections(): Promise<ProjectionRebuildResult> {
     claims,
     trades,
   };
+  });
+}
+
+export async function recoverProjections() {
+  const collected = await prisma.syncState.findUnique({ where: { id: env.indexerSyncId } });
+  if (!collected || collected.latestIndexedBlock < env.indexerStartBlock) return null;
+  const applied = await prisma.projectionState.findUnique({ where: { id: env.indexerSyncId } });
+  if (applied && applied.latestProjectedBlock >= collected.latestIndexedBlock) return null;
+  const startedAt = performance.now();
+  const result = await rebuildProjections();
+  const completed = await prisma.projectionState.findUniqueOrThrow({ where: { id: env.indexerSyncId } });
+  console.log(JSON.stringify({ level: "info", message: "projection recovery completed", syncId: env.indexerSyncId,
+    ingestionCheckpoint: collected.latestIndexedBlock.toString(), projectionCheckpoint: completed.latestProjectedBlock.toString(),
+    projectionTimestamp: completed.latestProjectedBlockTimestamp.toISOString(),
+    durationMs: performance.now() - startedAt, ...result }));
+  return result;
 }

@@ -1,12 +1,11 @@
 import { ListingStatus } from "@prisma/client";
 import type { FastifyInstance } from "fastify";
 
-import { prisma } from "../../db/prisma.js";
-import { getProjectionSyncContext, projectionSyncMeta } from "../sync-context.js";
+import { withProjectionSnapshot, projectionSyncMeta } from "../sync-context.js";
 
 export async function registerMarketRoutes(app: FastifyInstance) {
   app.get("/market/stats", async () => {
-    const syncContext = await getProjectionSyncContext();
+    return withProjectionSnapshot(async (prisma, syncContext) => {
     const [streamCount, listingCounts, listings, tradeCount, trades] =
       await Promise.all([
         prisma.streamProjection.count(),
@@ -67,5 +66,6 @@ export async function registerMarketRoutes(app: FastifyInstance) {
         ...projectionSyncMeta(syncContext),
       },
     };
+    });
   });
 }

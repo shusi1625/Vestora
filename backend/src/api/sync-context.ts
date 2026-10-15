@@ -1,93 +1,57 @@
+import { Prisma } from "@prisma/client";
 import { env } from "../config/env.js";
 import { prisma } from "../db/prisma.js";
 import { getSafeBlockNumber, publicClient } from "../indexer/chain.js";
 
-export type ProjectionSyncContext = {
-  status: "not_started" | "synced" | "lagging" | "rpc_error";
-  syncId: string;
-  chainId: number;
-  latestBlock: string | null;
-  safeLatestBlock: string | null;
-  latestIndexedBlock: string;
-  latestIndexedBlockTimestamp: string | null;
-  lagBlocks: string | null;
-  updatedAt: string | null;
-  estimateAt: Date;
-  error?: string;
-};
-
-export async function getProjectionSyncContext(): Promise<ProjectionSyncContext> {
-  const state = await prisma.syncState.findUnique({
-    where: {
-      id: env.indexerSyncId,
-    },
-  });
-  const latestIndexedBlock = state?.latestIndexedBlock ?? 0n;
-
-  try {
-    const latestBlock = await publicClient.getBlockNumber();
-    const safeLatestBlock = getSafeBlockNumber(latestBlock);
-    const lagBlocks =
-      safeLatestBlock > latestIndexedBlock
-        ? safeLatestBlock - latestIndexedBlock
-        : 0n;
-    const indexedBlock =
-      latestIndexedBlock > 0n
-        ? await publicClient.getBlock({ blockNumber: latestIndexedBlock })
-        : null;
-    const latestIndexedBlockTimestamp = indexedBlock
-      ? new Date(Number(indexedBlock.timestamp) * 1_000)
-      : null;
-
-    return {
-      status:
-        latestIndexedBlock === 0n
-          ? "not_started"
-          : lagBlocks === 0n
-            ? "synced"
-            : "lagging",
-      syncId: env.indexerSyncId,
-      chainId: env.sepoliaChainId,
-      latestBlock: latestBlock.toString(),
-      safeLatestBlock: safeLatestBlock.toString(),
-      latestIndexedBlock: latestIndexedBlock.toString(),
-      latestIndexedBlockTimestamp:
-        latestIndexedBlockTimestamp?.toISOString() ?? null,
-      lagBlocks: lagBlocks.toString(),
-      updatedAt: state?.updatedAt.toISOString() ?? null,
-      estimateAt: latestIndexedBlockTimestamp ?? state?.updatedAt ?? new Date(0),
-    };
-  } catch (error) {
-    return {
-      status: "rpc_error",
-      syncId: env.indexerSyncId,
-      chainId: env.sepoliaChainId,
-      latestBlock: null,
-      safeLatestBlock: null,
-      latestIndexedBlock: latestIndexedBlock.toString(),
-      latestIndexedBlockTimestamp: null,
-      lagBlocks: null,
-      updatedAt: state?.updatedAt.toISOString() ?? null,
-      estimateAt: state?.updatedAt ?? new Date(0),
-      error: error instanceof Error ? error.message : "unknown RPC error",
-    };
-  }
+type Freshness = { latest: bigint | null; error?: string };
+async function readFreshness(): Promise<Freshness> {
+  try { return { latest: await publicClient.getBlockNumber() }; }
+  catch { return { latest: null, error: "Chain freshness could not be verified" }; }
 }
 
-export function projectionSyncMeta(context: ProjectionSyncContext) {
+export async function getProjectionSyncContext(
+  db: Prisma.TransactionClient = prisma,
+  freshness?: Freshness,
+) {
+  const head = freshness ?? await readFreshness();
+  const state = await db.syncState.findUnique({ where: { id: env.indexerSyncId } });
+  const applied = await db.projectionState.findUnique({ where: { id: env.indexerSyncId } });
+  const indexed = state?.latestIndexedBlock ?? 0n;
+  const projected = applied?.latestProjectedBlock ?? null;
+  const safe = head.latest === null ? null : getSafeBlockNumber(head.latest);
+  const lag = safe === null ? null : safe > indexed ? safe - indexed : 0n;
   return {
-    projection: {
-      status: context.status,
-      syncId: context.syncId,
-      chainId: context.chainId,
-      latestBlock: context.latestBlock,
-      safeLatestBlock: context.safeLatestBlock,
-      latestIndexedBlock: context.latestIndexedBlock,
-      latestIndexedBlockTimestamp: context.latestIndexedBlockTimestamp,
-      lagBlocks: context.lagBlocks,
-      updatedAt: context.updatedAt,
-      estimateAt: context.estimateAt.toISOString(),
-      error: context.error,
-    },
+    status: head.error ? "rpc_error" : !state ? "not_started" : lag === 0n ? "synced" : "lagging",
+    syncId: env.indexerSyncId,
+    chainId: env.sepoliaChainId,
+    latestBlock: head.latest?.toString() ?? null,
+    safeLatestBlock: safe?.toString() ?? null,
+    latestIndexedBlock: indexed.toString(),
+    latestIndexedBlockTimestamp: state?.latestIndexedBlockTimestamp?.toISOString() ?? null,
+    latestProjectedBlock: projected?.toString() ?? null,
+    latestProjectedBlockTimestamp: applied?.latestProjectedBlockTimestamp.toISOString() ?? null,
+    projectionStatus: !applied ? "not_started" : projected === indexed ? "applied" : "pending",
+    projectionAppliedAt: applied?.appliedAt.toISOString() ?? null,
+    lagBlocks: lag?.toString() ?? null,
+    updatedAt: state?.updatedAt.toISOString() ?? null,
+    estimateAt: applied?.latestProjectedBlockTimestamp ?? null,
+    error: head.error,
   };
+}
+
+export type ProjectionSyncContext = Awaited<ReturnType<typeof getProjectionSyncContext>>;
+
+export function projectionSyncMeta(context: ProjectionSyncContext) {
+  return { projection: { ...context, estimateAt: context.estimateAt?.toISOString() ?? null } };
+}
+
+// Fetch chain freshness before opening the DB snapshot so slow RPC does not hold it.
+export async function withProjectionSnapshot<T>(
+  read: (db: Prisma.TransactionClient, context: ProjectionSyncContext) => Promise<T>,
+) {
+  const freshness = await readFreshness();
+  return prisma.$transaction(async (db) => {
+    const context = await getProjectionSyncContext(db, freshness);
+    return read(db, context);
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 30_000 });
 }

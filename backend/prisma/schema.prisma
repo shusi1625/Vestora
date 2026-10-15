@@ -18,10 +18,20 @@ model SyncState {
   id                 String   @id @default("sepolia")
   chainId            Int      @map("chain_id")
   latestIndexedBlock BigInt   @default(0) @map("latest_indexed_block")
+  latestIndexedBlockTimestamp DateTime? @map("latest_indexed_block_timestamp")
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@map("sync_state")
+}
+
+model ProjectionState {
+  id String @id
+  latestProjectedBlock BigInt @map("latest_projected_block")
+  latestProjectedBlockTimestamp DateTime @map("latest_projected_block_timestamp")
+  appliedAt DateTime @default(now()) @map("applied_at")
+
+  @@map("projection_state")
 }
 
 model IndexedEvent {
@@ -55,6 +65,7 @@ model StreamEvent {
   payload         Json
   blockTimestamp  DateTime @map("block_timestamp")
   createdAt       DateTime @default(now()) @map("created_at")
+  firstProjectedAt DateTime? @map("first_projected_at")
 
   @@unique([transactionHash, logIndex])
   @@index([chainId, blockNumber])

@@ -1,8 +1,7 @@
 import type { FastifyInstance } from "fastify";
 
-import { prisma } from "../../db/prisma.js";
 import { serializeStream, serializeTrade } from "../serializers.js";
-import { getProjectionSyncContext, projectionSyncMeta } from "../sync-context.js";
+import { withProjectionSnapshot, projectionSyncMeta } from "../sync-context.js";
 import { parseAddress } from "../validation.js";
 
 type AddressParams = {
@@ -36,7 +35,7 @@ export async function registerUserRoutes(app: FastifyInstance) {
     "/users/:address/streams",
     async (request) => {
       const address = parseAddress(request.params.address);
-      const syncContext = await getProjectionSyncContext();
+      return withProjectionSnapshot(async (prisma, syncContext) => {
       const streams = await prisma.streamProjection.findMany({
         where: {
           OR: [
@@ -85,11 +84,13 @@ export async function registerUserRoutes(app: FastifyInstance) {
           ...projectionSyncMeta(syncContext),
         },
       };
+      });
     },
   );
 
   app.get<{ Params: AddressParams }>("/users/:address/trades", async (request) => {
     const address = parseAddress(request.params.address);
+    return withProjectionSnapshot(async (prisma, syncContext) => {
     const trades = await prisma.tradeProjection.findMany({
       where: {
         OR: [
@@ -117,7 +118,9 @@ export async function registerUserRoutes(app: FastifyInstance) {
       meta: {
         address,
         count: trades.length,
+        ...projectionSyncMeta(syncContext),
       },
     };
+    });
   });
 }

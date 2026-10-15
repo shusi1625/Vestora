@@ -1,6 +1,6 @@
 import { env } from "../config/env.js";
 import { prisma } from "../db/prisma.js";
-import { rebuildProjections } from "../projections/rebuild.js";
+import { recoverProjections } from "../projections/rebuild.js";
 import { runIndexerOnce } from "./service.js";
 
 let stopping = false;
@@ -10,11 +10,16 @@ function wait(ms: number) {
 }
 
 async function runLoop() {
+  let failures = 0;
   while (!stopping) {
+    let stage = "startup_projection_recovery";
     try {
+      await recoverProjections();
+      stage = "ingestion";
       const result = await runIndexerOnce();
-      const projection =
-        result.insertedEvents > 0 ? await rebuildProjections() : null;
+      stage = "projection_recovery";
+      const projection = await recoverProjections();
+      failures = 0;
 
       console.log(
         JSON.stringify({
@@ -25,10 +30,14 @@ async function runLoop() {
         }),
       );
     } catch (error) {
+      failures += 1;
       console.error(
         JSON.stringify({
           level: "error",
           message: "indexer cycle failed",
+          stage,
+          consecutiveFailures: failures,
+          retryInMs: env.indexerPollIntervalMs,
           error: error instanceof Error ? error.message : "unknown error",
         }),
       );
