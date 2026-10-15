@@ -214,4 +214,30 @@ Use a dedicated terminal, then close it so benchmark environment overrides canno
 2. **Incremental projection second.** Five events rebuild in about 29ms here; this does not demonstrate a current bottleneck, but full replay cost grows with history. Benchmark synthetic event-volume scaling and implement atomic projection checkpoints plus replay equivalence before replacing full rebuild. Also cover restart after event insertion but before successful rebuild.
 3. **Separate live tail/backfill last, gated by freshness requirements.** Current operating lag reached zero and bounded cycles already expose partial progress. Introduce separate cursors/workers only if catch-up prevents the required live freshness; out-of-order projection correctness and a single authoritative read-model checkpoint must be designed first. Moving this earlier requires measured persistent freshness failures.
 
-This is an evidence-based implementation order, not a claim that any of these three optimizations is already deployed. End-to-end browser create/list/claim latency still requires wallet interaction and remains open.
+This is an evidence-based implementation order, not a claim that any of these three optimizations is already deployed. The subsequent manual browser results below close the functional smoke test; precise first-visibility latency instrumentation remains a follow-up, not a measured result.
+
+## Manual Create / List / Claim Verification (2026-10-15 KST)
+
+The user operated MetaMask in their own browser. RPC receipt checks independently confirmed all three transactions succeeded (`status=0x1`). The API `/streams/2` independently confirmed the corresponding stream, listing and claim records. Timing precision is explicitly limited: browser observations were approximate and no continuous API first-visibility capture was running.
+
+| Action | Transaction | Block / block timestamp (KST) | User-observed reflection |
+| --- | --- | --- | --- |
+| Create | `0x3914b2beb04136b99323b092177c9d1187ef4097a7befa34747e5b9cd7c1c41f` | 11920100 / 20:21:24 | Started interaction around 20:20; backend/Indexed around 20:22 |
+| List | `0x684e542914b83681abe0a4b86fce49fb588606030d0f8938b82161cf9965e816` | 11920131 / 20:27:36 | Backend ACTIVE and Indexed observed around 20:28 |
+| Claim | `0x6b006ea07a793f68f5b6d679dcb1f34055cad86a6a185de88b60e1919d3133f0` | 11920156 / 20:33:00 | On-chain UI nearly immediate after confirmation; Indexed about one minute later |
+
+Create input: 5 mUSDC, start delay 0, duration 30 minutes, uncancelable, recipient=connected wallet. Balance moved 10.4 -> 5.4; stream #2 started 20:21:24 and ends 20:51:24. The user's pre-list snapshot showed projection updated 20:22:05, 41 seconds after the creation block timestamp. This is a projection timestamp proxy, not an exact first API/UI visibility measurement or a two-minute indexing measurement.
+
+Listing price was 4 with 5 remaining, ACTIVE and displayed simple yield 25%. Claim withdrew 1.933333, leaving 3.066667. API confirms withdrawnAmount=1933333, remainingReceivable=3066667, listing ACTIVE at price=4000000, and the claim hash above. The claimed amount matches floor(5000000 * 696 / 1800)=1933333 at the receipt block timestamp. No second claim or buy was performed during this test.
+
+API claim createdAt=20:33:41.964 and stream updatedAt=20:33:41.971, approximately 41.97 seconds after the claim block timestamp. Full rebuild recreates projection rows, so these fields are not durable first-indexed timestamps and can change on subsequent rebuilds. This proxy is consistent with the user's approximate one-minute UI observation, but does not establish exact network, commit, API or render latency separately. Block timestamps and client-observed receipt times are also different clocks/events. Do not publish latency percentiles from these three manual samples.
+
+### Follow-up Findings (Not Changed In This Phase)
+
+- On-chain vested/claimable remained zero after creation until manual Refresh; afterward it advanced to 0.5. Backend estimates continued advancing on their own indexed-block basis. Investigate polling/query invalidation and display both read timestamps; do not require different-block values to be equal.
+- Transaction text/Phase still said Backend indexing after the separate indicator became Indexed; derive consistent completion messaging.
+- Expired stream #1 displayed Active or scheduled; distinguish scheduled, active, ended, canceled and fully claimed.
+- After claim, price 4 exceeded remaining 3.066667; risk label correctly became price_above_remaining_value. Source inspection confirms serializers.ts clamps discountAmount=max(remaining-price,0), then uses it for expectedYieldBps. Consequently yield displays 0 instead of approximately -23.33%. Separate nonnegative discount from signed simple yield in a follow-up with tests.
+- Editing the Price input does not change persisted listing metrics. Label draft versus persisted values and consider a separate preview rather than implying an unsubmitted price is on-chain.
+
+Functional create/list/claim and eventual projection reflection are verified by user screen reports plus receipt/API evidence. Exact automatic API/UI latency remains unmeasured; the available manual observations and timestamp proxies above are the evidence delivered for this run. Repo documentation is committed; Obsidian notes are updated without a vault commit.
