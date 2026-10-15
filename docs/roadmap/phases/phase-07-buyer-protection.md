@@ -70,11 +70,11 @@ Completed in Phase 7B:
 - frontend buy flow now passes final preflight constraints into
   `buyWithProtection`
 
-Deferred after Phase 7:
+Subsequent verification:
 
-- Sepolia redeployment of the updated marketplace contract
-- production-style route from frontend contract addresses to new deployment
-- broader gas comparison between `buy` and `buyWithProtection`
+- Updated contracts were redeployed to Sepolia (v4); frontend addresses and protected-buy smoke were updated. See the AWS operations report and deployment records.
+- Phase 8 recorded gas comparisons for both `buy` and `buyWithProtection`.
+- Phase 9.6 corrects negative implied yield and bases estimates on the applied projection checkpoint. Its AWS rollout remains pending approval.
 
 ## Completion Criteria
 

@@ -57,13 +57,13 @@ Implemented before real AWS resource creation:
 - local `/metrics` endpoint with indexer, API, and DB observability fields
 - API and indexer share the same image; the indexer uses command override `node dist/src/indexer/worker.js`
 
-Still requires explicit approval before execution:
+Deployment status (recorded operational evidence, not a fresh AWS audit):
 
-- ECR repository creation
-- RDS PostgreSQL creation
-- App Runner or ECS service creation
-- CloudWatch evidence capture
-- any real AWS cost-incurring command
+- ECR, RDS PostgreSQL, ECS Fargate API/indexer and CloudWatch logs were configured in Sydney.
+- Phase 9.5 deployment and manual transaction evidence are recorded in `docs/report/aws-indexer-operations-and-bottleneck.md`.
+- Phase 9.6 is locally verified only. Its migration and deployment require explicit approval.
+- RPC error rate, DB connection count/slow queries/index hit ratio remain incomplete operational metrics; the list above is a target, not a claim that every metric exists.
+- Future resource, permission, migration and deployment changes still require approval.
 
 ## Codex Routing
 
