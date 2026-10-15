@@ -76,6 +76,8 @@ node --test frontend/tests/transaction-policy.test.mjs
 
 The integration script refuses any host/port/database/schema other than the dedicated local target. It clears only that schema's test data.
 
+The older `ownership:smoke-projection` command now requires a separate local schema `phase96_ownership` and `INDEXER_SYNC_ID=phase96-ownership`. Migrate that schema first. It creates a synthetic checkpoint so bounded replay can test external NFT transfers safely. The Phase 9.5 comparison schema must also be migrated before rerunning its harness; it now clears the disposable projection checkpoint between samples.
+
 ## Deployment Runbook (Approval Required)
 
 1. Record deployed image digest, task revisions, sync ID and ingestion cursor. Take an approved RDS backup.

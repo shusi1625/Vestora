@@ -71,6 +71,7 @@ try {
       // Only the guarded disposable schema is cleared, never AWS or public.
       await prisma.streamEvent.deleteMany();
       await prisma.syncState.deleteMany();
+      await prisma.projectionState.deleteMany();
       logCalls = blockCalls = headCalls = 0;
       const cycle = await runIndexerOnce();
       assert.equal(cycle.scannedBlocks, "110");

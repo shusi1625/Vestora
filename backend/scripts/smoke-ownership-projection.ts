@@ -1,8 +1,16 @@
 import { ListingStatus } from "@prisma/client";
+import assert from "node:assert/strict";
 
 import { env } from "../src/config/env.js";
 import { prisma } from "../src/db/prisma.js";
 import { rebuildProjections } from "../src/projections/rebuild.js";
+
+const database = new URL(env.databaseUrl);
+assert.equal(database.hostname, "127.0.0.1");
+assert.equal(database.port, "5433");
+assert.equal(database.pathname, "/vestora");
+assert.equal(database.searchParams.get("schema"), "phase96_ownership");
+assert.equal(env.indexerSyncId, "phase96-ownership");
 
 const streamId = 999_000_000_001n;
 const blockTimestamp = new Date("2026-01-01T00:00:00.000Z");
@@ -101,6 +109,11 @@ async function seedSyntheticEvents() {
 
 try {
   await seedSyntheticEvents();
+  await prisma.syncState.upsert({
+    where: { id: env.indexerSyncId },
+    create: { id: env.indexerSyncId, chainId: env.sepoliaChainId, latestIndexedBlock: 999_000_003n, latestIndexedBlockTimestamp: blockTimestamp },
+    update: { latestIndexedBlock: 999_000_003n, latestIndexedBlockTimestamp: blockTimestamp },
+  });
 
   const rebuildResult = await rebuildProjections();
   const [stream, listing] = await Promise.all([
