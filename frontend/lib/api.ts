@@ -21,11 +21,11 @@ export type ApiStream = {
   createdTxHash: string;
   updatedAt: string;
   computed: {
-    vestedAmount: string;
-    claimableEstimate: string;
-    remainingReceivable: string;
-    fullyClaimed: boolean;
-    estimateTimestamp: string;
+    vestedAmount: string | null;
+    claimableEstimate: string | null;
+    remainingReceivable: string | null;
+    fullyClaimed: boolean | null;
+    estimateTimestamp: string | null;
   };
   riskLabel: string;
   listing: ApiListing | null;
@@ -41,7 +41,7 @@ export type ApiStreamSummary = {
   token: string;
   depositedAmount: string;
   withdrawnAmount: string;
-  remainingReceivable: string;
+  remainingReceivable: string | null;
   startTime: string;
   endTime: string;
   cancelable: boolean;
@@ -71,8 +71,8 @@ export type ApiListing = {
     discountBps: number | null;
     expectedYieldBps: number | null;
     priceToRemainingBps: number | null;
-    listedForSeconds: number;
-    freshness: "fresh" | "same_day" | "stale";
+    listedForSeconds: number | null;
+    freshness: "fresh" | "same_day" | "stale" | "unavailable";
     riskLabels: string[];
     valuationBasis: string;
   };
@@ -126,9 +126,13 @@ export type ApiProjectionMeta = {
   safeLatestBlock: string | null;
   latestIndexedBlock: string;
   latestIndexedBlockTimestamp: string | null;
+  latestProjectedBlock: string | null;
+  latestProjectedBlockTimestamp: string | null;
+  projectionStatus: "not_started" | "applied" | "pending";
+  projectionAppliedAt: string | null;
   lagBlocks: string | null;
   updatedAt: string | null;
-  estimateAt: string;
+  estimateAt: string | null;
   error?: string;
 };
 

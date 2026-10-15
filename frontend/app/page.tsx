@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { isAddress, parseUnits, type Address, type Hex } from "viem";
 import {
   useAccount,
@@ -13,6 +13,7 @@ import {
   useWriteContract,
 } from "wagmi";
 import { sepolia } from "wagmi/chains";
+import { requiresProjection, projectionIncludes, streamLifecycle, visiblePollInterval, refreshAfterConfirmation } from "../lib/transaction-policy";
 
 import {
   fetchListings,
@@ -47,10 +48,13 @@ type TxState = {
     | "confirming"
     | "refreshing_onchain"
     | "indexing_pending"
+    | "completed"
     | "error";
   message: string;
   hash?: Hex;
   confirmedBlockNumber?: bigint;
+  projectionRequired?: boolean;
+  refreshWarning?: string;
 };
 
 type OnchainListing = {
@@ -169,6 +173,8 @@ function txPhaseLabel(phase: TxState["phase"]) {
       return "Refreshing on-chain";
     case "indexing_pending":
       return "Backend indexing";
+    case "completed":
+      return "Completed";
     case "error":
       return "Error";
     default:
@@ -179,7 +185,7 @@ function txPhaseLabel(phase: TxState["phase"]) {
 export default function Home() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
-  const publicClient = usePublicClient();
+  const publicClient = usePublicClient({ chainId: sepolia.id });
   const { connect, connectors, isPending: isConnecting } = useConnect();
   const { disconnect } = useDisconnect();
   const { writeContractAsync, isPending: isWriting } = useWriteContract();
@@ -194,6 +200,13 @@ export default function Home() {
   const [streamIdInput, setStreamIdInput] = useState("1");
   const [listingPrice, setListingPrice] = useState("40");
   const [txState, setTxState] = useState<TxState>(initialTxState);
+  const [pageVisible, setPageVisible] = useState(false);
+  useEffect(() => {
+    const update = () => setPageVisible(document.visibilityState === "visible");
+    update();
+    document.addEventListener("visibilitychange", update);
+    return () => document.removeEventListener("visibilitychange", update);
+  }, []);
   const [buyPreflightMessage, setBuyPreflightMessage] =
     useState("Not checked yet.");
 
@@ -205,6 +218,14 @@ export default function Home() {
   const canWrite = Boolean(isConnected && isSepolia && address && publicClient);
   const selectedStreamId = parseStreamId(streamIdInput);
   const selectedStreamIdText = selectedStreamId?.toString();
+  const onchainPoll = visiblePollInterval(pageVisible);
+  const chainBlock = useQuery({
+    queryKey: ["chain-block", sepolia.id, selectedStreamIdText],
+    queryFn: () => publicClient!.getBlock(),
+    enabled: Boolean(publicClient && selectedStreamId && pageVisible),
+    refetchInterval: onchainPoll,
+    retry: false,
+  });
 
   const marketStats = useQuery({
     queryKey: ["market-stats"],
@@ -287,56 +308,66 @@ export default function Home() {
   });
 
   const stream = useReadContract({
+    chainId: sepolia.id,
     address: sepoliaContracts.receivableStream,
     abi: receivableStreamAbi,
     functionName: "getStream",
     args: selectedStreamId ? [selectedStreamId] : undefined,
     query: {
-      enabled: Boolean(selectedStreamId),
+      enabled: Boolean(selectedStreamId && pageVisible),
+      refetchInterval: onchainPoll,
       retry: false,
     },
   });
 
   const vestedAmount = useReadContract({
+    chainId: sepolia.id,
     address: sepoliaContracts.receivableStream,
     abi: receivableStreamAbi,
     functionName: "vestedAmount",
     args: selectedStreamId ? [selectedStreamId] : undefined,
     query: {
-      enabled: Boolean(selectedStreamId),
+      enabled: Boolean(selectedStreamId && pageVisible),
+      refetchInterval: onchainPoll,
       retry: false,
     },
   });
 
   const claimableAmount = useReadContract({
+    chainId: sepolia.id,
     address: sepoliaContracts.receivableStream,
     abi: receivableStreamAbi,
     functionName: "claimableAmount",
     args: selectedStreamId ? [selectedStreamId] : undefined,
     query: {
-      enabled: Boolean(selectedStreamId),
+      enabled: Boolean(selectedStreamId && pageVisible),
+      refetchInterval: onchainPoll,
       retry: false,
     },
   });
 
   const streamOwner = useReadContract({
+    chainId: sepolia.id,
     address: sepoliaContracts.receivableStream,
     abi: receivableStreamAbi,
     functionName: "ownerOf",
     args: selectedStreamId ? [selectedStreamId] : undefined,
     query: {
-      enabled: Boolean(selectedStreamId),
+      enabled: Boolean(selectedStreamId && pageVisible),
+      refetchInterval: onchainPoll,
       retry: false,
     },
   });
 
   const listing = useReadContract({
+    chainId: sepolia.id,
     address: sepoliaContracts.receivableMarketplace,
     abi: receivableMarketplaceAbi,
     functionName: "getListing",
     args: selectedStreamId ? [selectedStreamId] : undefined,
     query: {
-      enabled: Boolean(selectedStreamId),
+      enabled: Boolean(selectedStreamId && pageVisible),
+      refetchInterval: onchainPoll,
       retry: false,
     },
   });
@@ -385,17 +416,21 @@ export default function Home() {
       (item) => item.streamId === selectedStreamIdText,
     ) ??
     null;
-  const latestIndexedBlock = parseBlockNumber(
-    indexerMetrics.data?.indexer.latestIndexedBlock,
+  const latestProjectedBlock = parseBlockNumber(
+    backendListings.data?.meta?.projection?.latestProjectedBlock,
   );
-  const transactionBackendIndexed =
-    txState.confirmedBlockNumber !== undefined &&
-    latestIndexedBlock !== undefined &&
-    latestIndexedBlock >= txState.confirmedBlockNumber;
+  const transactionBackendIndexed = projectionIncludes(txState.confirmedBlockNumber, latestProjectedBlock);
+  const transactionComplete = txState.status === "success" &&
+    (!txState.projectionRequired || transactionBackendIndexed);
+  const displayedPhase = transactionComplete ? "completed" : txState.phase;
+  const displayedMessage = transactionComplete
+    ? "Transaction confirmed. Required updates completed."
+    : txState.message;
   const transactionBackendIndexingStatus =
     txState.confirmedBlockNumber === undefined
       ? "No confirmed transaction"
-      : indexerMetrics.isError
+      : !txState.projectionRequired ? "Not required"
+      : backendListings.isError
         ? "Indexer status unavailable"
         : transactionBackendIndexed
           ? "Indexed"
@@ -405,15 +440,13 @@ export default function Home() {
     backendSelectedListing?.computed.riskLabels ?? [];
 
   async function refreshOnchainReads() {
-    await Promise.all([
-      mockUsdcBalance.refetch(),
+    const results = await Promise.all([
+      ...(address ? [mockUsdcBalance.refetch()] : []),
       nextStreamId.refetch(),
-      stream.refetch(),
-      vestedAmount.refetch(),
-      claimableAmount.refetch(),
-      streamOwner.refetch(),
-      listing.refetch(),
+      ...(selectedStreamId ? [stream.refetch(), vestedAmount.refetch(), claimableAmount.refetch(),
+        streamOwner.refetch(), listing.refetch(), chainBlock.refetch()] : []),
     ]);
+    if (results.some((result) => result.isError)) throw new Error("On-chain read refresh failed");
   }
 
   async function refreshBackendReads() {
@@ -437,6 +470,9 @@ export default function Home() {
   }
 
   async function runTransaction(label: string, action: () => Promise<Hex>) {
+    const projectionRequired = requiresProjection(label);
+    let submittedHash: Hex | undefined;
+    let confirmedBlock: bigint | undefined;
     if (!publicClient) {
       setTxState({
         label,
@@ -456,6 +492,7 @@ export default function Home() {
       });
 
       const hash = await action();
+      submittedHash = hash;
 
       setTxState({
         label,
@@ -478,6 +515,7 @@ export default function Home() {
       if (receipt.status !== "success") {
         throw new Error("Transaction reverted.");
       }
+      confirmedBlock = receipt.blockNumber;
 
       setTxState({
         label,
@@ -488,23 +526,31 @@ export default function Home() {
         confirmedBlockNumber: receipt.blockNumber,
       });
 
-      await refreshOnchainReads();
-      void refreshBackendReads();
+      const refreshWarning = await refreshAfterConfirmation([refreshOnchainReads, refreshBackendReads]);
 
       setTxState({
         label,
         status: "success",
-        phase: "indexing_pending",
-        message: "On-chain confirmed. Backend indexing may still be pending.",
+        phase: projectionRequired ? "indexing_pending" : "completed",
+        message: projectionRequired ? "On-chain confirmed. Waiting for projection." : "Transaction confirmed.",
+        projectionRequired,
+        refreshWarning,
         hash,
         confirmedBlockNumber: receipt.blockNumber,
       });
       return true;
     } catch (error) {
+      if (confirmedBlock !== undefined) {
+        setTxState({ label, status: "success", phase: projectionRequired ? "indexing_pending" : "completed",
+          hash: submittedHash, confirmedBlockNumber: confirmedBlock, projectionRequired,
+          message: "Transaction confirmed.", refreshWarning: "Read refresh failed. The transaction succeeded." });
+        return true;
+      }
       setTxState({
         label,
         status: "error",
         phase: "error",
+        hash: submittedHash,
         message: error instanceof Error ? error.message : "Transaction failed.",
       });
       return false;
@@ -999,7 +1045,8 @@ export default function Home() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-lg font-medium">Transaction Status</h2>
-              <p className="mt-1 text-sm text-zinc-400">{txState.message}</p>
+              <p className="mt-1 text-sm text-zinc-400">{displayedMessage}</p>
+              {txState.refreshWarning && <p role="status">{txState.refreshWarning}</p>}
             </div>
             <span
               className={`rounded-md px-3 py-1 text-xs font-medium ${statusClassName(
@@ -1010,7 +1057,7 @@ export default function Home() {
             </span>
           </div>
           <div className="mt-4 grid gap-3 text-sm md:grid-cols-4">
-            <InfoRow label="Phase" value={txPhaseLabel(txState.phase)} />
+            <InfoRow label="Phase" value={txPhaseLabel(displayedPhase)} />
             <InfoRow label="Tx hash" value={shortenHash(txState.hash)} />
             <InfoRow
               label="Confirmed block"
@@ -1371,8 +1418,11 @@ export default function Home() {
               <InfoRow label="End" value={formatTimestamp(stream.data?.endTime)} />
               <InfoRow
                 label="On-chain status"
-                value={stream.data?.canceled ? "Canceled" : "Active or scheduled"}
+                value={streamLifecycle(stream.data, vestedAmount.data, chainBlock.data?.timestamp)}
               />
+              <InfoRow label="On-chain last read" value={claimableAmount.dataUpdatedAt ? new Date(claimableAmount.dataUpdatedAt).toLocaleString() : "-"} />
+              <InfoRow label="Latest observed block time" value={chainBlock.data ? formatTimestamp(chainBlock.data.timestamp) : "-"} />
+              <InfoRow label="On-chain read status" value={stream.isError || vestedAmount.isError || claimableAmount.isError || chainBlock.isError ? "Read error; values may be stale" : !claimableAmount.dataUpdatedAt ? "Unavailable" : Date.now() - claimableAmount.dataUpdatedAt > 30_000 ? "Stale" : "Recent"} />
               <InfoRow
                 label="Backend listing"
                 value={backendSelectedListing?.status ?? "-"}
@@ -1393,7 +1443,7 @@ export default function Home() {
                 value={shortenAddress(listing.data?.seller)}
               />
               <InfoRow
-                label="Listing price"
+                label="Stored listing price"
                 value={formatTokenAmount(listing.data?.price, decimals)}
               />
               <InfoRow
