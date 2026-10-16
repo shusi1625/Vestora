@@ -1,5 +1,7 @@
 # AWS Indexer Operations And Bottleneck Review
 
+Later deployment: [Phase 9.6 AWS rollout, 2026-10-16](phase-09-6-aws-deployment.md) supersedes the service revisions and API address below. Earlier measurements and transaction evidence remain historical.
+
 작성일: 2026-10-14
 
 ## Purpose

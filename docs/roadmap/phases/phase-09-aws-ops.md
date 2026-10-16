@@ -61,7 +61,7 @@ Deployment status (recorded operational evidence, not a fresh AWS audit):
 
 - ECR, RDS PostgreSQL, ECS Fargate API/indexer and CloudWatch logs were configured in Sydney.
 - Phase 9.5 deployment and manual transaction evidence are recorded in `docs/report/aws-indexer-operations-and-bottleneck.md`.
-- Phase 9.6 is locally verified only. Its migration and deployment require explicit approval.
+- Phase 9.6 DB migration and API/worker deployment completed with approval on 2026-10-16; see [deployment evidence](../../report/phase-09-6-aws-deployment.md). Frontend endpoint/redeployment and a new signed transaction test remain.
 - RPC error rate, DB connection count/slow queries/index hit ratio remain incomplete operational metrics; the list above is a target, not a claim that every metric exists.
 - Future resource, permission, migration and deployment changes still require approval.
 

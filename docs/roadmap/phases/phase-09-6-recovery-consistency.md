@@ -1,6 +1,6 @@
 # Phase 9.6: Recovery, Consistency And Accurate UI
 
-Status: local implementation verified on 2026-10-16. Not deployed to AWS.
+Status: local implementation verified and AWS DB/API/worker rollout completed on 2026-10-16. Frontend endpoint/redeployment and signed transaction verification remain. See [AWS deployment evidence](../../report/phase-09-6-aws-deployment.md) for the recorded snapshot and transition incident.
 
 ## Invariants
 
@@ -29,7 +29,7 @@ Validated in the disposable local PostgreSQL schema `phase96_test`:
 - Negative implied yield and undefined zero-price yield.
 
 Frontend policy tests cover projection completion, transaction categories, lifecycle labels, visible-only interval selection and post-confirmation refresh failure.
-Backend typecheck/build and frontend typecheck/build have passed during implementation; rerun final checks after remaining edits.
+Backend typecheck/build and frontend typecheck/build passed during implementation. The deployment image also passed Prisma generation and backend compilation; rerun affected checks after future code changes.
 
 ## Additional Verification
 
@@ -83,7 +83,7 @@ The older `ownership:smoke-projection` command now requires a separate local sch
 1. Record deployed image digest, task revisions, sync ID and ingestion cursor. Take an approved RDS backup.
 2. Stop all old indexer writers before deploying the new writer-lock protocol; old binaries do not participate in the lock.
 3. Apply additive migration `20261015120000_projection_checkpoints` to the approved target database.
-4. Deploy the new API and worker. Existing ingestion cursors/events remain unchanged.
+4. Deploy the new API. Update the worker task definition while desired count stays 0. Wait until the old deployment disappears and only the new revision remains COMPLETED with desired/running/pending all 0; then set desired count to 1 in a separate operation. The 2026-10-16 rollout briefly overlapped revisions when these actions were combined. Preserve existing ingestion cursors/events.
 5. Legacy checkpoint timestamps are fetched from their exact block. If RPC is unavailable, recovery must wait; do not substitute wall-clock time.
 6. Verify projection checkpoint catches up, repeated cycles are stable, estimates have a verified basis and `/metrics` distinguishes both checkpoints.
 7. Deploy the matching frontend and perform a user-signed test transaction only with approval.

@@ -44,6 +44,12 @@ Run migrations from the same image before starting long-running services:
 docker run --rm --env-file .env.production.example vestora-backend:local pnpm db:deploy
 ```
 
+## Existing-service Rollouts
+
+For Phase 9.6 checkpoint migration, follow the [specific rollout order](../docs/roadmap/phases/phase-09-6-recovery-consistency.md). Stop existing indexer writers before migration. Change the worker revision with desired count 0, wait until only the new deployment remains COMPLETED at 0 running/pending, then scale to 1 separately. Combining revision update and scale-up briefly restarted the old writer during the 2026-10-16 rollout.
+
+The [deployment record](../docs/report/phase-09-6-aws-deployment.md) contains the verified backup, revisions, endpoint, data-preservation checks and remaining frontend work. Its state is a dated snapshot.
+
 ## AWS Setup Checklist
 
 1. Create or select an AWS region and cost budget.

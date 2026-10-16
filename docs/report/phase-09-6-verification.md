@@ -1,6 +1,6 @@
 # Phase 9.6 Verification Record
 
-Date: 2026-10-16. Scope: local implementation only; no AWS migration or redeployment.
+Date: 2026-10-16. Local implementation evidence is recorded below; subsequent approved AWS migration and deployment evidence is recorded separately in [AWS deployment](phase-09-6-aws-deployment.md). Frontend endpoint/redeployment and a new signed transaction test remain outstanding.
 
 ## Changes
 
@@ -8,7 +8,7 @@ Additive migration separates ingestion and projection checkpoints and stores the
 
 API reads use repeatable-read snapshots. RPC failure affects freshness, not the stored estimate basis. Missing basis returns unavailable time-dependent estimates. Listing yield is signed; discount remains nonnegative. Frontend distinguishes projection-required actions from mint/approval, keeps successful receipts successful after read failures, and polls selected stream reads only while visible.
 
-## Evidence
+## Local Evidence
 
 - `backend/scripts/test-recovery.ts`: local schema guard, recovery without new events, first-application retention, rollback/retry, empty ranges, writer contention, cursor protection, RPC outage, all API routes, row/checkpoint snapshot consistency, legacy bootstrap, bounded replay, separate worker process startup.
 - `frontend/tests/transaction-policy.test.mjs`: five passing tests for completion boundary, transaction classes, lifecycle, polling interval and post-confirmation read failures.
@@ -19,4 +19,4 @@ These are correctness tests, not throughput benchmarks. Recovery durations in lo
 
 ## Operations
 
-See [Phase 9.6 runbook](../roadmap/phases/phase-09-6-recovery-consistency.md) for migration and rollout order, rollback cautions, and deferred work. Existing AWS data is untouched. Do not run the destructive fixture reset against an operating schema; the test refuses anything except localhost:5433/vestora schema phase96_test.
+See [Phase 9.6 runbook](../roadmap/phases/phase-09-6-recovery-consistency.md) for migration and rollout order, rollback cautions, and deferred work. The approved AWS migration and rollout preserved raw events and the ingestion cursor; see the deployment record for checks and the worker transition incident. Do not run the destructive fixture reset against an operating schema; the test refuses anything except localhost:5433/vestora schema phase96_test.
