@@ -19,29 +19,12 @@ When writing or modifying tests, configuring `hardhat.config.ts`, or interacting
 - Hardhat 3 — https://hardhat.org/llms.txt
 - viem — https://viem.sh/llms.txt
 
-<!-- BEGIN:vestora-codex-workflow -->
+## Vestora Working Rules
 
-## Vestora Codex Workflow
-
-Vestora is a graduation-project dApp for tokenizing ERC-20 future receivables as ERC-721 NFTs and treating them as tradable financial objects.
-
-Keep these boundaries clear:
-
-- contracts are the settlement layer
-- backend API and indexer are indexing/analytics layers
-- PostgreSQL is the off-chain projection store
-- frontend is the valuation and transaction dashboard
-- AWS is for service-like operational evidence, not an overclaim of production maturity
-
-For Codex workflow routing, start with:
-
-- `docs/codex-system/README.md`
-- `docs/codex-system/operating-manual.md`
-- `docs/codex-system/task-routing.md`
-- `docs/codex-system/phase-workflows.md`
-
-For phase work, use `docs/roadmap/phases/` and load only the relevant phase file. Use Obsidian notes only when repository docs are insufficient, then copy durable decisions back into repository docs.
-
-Do not add app-facing AI/ML features unless explicitly requested. The `.codex/agents` setup is for personal development workflow, role-based review, context reduction, and verification.
-
-<!-- END:vestora-codex-workflow -->
+- Source repository: C:/GitHub/Vestora. Contracts settle; backend/indexer/PostgreSQL project data; frontend rechecks chain state before transactions.
+- Respond in Korean. Default to learning-led guidance; edit/run implementation only when explicitly requested. Announce edits, then report verification and remaining risk.
+- Read applicable area instructions and relevant code/tests. For phase work, add only the matching phase under docs/roadmap/phases/. Workflow docs are optional references, not a startup checklist.
+- Default to one agent. Delegate only a bounded independent task with a concrete benefit; no automatic planner/reviewer/verifier chain.
+- Preserve user changes. Never commit secrets, .env or keystores. Ask before cloud mutations, production migrations, wallet signing or destructive operations. Commit/push only when requested; never include Obsidian without explicit authorization.
+- Verify touched behavior: contract tests; backend typecheck/build and isolated DB tests; frontend typecheck/build and relevant interaction checks. Docs-only: links, consistency, diff. Report skipped checks and distinguish local evidence from AWS evidence.
+- Do not add app-facing AI features unless requested. Read docs/codex-system/README.md only for workflow questions.
