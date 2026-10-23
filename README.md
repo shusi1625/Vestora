@@ -1,57 +1,52 @@
-# Sample Hardhat 3 Project (`node:test` and `viem`)
+# Vestora
 
-This project showcases a Hardhat 3 project using the native Node.js test runner (`node:test`) and the `viem` library for Ethereum interactions.
+Fully funded token-payment streams and a receivable NFT marketplace on Sepolia.
+Smart contracts settle transactions; the backend indexes events and serves projection data.
+Transaction-critical ownership, allowances and amounts must be rechecked on-chain.
 
-To learn more about Hardhat 3, please visit the [Getting Started guide](https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3). To share your feedback, join our [Hardhat 3](https://hardhat.org/hardhat3-telegram-group) Telegram group or [open an issue](https://github.com/NomicFoundation/hardhat/issues/new) in our GitHub issue tracker.
+## Current Checkpoint
 
-## Project Overview
+As of 2026-10-23, two frontend implementations coexist:
 
-This example project includes:
+- `frontend/`: Next.js dashboard, shared components, transaction guards and recovery.
+- `frontend-sample/`: Vite/React interface collected from Enter, subsequently integrated with live API reads, claim and fully funded payment creation. Buy/list/unlist/payment-cancel actions remain disabled in its live mode.
+- `backend/`: Fastify API, PostgreSQL projections and indexer. New local request spans are opt-in and have not been deployed.
+- `contracts/` and `test/`: settlement contracts and local boundary/invariant tests.
 
-- A simple Hardhat configuration file.
-- Foundry-compatible Solidity unit tests.
-- TypeScript integration tests using [`node:test`](nodejs.org/api/test.html), the new Node.js native test runner, and [`viem`](https://viem.sh/).
-- Examples demonstrating how to connect to different types of networks, including locally simulating OP mainnet.
+Promoting `frontend-sample` into `frontend` and a new Vercel deployment were requested, but are paused until this documentation/commit checkpoint is complete. No frontend move or Vercel deployment has occurred at this checkpoint.
 
-## Usage
+Start with [development progress](docs/report/development-progress-2026-10-23.md), [performance status](docs/report/performance-status-2026-10-23.md), and [handoff](docs/codex-system/handoff.md).
+Local tests, measured AWS reads, user-signed transactions and deployed product behavior are different evidence levels. G1/G2/G3 and wallet E2E are not collectively complete.
 
-### Running Tests
+## Local Verification
 
-To run all the tests in the project, execute the following command:
+Use the installed package-manager versions and consult each workspace's setup notes.
 
-```shell
-npx hardhat test
+```powershell
+# Simulated local chain only; never add --network sepolia to a regression command.
+npm run contracts:test
+
+# Backend compile and isolated request-span regression.
+corepack pnpm --dir backend typecheck
+corepack pnpm --dir backend build
+node --experimental-vm-modules --test backend/scripts/test-local-spans.mjs
+
+# Current Next.js frontend model tests.
+node --test frontend/tests/*.test.mjs
+
+# Integrated Vite frontend.
+npm --prefix frontend-sample run check
+npm --prefix frontend-sample run test:load-safety
+npm --prefix frontend-sample run test:ui-performance
+npm --prefix frontend-sample run build:prod
 ```
 
-You can also selectively run the Solidity or `node:test` tests:
+See [frontend-sample](frontend-sample/README.md), [backend](backend/README.md), and [design-system status](docs/design-system/README.md) for scope and caveats. The latest checkpoint verification report records which commands were actually rerun.
 
-```shell
-npx hardhat test solidity
-npx hardhat test nodejs
-```
+## Operational Boundaries
 
-### Make a deployment to Sepolia
-
-This project includes an example Ignition module to deploy the contract. You can deploy this module to a locally simulated chain or to Sepolia.
-
-To run the deployment to a local chain:
-
-```shell
-npx hardhat ignition deploy ignition/modules/Counter.ts
-```
-
-To run the deployment to Sepolia, you need an account with funds to send the transaction. The provided Hardhat configuration includes a Configuration Variable called `SEPOLIA_PRIVATE_KEY`, which you can use to set the private key of the account you want to use.
-
-You can set the `SEPOLIA_PRIVATE_KEY` variable using the `hardhat-keystore` plugin or by setting it as an environment variable.
-
-To set the `SEPOLIA_PRIVATE_KEY` config variable using `hardhat-keystore`:
-
-```shell
-npx hardhat keystore set SEPOLIA_PRIVATE_KEY
-```
-
-After setting the variable, you can run the deployment with the Sepolia network:
-
-```shell
-npx hardhat ignition deploy --network sepolia ignition/modules/Counter.ts
-```
+- Only public browser configuration belongs in `VITE_*` or `NEXT_PUBLIC_*` values. Never commit keys, seed phrases, RPC credentials or real `.env` files.
+- API projection state is not final settlement authority. Missing values are unavailable, not zero.
+- Preserve hashless/unknown transactions and their duplicate-submission blocks; do not clear records just to make a test proceed.
+- Cloud changes, migrations, wallet signatures, deployments and pushes require explicit authorization.
+- Git ignores dependency/build output and local credentials. Large raw experiment logs remain local; dated reports retain conclusions, counts, limitations and evidence hashes.

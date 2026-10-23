@@ -1,0 +1,103 @@
+{
+  "secretsScan": "Focused pattern and archive checks; not a comprehensive security proof",
+  "rawEvidence": [
+    {
+      "storage": "separate-local-evidence-not-included",
+      "sha256": "44463f272599cb0b0473ea5932ed0266e011ee5b5fe1965c80bf7e777741832a",
+      "file": "vestora-manual-results-2026-10-22.md"
+    },
+    {
+      "storage": "separate-local-evidence-not-included",
+      "sha256": "7d5fb7b7e8f35b3923bd30d69ea13410f3927a42d9e8b5293b87e8a9533541c7",
+      "file": "aws-readonly-live-2026-10-23-2026-10-23T07-03-32-028Z.json"
+    },
+    {
+      "storage": "separate-local-evidence-not-included",
+      "sha256": "b27b78e829d7a15d8f604214b987a21062a662c42240de7d5a0698e5c9552a0a",
+      "file": "api-ui-run-dc23a116-6a59-4fb2-8487-3ab1bffdc54e.json"
+    },
+    {
+      "storage": "separate-local-evidence-not-included",
+      "sha256": "a95025e1f12d8e0c41977ca34b23cee72dc77b53217bc5b5cd0b7f71aec4add3",
+      "file": "g3-actual-analysis.json"
+    }
+  ],
+  "formatVersion": 1,
+  "generatedAt": "2026-10-23T10:01:35.2048568Z",
+  "publicDeploymentExecuted": false,
+  "actualAwsReadsThisCheckpoint": 0,
+  "verificationLogs": [
+    {
+      "storage": "separate-local-verification-log",
+      "sha256": "189608c7013260db29e7634b64da79e88dbf4c4f1bfa1ee4884c82d1697792d1",
+      "file": "backend-build.log"
+    },
+    {
+      "storage": "separate-local-verification-log",
+      "sha256": "671e8b5b286f15fa7f9415a7205e657f9d41ddbf7f649258678188781ea1f8c0",
+      "file": "backend-spans.log"
+    },
+    {
+      "storage": "separate-local-verification-log",
+      "sha256": "bf69addd520b4a35c72365ce230cd3266bf3734e6afb211b863e327e3e1c8b34",
+      "file": "backend-typecheck.log"
+    },
+    {
+      "storage": "separate-local-verification-log",
+      "sha256": "ac6694859a8b566bb4d79ae09df0a0ca467445adb7633c823323dd6f3360e02a",
+      "file": "contracts-test.log"
+    },
+    {
+      "storage": "separate-local-verification-log",
+      "sha256": "6820dbf80e0c5acaa3408abca9cd3925716014db686cbf5a9ae0aa8b5811bd5a",
+      "file": "frontend-build.log"
+    },
+    {
+      "storage": "separate-local-verification-log",
+      "sha256": "65d10c2da0781691adc45c185308c222c2a92911360ade0a27a4e555be91c5bb",
+      "file": "frontend-lint-fixed.log"
+    },
+    {
+      "storage": "separate-local-verification-log",
+      "sha256": "984f472341da6382673d7888f9e272ba4113af5a71698d401066b10dc294f660",
+      "file": "frontend-lint.log"
+    },
+    {
+      "storage": "separate-local-verification-log",
+      "sha256": "cad7eb8d08c4199717dabd0bfddcd3e6a7f2746bf92ba7bb785b399b396cc252",
+      "file": "frontend-node-tests.log"
+    },
+    {
+      "storage": "separate-local-verification-log",
+      "sha256": "b95059621002c52a50ac2523ac9c6a3911624b1dd2979dc524ccb327118c5195",
+      "file": "sample-build.log"
+    },
+    {
+      "storage": "separate-local-verification-log",
+      "sha256": "8a26908f0482ff1dbca26715c9faf41d320cb90679fe8b68ad3e8950bf0d61eb",
+      "file": "sample-check.log"
+    },
+    {
+      "storage": "separate-local-verification-log",
+      "sha256": "5451b008ea1480ac4fec797c398264fcfdb03a309d7305cc6a1c58ecb8c79bd4",
+      "file": "sample-load-safety-fixed.log"
+    },
+    {
+      "storage": "separate-local-verification-log",
+      "sha256": "27ec05d65f84daa9ae74d206772cac6918248efeacc04ae267dca624b7eac42a",
+      "file": "sample-load-safety.log"
+    },
+    {
+      "storage": "separate-local-verification-log",
+      "sha256": "b37509a847f17c19d61d81570cc60accdb64c9a9e2ee2b02b95c7b43355d612e",
+      "file": "sample-qa-typecheck.log"
+    },
+    {
+      "storage": "separate-local-verification-log",
+      "sha256": "973cbc03750ed57a2d32a700dbbf39a890d42c82ed253bba1f5e3a628eecee3a",
+      "file": "sample-ui-performance.log"
+    }
+  ],
+  "actualWalletTransactionsThisCheckpoint": 0,
+  "date": "2026-10-23"
+}
