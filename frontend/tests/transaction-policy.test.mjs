@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { requiresProjection, projectionIncludes, streamLifecycle, visiblePollInterval, refreshAfterConfirmation } from "../lib/transaction-policy.ts";
+import { isWalletRejection, requiresProjection, projectionIncludes, streamLifecycle, visiblePollInterval, refreshAfterConfirmation } from "../lib/transaction-policy.ts";
 
 test("ingestion alone cannot mark a confirmed transaction Indexed", () => {
   assert.equal(projectionIncludes(100n, undefined), false);
@@ -32,4 +32,11 @@ test("post-confirmation read failure returns warning instead of transaction reje
   assert.equal(refreshed, true);
   assert.match(warning, /Transaction succeeded/);
   assert.equal(await refreshAfterConfirmation([async () => undefined]), undefined);
+});
+
+test("wallet rejection traverses provider causes without confusing RPC errors or cycles",()=>{
+ assert.equal(isWalletRejection({cause:{cause:{code:4001}}}),true);
+ assert.equal(isWalletRejection({code:-32000,message:"User rejected"}),false);
+ assert.equal(isWalletRejection(null),false);
+ const cycle={};cycle.cause=cycle;assert.equal(isWalletRejection(cycle),false);
 });

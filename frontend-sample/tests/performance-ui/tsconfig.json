@@ -1,0 +1,5 @@
+{
+  "extends":"../../tsconfig.app.json",
+  "compilerOptions":{"baseUrl":"../..","target":"ES2022","lib":["ES2022","DOM","DOM.Iterable"]},
+  "include":["*.ts","*.tsx","../../src","../../i18n.config.json"]
+}

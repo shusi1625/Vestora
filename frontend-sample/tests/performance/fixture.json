@@ -1,0 +1,6 @@
+{
+  "mode": "fixture",
+  "target": "http://127.0.0.1:4391",
+  "allowedPaths": ["/streams", "/streams/3", "/streams/4", "/users/0x2222222222222222222222222222222222222222/trades"],
+  "limits": {"rps": 5, "requests": 1500, "inFlight": 5, "bytes": 67108864, "durationMs": 600000, "timeoutMs": 5000}
+}

@@ -28,3 +28,16 @@ export async function refreshAfterConfirmation(refreshes: Array<() => Promise<un
   return results.some((result) => result.status === "rejected")
     ? "Transaction succeeded, but some reads could not be refreshed." : undefined;
 }
+
+/** EIP-1193 rejection may be wrapped by viem; never classify by message text. */
+export function isWalletRejection(error: unknown): boolean {
+  const seen = new Set<object>();
+  let current = error;
+  while (current && typeof current === "object" && !seen.has(current)) {
+    seen.add(current);
+    const value = current as { code?: unknown; cause?: unknown };
+    if (value.code === 4001) return true;
+    current = value.cause;
+  }
+  return false;
+}

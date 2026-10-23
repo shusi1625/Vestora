@@ -58,6 +58,8 @@ export const erc20Abi = [
 ] as const;
 
 export const receivableStreamAbi = [
+  { type:"event", name:"StreamCreated", inputs:[{name:"streamId",type:"uint256",indexed:true},{name:"sender",type:"address",indexed:true},{name:"recipient",type:"address",indexed:true},{name:"token",type:"address",indexed:false},{name:"depositedAmount",type:"uint256",indexed:false},{name:"startTime",type:"uint256",indexed:false},{name:"endTime",type:"uint256",indexed:false},{name:"cancelable",type:"bool",indexed:false}] },
+  { type: "function", name: "cancel", stateMutability: "nonpayable", inputs: [{name:"streamId",type:"uint256"}], outputs:[{name:"senderRefund",type:"uint256"}] },
   {
     type: "function",
     name: "nextStreamId",

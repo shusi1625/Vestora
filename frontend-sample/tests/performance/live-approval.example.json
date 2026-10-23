@@ -1,0 +1,14 @@
+{
+  "target": "http://15.135.223.4:3001",
+  "humanApproved": false,
+  "functionalP0Passed": false,
+  "monitoringReady": false,
+  "autoscalingReviewed": false,
+  "storageHeadroomReviewed": false,
+  "cpuCreditsReviewed": false,
+  "baselineHealthy": false,
+  "operator": "",
+  "checkedAt": null,
+  "expiresAt": null,
+  "blockers": ["QA-03/04 gas maximum fee and no-hash recovery", "QA-05 storage failure status", "Fresh AWS resource baseline and watchdog adapter not yet verified"]
+}

@@ -1,0 +1,6 @@
+{
+  "mode": "live",
+  "target": "http://15.135.223.4:3001",
+  "allowedPaths": ["/streams", "/streams/1", "/streams/2", "/streams/3", "/users/0xbf9bf852225899b667aa4c73bb082e830abb9de1/trades", "/health", "/metrics"],
+  "limits": {"rps": 5, "requests": 1500, "inFlight": 5, "bytes": 67108864, "durationMs": 600000, "timeoutMs": 5000}
+}

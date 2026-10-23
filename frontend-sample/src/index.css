@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ---------- Surface & text ---------- */
+    --background: 220 20% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* ---------- Brand ---------- */
+    --primary: 163 60% 22%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 215 25% 93%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 215 20% 95%;
+    --muted-foreground: 215 16% 41%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 72% 42%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 89%;
+    --input: 214 32% 89%;
+    --ring: 163 60% 22%;
+
+    --radius: 0.5rem;
+
+    /* ---------- Vestora domain semantics ---------- */
+    /* 지금 청구 가능 / 정상 진행 */
+    --claimable: 142 72% 26%;
+    --claimable-bg: 142 76% 96%;
+    --claimable-border: 142 69% 82%;
+
+    /* 앞으로 지급 예정 / 중립 대기 */
+    --scheduled: 215 25% 27%;
+    --scheduled-bg: 210 40% 96%;
+    --scheduled-border: 214 32% 83%;
+
+    /* 취소 가능 / 주의 */
+    --warning: 32 95% 24%;
+    --warning-bg: 48 96% 95%;
+    --warning-border: 45 93% 76%;
+
+    /* 취소됨 / 무효 / 위험 */
+    --void: 347 77% 30%;
+    --void-bg: 355 100% 97%;
+    --void-border: 350 89% 88%;
+
+    /* 판매 중 / 정보 */
+    --listed: 213 67% 34%;
+    --listed-bg: 211 85% 96%;
+    --listed-border: 211 60% 85%;
+
+    /* 테스트넷 상시 고지 */
+    --testnet: 17 88% 25%;
+    --testnet-bg: 33 100% 96%;
+    --testnet-border: 27 96% 82%;
+
+    /* 금융 수치 보조 토큰 */
+    --figure-muted: 215 16% 41%;
+    --figure-stale: 32 90% 32%;
+
+    /* ---------- Elevation ---------- */
+    --shadow-card: 0 1px 3px 0 hsl(222 47% 11% / 0.06),
+      0 1px 2px -1px hsl(222 47% 11% / 0.04);
+    --shadow-dialog: 0 10px 25px -5px hsl(222 47% 11% / 0.12),
+      0 8px 10px -6px hsl(222 47% 11% / 0.08);
+    --shadow-floating: 0 20px 30px -10px hsl(222 47% 11% / 0.2);
+
+    /* ---------- Motion ---------- */
+    --transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* ---------- Gradients ---------- */
+    --gradient-surface: linear-gradient(
+      180deg,
+      hsl(220 20% 99%) 0%,
+      hsl(220 20% 97%) 100%
+    );
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(163 60% 22%) 0%,
+      hsl(163 60% 22%) 100%
+    );
+
+    /* ---------- Sidebar (템플릿 유지) ---------- */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 163 60% 22%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 215 20% 95%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 32% 89%;
+    --sidebar-ring: 163 60% 22%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "tnum" 1;
+  }
+}
+
+@layer components {
+  /* 모든 금액·주소·일시 표기에 적용하는 수치 정렬 규칙 */
+  .figure {
+    @apply tabular-nums tracking-tight;
+  }
+
+  /* 화면 공통 컨테이너: 최대 1280px, 데스크톱 24px / 모바일 16px 패딩 */
+  .page-container {
+    @apply mx-auto w-full max-w-[1280px] px-4 md:px-6;
+  }
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
+/* 숫자가 갱신될 때 레이아웃이 흔들리지 않도록 폭을 고정 */
+.figure-stable {
+  font-variant-numeric: tabular-nums;
+}

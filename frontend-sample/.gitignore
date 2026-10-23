@@ -1,0 +1,12 @@
+node_modules/
+dist/
+qa-dist/
+qa-ui-dist/
+qa-ui-actual-dist/
+.vercel/
+tests/performance/*-smoke.json
+docs/dev-server*.log
+*.tsbuildinfo
+.env
+.env.*
+!.env.example

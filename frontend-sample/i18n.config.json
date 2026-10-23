@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "fallbackLng": "ko",
+  "languages": [
+    {
+      "code": "ko",
+      "label": "한국어",
+      "detect": ["ko", "ko-KR"],
+      "dir": "ltr"
+    }
+  ]
+}

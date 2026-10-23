@@ -1,0 +1,26 @@
+[
+  {
+    "name": "market-desktop",
+    "format": "jpeg",
+    "identicalBytes": false,
+    "note": "Time-dependent amounts may differ; full-page captures can show sticky-header capture artifacts."
+  },
+  {
+    "name": "market-mobile",
+    "format": "jpeg",
+    "identicalBytes": true,
+    "note": "Time-dependent amounts may differ; full-page captures can show sticky-header capture artifacts."
+  },
+  {
+    "name": "assets-desktop",
+    "format": "jpeg",
+    "identicalBytes": false,
+    "note": "Time-dependent amounts may differ; full-page captures can show sticky-header capture artifacts."
+  },
+  {
+    "name": "assets-mobile",
+    "format": "jpeg",
+    "identicalBytes": false,
+    "note": "Time-dependent amounts may differ; full-page captures can show sticky-header capture artifacts."
+  }
+]

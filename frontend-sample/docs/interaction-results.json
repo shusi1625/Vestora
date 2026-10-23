@@ -1,0 +1,58 @@
+[
+  {
+    "case": "market token mWETH",
+    "pass": true,
+    "url": "http://127.0.0.1:4180/market?token=mWETH"
+  },
+  {
+    "case": "market reset",
+    "pass": true
+  },
+  {
+    "case": "market unclaimed descending",
+    "pass": true,
+    "titles": [
+      "수취권 #1054",
+      "수취권 #1049",
+      "수취권 #1051",
+      "수취권 #1057"
+    ]
+  },
+  {
+    "case": "detail navigation",
+    "pass": true
+  },
+  {
+    "case": "assets account A summary and holdings",
+    "pass": true
+  },
+  {
+    "case": "assets listed filter",
+    "pass": true
+  },
+  {
+    "case": "claim review dialog opens without transaction",
+    "pass": true
+  },
+  {
+    "case": "assets mobile viewport",
+    "height": 844,
+    "pass": true,
+    "width": 390
+  },
+  {
+    "case": "market mobile viewport",
+    "cards": 4,
+    "height": 844,
+    "pass": true,
+    "width": 390
+  },
+  {
+    "case": "mobile navigation opens",
+    "pass": true
+  },
+  {
+    "case": "buy review dialog opens for account B without transaction",
+    "pass": true
+  }
+]
