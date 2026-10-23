@@ -24,21 +24,21 @@
 | 미추적 | `docs/design-system/`, `frontend/app/design-system/`, `frontend/components/`, `hooks/`, `styles/`, 신규 금액·pending 모듈과 테스트 | 기존 Next 앱의 디자인 시스템 및 컨트롤러 분리 |
 | 미추적 | `frontend-sample/` 전체 | 별도 Vite 앱, 원본 수집 자료, 문서, 제품 코드, 수동 QA·성능 하네스 |
 
-당시 추적 파일 diff는 13개, 197줄 추가/1,638줄 삭제였다. 미추적 파일은 이 통계에 포함되지 않는다. 특히 `frontend/app/page.tsx`의 큰 삭제는 [LiveApp 진입점](../../frontend/app/page.tsx)과 [분리된 컨트롤러](../../frontend/hooks/use-vestora.ts)를 함께 검토해야 한다. 변경량만으로 서비스 삭제나 전체 검증 완료를 판단하지 않는다. 이 목록은 커밋 허용 목록이 아니며, 생성 산출물이나 원본 아카이브를 전부 커밋하라는 뜻도 아니다.
+당시 추적 파일 diff는 13개, 197줄 추가/1,638줄 삭제였다. 미추적 파일은 이 통계에 포함되지 않는다. 특히 `frontend/app/page.tsx`의 큰 삭제는 [LiveApp 진입점](../../frontend-legacy/app/page.tsx)과 [분리된 컨트롤러](../../frontend-legacy/hooks/use-vestora.ts)를 함께 검토해야 한다. 변경량만으로 서비스 삭제나 전체 검증 완료를 판단하지 않는다. 이 목록은 커밋 허용 목록이 아니며, 생성 산출물이나 원본 아카이브를 전부 커밋하라는 뜻도 아니다.
 
 ## 구현 완료 범위
 
 | 영역 | 반영된 동작 | 저장소 근거 | 검증 경계 |
 | --- | --- | --- | --- |
-| 기존 Next 앱 | 공통 토큰·UI, 마켓/자산/판매/지급/내역, 금액 계산 분리, 확인창과 pending 복구, 중첩 `4001` 거절 분류 | [디자인 시스템](../design-system/README.md), [완료 감사](../design-system/completion-audit.md), [금액 계산](../../frontend/lib/receivable-value.ts), [pending 저장](../../frontend/lib/pending-transaction.ts) | 대표 공개 화면·로컬 회귀 근거가 있으며 전체 연결 지갑·키보드·상태 행렬은 미완료 |
-| 새 Vite UI | 마켓, 내 자산, 내 판매, 발행 지급, 개인 이력의 workspace 화면과 토큰별 회계 | [UI 통합 이력](../../frontend-sample/docs/ui-integration.md), [workspace 모델](../../frontend-sample/src/lib/workspace-model.ts) | 초기 샘플 검증과 이후 live 연동을 구분 |
-| 실제 데이터 조회 | API projection 기준 금액·적용 시점, 계정별 이력·캐시 분리, 읽기 전용 주소 조회, 오류/지연/확인 불가 구분 | [조회 경계](../../frontend-sample/docs/live-data.md), [snapshot hook](../../frontend-sample/src/hooks/use-live-snapshot.ts), [API 매핑](../../frontend-sample/src/lib/live-mapping.ts) | 조회 성공이 지갑 소유 증명이나 거래 성공은 아님 |
-| 청구 | 원장 조건 재확인, simulation, 명시적 지갑 승인, 직접/래퍼 영수증 검증, 정확한 이벤트와 API 적용 후 완료 | [청구 실행](../../frontend-sample/docs/claim-execution.md), [엔진](../../frontend-sample/src/lib/claim-engine.ts), [체인 어댑터](../../frontend-sample/src/lib/claim-chain.ts) | 과거 특정 청구의 확인 증거와 현재 B #3 실패를 구분 |
-| 지급 생성 | exact-amount 토큰 승인과 전액 예치 생성을 별도 단계로 검토, 영수증 ID·지급 조건·API 적용 대조 | [지급 생성](../../frontend-sample/docs/payment-creation.md), [엔진](../../frontend-sample/src/lib/create-payment-engine.ts), [체인 어댑터](../../frontend-sample/src/lib/create-payment-chain.ts) | 토큰 승인만으로 지급 생성 완료를 판정하지 않음 |
-| 복구·중복 방지 | 계정/배포별 예약, Web Lock, 세션 변경 무효화, 저장 실패 시 미전송, 해시 복구, 모호한 전송 결과의 재전송 차단 | [예약 저장](../../frontend-sample/src/lib/claim-storage.ts), [지갑 세션](../../frontend-sample/src/lib/wallet-session.ts), [거래 안전성](../../frontend-sample/src/lib/transaction-safety.ts) | 모의 지갑·로컬 상태 복구가 실제 확장 프로그램 전체 복구를 증명하지 않음 |
-| 가스 안내 | 직접 RPC의 EIP-1559 최대 비용 추정과 잔액 대조, 지갑 단계 실패 진단 보존, 공통 검토 표시 | [가스 검토 UI](../../frontend-sample/src/components/workspace/GasReview.tsx), [추정 범위](../../frontend-sample/src/lib/transaction-safety.ts) | 지갑 래퍼 실행의 최종 최대 비용은 별도이며 자동 검증 미완료 |
-| 금액·UI 보완 | 최소 raw 단위와 정밀 금액, 계정별 이름, 성공 알림 닫기 정책, 필터/정렬/보기 URL, Back/Forward·포커스, 빈 상태 구분 | [공통 UI](../../frontend-sample/src/components/workspace/WorkspaceUI.tsx), [알림 정책](../../frontend-sample/src/lib/notice-policy.ts), [마켓](../../frontend-sample/src/pages/market/WorkspaceMarket.tsx) | pending/unknown 보호와 데이터 최신성 안내는 별도로 유지 |
-| 마켓 최적화 | claims Map, 파생 행 memo, totals 재사용, 중복 포맷 제거, 전체 필터·정렬 후 40개씩 렌더링 | [마켓](../../frontend-sample/src/pages/market/WorkspaceMarket.tsx), [금액 함수](../../frontend-sample/src/lib/claim-math.ts) | 클라이언트 표시량만 제한하며 초기 API 요청량 감소는 미구현 |
+| 기존 Next 앱 | 공통 토큰·UI, 마켓/자산/판매/지급/내역, 금액 계산 분리, 확인창과 pending 복구, 중첩 `4001` 거절 분류 | [디자인 시스템](../design-system/README.md), [완료 감사](../design-system/completion-audit.md), [금액 계산](../../frontend-legacy/lib/receivable-value.ts), [pending 저장](../../frontend-legacy/lib/pending-transaction.ts) | 대표 공개 화면·로컬 회귀 근거가 있으며 전체 연결 지갑·키보드·상태 행렬은 미완료 |
+| 새 Vite UI | 마켓, 내 자산, 내 판매, 발행 지급, 개인 이력의 workspace 화면과 토큰별 회계 | [UI 통합 이력](../../frontend/docs/ui-integration.md), [workspace 모델](../../frontend/src/lib/workspace-model.ts) | 초기 샘플 검증과 이후 live 연동을 구분 |
+| 실제 데이터 조회 | API projection 기준 금액·적용 시점, 계정별 이력·캐시 분리, 읽기 전용 주소 조회, 오류/지연/확인 불가 구분 | [조회 경계](../../frontend/docs/live-data.md), [snapshot hook](../../frontend/src/hooks/use-live-snapshot.ts), [API 매핑](../../frontend/src/lib/live-mapping.ts) | 조회 성공이 지갑 소유 증명이나 거래 성공은 아님 |
+| 청구 | 원장 조건 재확인, simulation, 명시적 지갑 승인, 직접/래퍼 영수증 검증, 정확한 이벤트와 API 적용 후 완료 | [청구 실행](../../frontend/docs/claim-execution.md), [엔진](../../frontend/src/lib/claim-engine.ts), [체인 어댑터](../../frontend/src/lib/claim-chain.ts) | 과거 특정 청구의 확인 증거와 현재 B #3 실패를 구분 |
+| 지급 생성 | exact-amount 토큰 승인과 전액 예치 생성을 별도 단계로 검토, 영수증 ID·지급 조건·API 적용 대조 | [지급 생성](../../frontend/docs/payment-creation.md), [엔진](../../frontend/src/lib/create-payment-engine.ts), [체인 어댑터](../../frontend/src/lib/create-payment-chain.ts) | 토큰 승인만으로 지급 생성 완료를 판정하지 않음 |
+| 복구·중복 방지 | 계정/배포별 예약, Web Lock, 세션 변경 무효화, 저장 실패 시 미전송, 해시 복구, 모호한 전송 결과의 재전송 차단 | [예약 저장](../../frontend/src/lib/claim-storage.ts), [지갑 세션](../../frontend/src/lib/wallet-session.ts), [거래 안전성](../../frontend/src/lib/transaction-safety.ts) | 모의 지갑·로컬 상태 복구가 실제 확장 프로그램 전체 복구를 증명하지 않음 |
+| 가스 안내 | 직접 RPC의 EIP-1559 최대 비용 추정과 잔액 대조, 지갑 단계 실패 진단 보존, 공통 검토 표시 | [가스 검토 UI](../../frontend/src/components/workspace/GasReview.tsx), [추정 범위](../../frontend/src/lib/transaction-safety.ts) | 지갑 래퍼 실행의 최종 최대 비용은 별도이며 자동 검증 미완료 |
+| 금액·UI 보완 | 최소 raw 단위와 정밀 금액, 계정별 이름, 성공 알림 닫기 정책, 필터/정렬/보기 URL, Back/Forward·포커스, 빈 상태 구분 | [공통 UI](../../frontend/src/components/workspace/WorkspaceUI.tsx), [알림 정책](../../frontend/src/lib/notice-policy.ts), [마켓](../../frontend/src/pages/market/WorkspaceMarket.tsx) | pending/unknown 보호와 데이터 최신성 안내는 별도로 유지 |
+| 마켓 최적화 | claims Map, 파생 행 memo, totals 재사용, 중복 포맷 제거, 전체 필터·정렬 후 40개씩 렌더링 | [마켓](../../frontend/src/pages/market/WorkspaceMarket.tsx), [금액 함수](../../frontend/src/lib/claim-math.ts) | 클라이언트 표시량만 제한하며 초기 API 요청량 감소는 미구현 |
 | 백엔드 진단 | `LOCAL_API_SPANS=true`에서 요청 ID·RPC·snapshot·query·metrics cache 분기 계측, 기본 비활성 | [백엔드 설명](../../backend/README.md), [span 구현](../../backend/src/api/local-spans.ts), [회귀](../../backend/scripts/test-local-spans.mjs) | 로컬 계측이며 실DB/RPC 병목·운영 개선은 미확인 |
 | 계약 경계 시험 | 자기 수취 원금 중복 방지, 1 raw/불균등 분배, 실제 블록 시각의 시작·종료 경계, 선청구 후 취소 보존 | [계약 테스트 diff 대상](../../test/ReceivableStream.ts) | 테스트 추가이며 컨트랙트 수정·재배포가 아님 |
 
@@ -51,9 +51,9 @@
 | 날짜·범위 | 기존 명령 또는 관측 | 당시 결과와 한계 |
 | --- | --- | --- |
 | 2026-10-18 기존 Next 앱 | 정책·금액·컨트롤러·pending 회귀, TypeScript, 대상 ESLint, production build | [기존 검증 문서](../design-system/verification.md)에 최종 31개 회귀 및 빌드 통과 기록. 연결 지갑·브라우저 전체 행렬 미완료 |
-| 2026-10-19 초기 Vite UI | typecheck/lint/source audit/build, 11개 브라우저 확인 | [초기 검증](../../frontend-sample/docs/verification.md). 당시 샘플/UI 범위이며 현재 코드 전체에 대한 결과가 아님 |
-| 2026-10-20 래퍼 청구 복구 | `npm.cmd run check`, `npm.cmd run build:prod` | [청구 문서](../../frontend-sample/docs/claim-execution.md)의 51개 회귀 및 빌드 통과. 과거 특정 해시를 읽어 복구했으며 새 전송 없음 |
-| 2026-10-20 승인·지급 생성 연결 | `npm.cmd run check`, `npm.cmd run build:prod` | [생성 문서](../../frontend-sample/docs/payment-creation.md)의 70개 회귀 및 빌드 통과. 당시 실제 생성 미완료는 이후 #4 관측과 구분 |
+| 2026-10-19 초기 Vite UI | typecheck/lint/source audit/build, 11개 브라우저 확인 | [초기 검증](../../frontend/docs/verification.md). 당시 샘플/UI 범위이며 현재 코드 전체에 대한 결과가 아님 |
+| 2026-10-20 래퍼 청구 복구 | `npm.cmd run check`, `npm.cmd run build:prod` | [청구 문서](../../frontend/docs/claim-execution.md)의 51개 회귀 및 빌드 통과. 과거 특정 해시를 읽어 복구했으며 새 전송 없음 |
+| 2026-10-20 승인·지급 생성 연결 | `npm.cmd run check`, `npm.cmd run build:prod` | [생성 문서](../../frontend/docs/payment-creation.md)의 70개 회귀 및 빌드 통과. 당시 실제 생성 미완료는 이후 #4 관측과 구분 |
 | 2026-10-23 로컬 최적화 단계 | `npm.cmd run check`, `npm.cmd run test:ui-performance`, `npm.cmd run qa:ui-typecheck` | 제품 회귀 145/145, QA 179/179, lint/typecheck/source audit 통과로 기존 로컬 보고서에 기록 |
 | 2026-10-23 같은 로컬 최적화 단계 | `npm.cmd run qa:ui-build -- --emptyOutDir false`, `npm.cmd run build -- --emptyOutDir false` | QA·제품 빌드 성공 기록. 기존 산출물 보존, chunk 크기 및 의존성 주석 경고 잔존 |
 | 2026-10-23 백엔드 span 단계 | `node --experimental-vm-modules --test backend/scripts/test-local-spans.mjs`, `corepack pnpm --dir backend typecheck`, `corepack pnpm --dir backend build` | 실제 Fastify.inject와 fake DB/RPC 12/12, 타입·빌드 성공 기록. listen/connect/fetch 차단 환경이며 실DB/RPC 검증 아님 |

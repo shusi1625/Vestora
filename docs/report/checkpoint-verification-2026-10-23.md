@@ -26,8 +26,8 @@
 
 ## 검사 중 발견해 정리한 항목
 
-1. 부하 안전성 테스트의 독립 검증기가 `@/lib/ui-measurement` import를 알지 못해 최초 실행에서 모듈 로딩에 실패했다. [검증기](../../frontend-sample/tests/performance/api-contract.mjs)에 해당 정확한 별칭 하나만 허용하고 실제 비활성 제품 모듈을 로드하도록 수정했다. 다른 예상 밖 의존성 거부, schema/계정/chain/금액 검사는 유지했다. 최초 실패 로그도 로컬에 보존했다.
-2. 기존 Next 전체 lint는 CommonJS 브라우저 테스트와 VM 테스트의 로컬 변수명 때문에 실패했다. [ESLint 설정](../../frontend/eslint.config.mjs)은 `tests/*.cjs`에서만 `no-require-imports`를 해제했다. [VM 테스트](../../frontend/tests/live-controller.test.mjs)는 `module` 변수명을 바꾸고 미사용 import를 제거했다. 제품 규칙이나 거래 동작은 완화하지 않았다.
+1. 부하 안전성 테스트의 독립 검증기가 `@/lib/ui-measurement` import를 알지 못해 최초 실행에서 모듈 로딩에 실패했다. [검증기](../../frontend/tests/performance/api-contract.mjs)에 해당 정확한 별칭 하나만 허용하고 실제 비활성 제품 모듈을 로드하도록 수정했다. 다른 예상 밖 의존성 거부, schema/계정/chain/금액 검사는 유지했다. 최초 실패 로그도 로컬에 보존했다.
+2. 기존 Next 전체 lint는 CommonJS 브라우저 테스트와 VM 테스트의 로컬 변수명 때문에 실패했다. [ESLint 설정](../../frontend-legacy/eslint.config.mjs)은 `tests/*.cjs`에서만 `no-require-imports`를 해제했다. [VM 테스트](../../frontend-legacy/tests/live-controller.test.mjs)는 `module` 변수명을 바꾸고 미사용 import를 제거했다. 제품 규칙이나 거래 동작은 완화하지 않았다.
 3. `frontend-sample/.gitignore`에 QA build 출력과 `.vercel`을 추가했다. 출력 파일은 삭제하지 않고 커밋 후보에서 제외했다.
 4. 루트/Vite README 및 handoff를 현재 두 프론트엔드 공존 상태, 실데이터 실행 경계, 미완료 성능, 배포 보류에 맞게 갱신했다.
 5. 최초 staged 공백 검사에서 발견한 수집 문서의 줄 끝 공백과 UI 파일의 마지막 빈 줄만 정리했다. 원본 ZIP은 바꾸지 않았고 source audit를 다시 생성해 101개 수집 파일·131개 소스·누락 import 0을 확인했다.

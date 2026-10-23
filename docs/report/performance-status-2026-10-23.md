@@ -20,7 +20,7 @@
 
 ## 로컬 최적화: 구현과 과거 관측
 
-[WorkspaceMarket](../../frontend-sample/src/pages/market/WorkspaceMarket.tsx)에 claims Map, 파생 행 memo, totals 재사용, 전체 필터·정렬 후 40개 표시를 반영했다. [Figure](../../frontend-sample/src/components/workspace/WorkspaceUI.tsx)의 전체 정밀값 중복 포맷도 줄였다. 필터 변경은 첫 페이지, 보기 변경은 현재 페이지 유지이며 Back/Forward와 페이지 밖 상세 직접 링크를 지원한다.
+[WorkspaceMarket](../../frontend/src/pages/market/WorkspaceMarket.tsx)에 claims Map, 파생 행 memo, totals 재사용, 전체 필터·정렬 후 40개 표시를 반영했다. [Figure](../../frontend/src/components/workspace/WorkspaceUI.tsx)의 전체 정밀값 중복 포맷도 줄였다. 필터 변경은 첫 페이지, 보기 변경은 현재 페이지 유지이며 Back/Forward와 페이지 밖 상세 직접 링크를 지원한다.
 
 2026-10-23 같은 Chrome의 로컬 production QA에서 기록한 값이다. API·지갑·RPC는 합성 또는 차단된 fixture이며 실제 운영 화면 성능으로 취급하지 않는다.
 
@@ -156,7 +156,7 @@ API 갱신 입력 중 normal로 인정된 마켓 8개·자산 7개는 API 대기
 
 실행 단계가 다른 QA 179/180과 계획·분석 테스트를 누적해 제품 테스트 수로 쓰지 않는다. VM Modules experimental, 기존 Zod 주석 및 대형 chunk 경고가 당시 남아 있었다. 현재 의존성 보안 상태를 새로 조회한 결과는 아니다.
 
-재현 구조는 [제품·QA 명령](../../frontend-sample/package.json), [성능 하네스](../../frontend-sample/tests/performance/README.md), [UI 성능 측정](../../frontend-sample/tests/performance-ui/README.md), [백엔드 span 회귀](../../backend/scripts/test-local-spans.mjs)에 있다. 별도 planning 실행기·승인·원문은 저장소에 포함됐다고 주장하지 않는다.
+재현 구조는 [제품·QA 명령](../../frontend/package.json), [성능 하네스](../../frontend/tests/performance/README.md), [UI 성능 측정](../../frontend/tests/performance-ui/README.md), [백엔드 span 회귀](../../backend/scripts/test-local-spans.mjs)에 있다. 별도 planning 실행기·승인·원문은 저장소에 포함됐다고 주장하지 않는다.
 
 ## 미완료와 다음 경계
 

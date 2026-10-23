@@ -1,8 +1,12 @@
-# Vestora design system — live frontend integration
+# Vestora design system - legacy Next.js integration
 
-Status: IN PROGRESS. Actual frontend integration authorized. User reviewed the representative page and requested preserving the service navigation; that feedback is applied.
-Source of truth: frontend/styles/design-system.css and frontend/components/.
-Review route: /design-system (sample-only, no wallet signing). The / route now runs the live component-based service. /design-system remains a separate sample-only gallery.
+Frontend promotion is in progress. This document describes the preserved Next.js implementation in [frontend-legacy](../../frontend-legacy/README.md); the primary Vite application is in [frontend](../../frontend/README.md), promoted from `frontend-sample`. These are target paths after the move, not confirmation that the move or deployment is complete.
+
+Status of the legacy integration: IN PROGRESS. User reviewed the representative page and requested preserving the service navigation; that feedback is applied.
+Source of truth for this legacy design system: [frontend-legacy/styles/design-system.css](../../frontend-legacy/styles/design-system.css) and [frontend-legacy/components/](../../frontend-legacy/components/).
+Review route on the legacy Next.js server: `/design-system` (sample-only, no wallet signing). Its `/` route runs the component-based live service. The primary Vite app does not inherit this Next.js gallery route merely through the folder promotion.
+
+From the repository root after the move, start the legacy server with `npm --prefix frontend-legacy run dev`, then open `http://localhost:3000/design-system` if it uses the default port. Primary Vite development uses `npm --prefix frontend run dev`. These commands have not been rerun by this documentation task. 전환 진행, Vercel 배포 결과는 배포 기록 확인.
 
 ## Product intent and tone
 
@@ -57,8 +61,8 @@ Long addresses wrap; the full address remains available without pointer-only hov
 | PurchaseSummary | item, price, actions | cost assumption; premium warning; no historical yield |
 | TransactionStatus | wallet/confirming/indexing/completed/rejected/failed | confirmed-but-indexing distinct from failure; polite live region |
 
-Examples: /design-system → 컴포넌트; representative screens reuse these exact React components.
-Amounts/cancellation math belongs to lib/receivable-value.ts, not JSX.
+Legacy examples: /design-system → 컴포넌트; representative Next.js screens reuse these exact React components.
+Legacy amounts/cancellation math belongs to [frontend-legacy/lib/receivable-value.ts](../../frontend-legacy/lib/receivable-value.ts), not JSX.
 
 ## Vocabulary
 
@@ -80,8 +84,10 @@ Use concrete error + recovery. Never assert "assets unaffected" from a failed re
 
 ## Scope still owed
 
-Initial live app migration, data adapters, hash navigation, confirmations and sender cancellation UI are implemented. Still owed: full keyboard/connected-wallet UI verification, browser verification of transaction recovery, remaining component-state matrix, complete regression and final audit. History is deliberately labeled partial.
+In the preserved Next.js implementation, initial live app migration, data adapters, hash navigation, confirmations and sender cancellation UI are implemented. Still owed: full keyboard/connected-wallet UI verification, browser verification of transaction recovery, remaining component-state matrix, complete regression and final audit. History is deliberately labeled partial.
 Full goal completion is NOT established by the isolated preview route.
+
+The primary Vite app has live claim and fully funded payment creation, but live buy/list/unlist/payment-cancel remain disabled. Legacy cancellation UI does not establish Vite payment-cancel support. B-account #3's hashless claim remains blocked; do not clear or retry it because the application path or deployment origin changes.
 
 ## Usage examples
 
@@ -95,5 +101,5 @@ Full goal completion is NOT established by the isolated preview route.
 - ReceivableList: feed streamView adapters and navigate using stable stream IDs.
 - TransactionStatus: derive from receipt/projection state, never wallet dismissal alone.
 
-Concrete usage: components/app/live-app.tsx; sample variants: app/design-system/page.tsx.
-Transaction persistence/recovery: lib/pending-transaction.ts and hooks/use-vestora.ts.
+Concrete legacy usage: [frontend-legacy/components/app/live-app.tsx](../../frontend-legacy/components/app/live-app.tsx); sample variants: [frontend-legacy/app/design-system/page.tsx](../../frontend-legacy/app/design-system/page.tsx).
+Legacy transaction persistence/recovery: [frontend-legacy/lib/pending-transaction.ts](../../frontend-legacy/lib/pending-transaction.ts) and [frontend-legacy/hooks/use-vestora.ts](../../frontend-legacy/hooks/use-vestora.ts).

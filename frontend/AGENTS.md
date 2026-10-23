@@ -1,30 +1,10 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# Vestora Frontend
 
-# This is NOT the Next.js you know
+This is the Vite/React product application. The previous Next.js application is in `../frontend-legacy/`.
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
-
-<!-- BEGIN:vestora-frontend-codex-guide -->
-
-## Vestora Frontend Guide
-
-The frontend is a valuation and transaction dashboard. It should help users answer:
-
-- how much remains receivable
-- how much is claimable now
-- how much has already been claimed
-- whether a listing appears stale
-- whether cancelable/canceled risk exists
-- what should be rechecked on-chain before a transaction
-
-Use backend API data for fast lists, dashboards, history, metrics, and projection views. Use on-chain reads for final authority, especially before buy, claim, cancel, or list transactions.
-
-When backend data may be stale, show refresh or stale-state handling rather than pretending it is final settlement state.
-
-Keep wallet, network, pending, success, and error states explicit. Do not expose secrets or private RPC credentials in client code.
-
-<!-- END:vestora-frontend-codex-guide -->
+- Preserve the current UI, Korean translations and BigInt accounting. Backend data is projection, not settlement authority.
+- Run `npm run check`, `npm run test:load-safety`, `npm run test:ui-performance`, `npm run qa:ui-typecheck` and `npm run build:prod` for relevant changes.
+- Production uses the same-origin `/vestora-api` read adapter. Never expose secrets in `VITE_*`, forward wallet credentials to the backend, or deploy QA output.
+- Keep unresolved reservations and the known B #3 account hold. A new origin, timeout, missing hash or fresh balance is not proof that resending is safe.
+- Wallet signatures, new load runs, AWS changes and deployments require explicit authorization. Do not turn disabled live marketplace/cancellation actions into sends during UI work.
+- Update `CodeGuideline.md` for new/removed modules. Dated reports describe their historical build and paths, not today's deployment.

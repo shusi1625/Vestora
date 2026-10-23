@@ -1,0 +1,25 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build:prod",
+  "outputDirectory": "dist",
+  "regions": ["syd1"],
+  "functions": { "api/read.js": { "maxDuration": 15 } },
+  "headers": [{
+    "source": "/(.*)",
+    "headers": [
+      { "key": "X-Content-Type-Options", "value": "nosniff" },
+      { "key": "Referrer-Policy", "value": "no-referrer" },
+      { "key": "X-Frame-Options", "value": "DENY" },
+      { "key": "Content-Security-Policy", "value": "frame-ancestors 'none'" }
+    ]
+  }],
+  "rewrites": [
+    { "source": "/vestora-api/:path*", "destination": "/api/read?path=:path*" },
+    { "source": "/(market|assets|transactions)", "destination": "/index.html" },
+    { "source": "/my/:path*", "destination": "/index.html" },
+    { "source": "/manage/:path*", "destination": "/index.html" },
+    { "source": "/claims/:path*", "destination": "/index.html" }
+  ]
+}
