@@ -1,6 +1,6 @@
 # Vestora Handoff
 
-Snapshot: 2026-10-23 frontend folders promoted; Vercel deployment preparation. Re-read Git state and the deployment record before continuing.
+Snapshot: 2026-10-23 frontend folders promoted and pushed; Vercel frontend READY, actual API blocked by AWS ingress. Re-read Git state and the deployment record before continuing.
 Repository: `C:/GitHub/Vestora`, not the older OneDrive planning workspace.
 
 ## Implementation
@@ -19,6 +19,7 @@ Repository: `C:/GitHub/Vestora`, not the older OneDrive planning workspace.
 - B-account #3 hashless claim remains blocked. Do not clear/retry it, infer a missing hash, or treat a new browser origin as a clean authorization to submit.
 - The user authorized moving the Next.js `frontend` to `frontend-legacy`, promoting Vite `frontend-sample` to `frontend`, and Vercel deployment. The main task owns folder moves, Git push, deployment settings, safety and validation. Preserve both implementations.
 - Both folders have moved with the original 262 tracked-file hashes verified before production edits. A new `shusi1625s-projects/vestora` project is linked. Read the [deployment record](../../frontend/docs/vercel-deployment.md) for its actual status; a linked project is not a successful deployment.
+- Production frontend URL: https://vestora-alpha.vercel.app/market. Fixed deployment `dpl_9ppsaeP8E8wXqDpquN3rDmLseHbx` is READY, but its API health/list/detail return 504. Read-only AWS inspection confirmed port 3001 permits only the operator IPv4 /32; Vercel is excluded. Await the user's backend-access decision before any AWS ingress/resource changes. Do not describe the site as fully connected.
 - The fixed GET-only Vercel API adapter, explicit SPA routes, QA-upload exclusion and known B #3 account hold are implemented with local regression tests. Actual deployment/API/browser behavior remains a separate validation step. The Vercel-to-existing-backend hop remains HTTP.
 - Main-owned deployment validation must cover the GET-only API proxy (fixed upstream, path allowlist, cookie-free handling, no-cache, rejected redirects, timeout and response-byte caps), SPA fallback, QA-output exclusion and the B-account #3 guard across origins. This documentation handoff does not establish implementation or deployment completion for those items.
 - After the move, run primary UI checks from the repository root with `npm --prefix frontend run check` and `npm --prefix frontend run build:prod`. Legacy model tests use `node --test frontend-legacy/tests/*.test.mjs`. These are reference commands; promotion-specific results belong in the validation/deployment record.

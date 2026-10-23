@@ -1,6 +1,8 @@
 # Vercel Deployment (2026-10-23)
 
-Status: folder promotion complete, Vercel project linked, production deployment pending. A deployment URL and Ready status must be observed before calling this deployment complete.
+Status: folder promotion complete and Vercel frontend READY. **Live API integration is blocked by the existing AWS ingress allowlist. This is not an end-to-end working deployment.**
+
+Production frontend: [vestora-alpha.vercel.app](https://vestora-alpha.vercel.app/market).
 
 ## Source and Scope
 
@@ -40,3 +42,29 @@ Local promotion checks: product model 147/147, deployment adapter 8/8, load safe
 Existing-origin preparation smoke: `/health` and `/streams` each read once, both HTTP 200; 4 streams, applied projection and identical indexed/projected checkpoint `11976131`. These two reads do not establish load capacity or a deployed frontend.
 
 New project: `shusi1625s-projects/vestora` on the authenticated Hobby team. CLI deploys only the local `frontend/` directory; no Git integration or repository-root build is assumed. The project was initially created with default framework/Node settings; committed Vercel config and package engines select Vite/Node 22 for the deployment. Server-only API origin is configured for Production and Preview. CLI credentials/OIDC files are local and ignored, never source files.
+
+## Observed Production Results
+
+| Item | Observed result |
+| --- | --- |
+| Migration commit | `62b4c7c`, pushed to origin/main |
+| API rewrite compatibility fix | `630d1bd`, pushed; deployment adapter regression 8/8 again |
+| Initial deployment | `dpl_8JWjJnGQ41TBwBQPdZQfEAcZmcrP`, READY, but API returned 400 because Vercel retains the original pathname and appends the rewrite query |
+| Fixed deployment | `dpl_9ppsaeP8E8wXqDpquN3rDmLseHbx`, READY, immutable URL `https://vestora-93njuaqd6-shusi1625s-projects.vercel.app` |
+| Public production alias | `https://vestora-alpha.vercel.app`; anonymous requests did not require Vercel login |
+| Cloud build/runtime | Vite, npm ci, Node 22; `api/read` function in syd1, timeout 15s |
+| Direct workspace entry | `/market`, `/assets`, `/my/sales`, `/manage/issued`, `/manage/create`, `/transactions`: all HTTP 200 HTML |
+| Excluded source/credentials | `/tests/manual-qa/main.tsx`, `/docs/original-source.zip`, `/.env.local`: all HTTP 404; response bodies not copied |
+| Write/unknown-path guards | POST `/vestora-api/streams`: 405. Unknown API path after compatibility fix: 404 JSON |
+| Live upstream integration | Fixed proxy health/list/detail each returned 504 `upstream-unavailable`, not sample data or HTML |
+| Browser attempt | Isolated headless Edge could not obtain a projection before the 30s UI wait deadline; no successful screenshots or personal UI validation claimed |
+
+The original-prefix query handling now accepts only one internal `path` equal to the original path; mismatches, duplicates and other queries remain rejected. The first READY deployment was not called functional merely because its build passed.
+
+## Confirmed Network Block and Next Approval
+
+A single read-only `describe-security-groups` query confirmed the existing ECS security group allows TCP 3001 only from the operator's IPv4 `/32`. The local two-read preparation smoke succeeds from that allowed source; the Vercel server origin is not allowed. No ingress rule, ECS task, DB, DNS or AWS resource was modified.
+
+HTTPS is available for the frontend, but actual data cannot load until an approved backend access path exists. The user was asked to choose between a properly scoped HTTPS API entry point (cost/configuration review first), a temporary explicitly risk-accepted public demo port, or retaining the restriction and deferring live data. Do not open `0.0.0.0/0`, invent fixed Hobby egress IPs, or create paid AWS resources without that decision.
+
+The failed browser attempt is not a full desktop/mobile audit, live balance verification or wallet E2E. Its isolated profile had no real wallet, blocked direct RPC, capped API reads at 24 and closed after failure. Existing browser records were not changed. No G2/G3 approval was reused.

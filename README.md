@@ -13,7 +13,7 @@ As of 2026-10-23, both frontend folders have been promoted to the layout below. 
 - `backend/`: Fastify API, PostgreSQL projections and indexer. New local request spans are opt-in and have not been deployed.
 - `contracts/` and `test/`: settlement contracts and local boundary/invariant tests.
 
-Folder promotion is complete. See the [Vercel deployment record](frontend/docs/vercel-deployment.md) for the actual deployment status and URL. A new Vercel project is linked; deployment completion still requires a Ready deployment and live smoke checks.
+Folder promotion is complete. The [Vercel frontend](https://vestora-alpha.vercel.app/market) is READY, but **live API reads are blocked by the existing AWS ingress allowlist**. See the [deployment record](frontend/docs/vercel-deployment.md) for smoke failures, local checks and the approval needed for a backend access path. This is not an end-to-end deployment success.
 
 Start with [development progress](docs/report/development-progress-2026-10-23.md), [performance status](docs/report/performance-status-2026-10-23.md), and [handoff](docs/codex-system/handoff.md).
 Local tests, measured AWS reads, user-signed transactions and deployed product behavior are different evidence levels. G1/G2/G3 and wallet E2E are not collectively complete.
