@@ -22,8 +22,9 @@ test("GET paths preserve raw JSON without forwarding wallet/cookie credentials",
 });
 test("original prefix requests work and keep unknown API routes out of the SPA", async () => {
   assert.equal((await readProxy(request("/vestora-api/streams"), { origin, fetchImpl: async () => json() })).status, 200);
+  assert.equal((await readProxy(request("/vestora-api/streams?path=streams"), { origin, fetchImpl: async () => json() })).status, 200);
   let calls = 0;
-  for (const path of ["/api/read?path=metrics", "/api/read?path=streams&path=health", "/api/read?path=streams&target=private", "/api/read?path=../health", "/api/read?path=https://evil.example", "/api/read?path=streams/0", "/vestora-api/streams?target=evil", "/api/unknown"]) {
+  for (const path of ["/api/read?path=metrics", "/api/read?path=streams&path=health", "/api/read?path=streams&target=private", "/api/read?path=../health", "/api/read?path=https://evil.example", "/api/read?path=streams/0", "/vestora-api/streams?target=evil", "/vestora-api/streams?path=health", "/vestora-api/streams?path=streams&path=streams", "/api/unknown"]) {
     const response = await readProxy(request(path), { origin, fetchImpl: async () => { calls++; return json(); } });
     assert.ok([400, 404].includes(response.status), path);
   }

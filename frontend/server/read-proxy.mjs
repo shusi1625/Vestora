@@ -15,7 +15,9 @@ export async function readProxy(request, { origin, fetchImpl = fetch, timeoutMs 
   let path;
   if (url.pathname.startsWith("/vestora-api/")) {
     path = url.pathname.slice("/vestora-api/".length);
-    if (url.search) return fail(400, "query-not-supported");
+    // Vercel retains the original pathname and adds the rewrite's path query.
+    const query = [...url.searchParams.entries()];
+    if (query.length && !(query.length === 1 && query[0][0] === "path" && query[0][1] === path)) return fail(400, "query-not-supported");
   } else if (url.pathname === "/api/read" && [...url.searchParams.keys()].length === 1) {
     path = url.searchParams.get("path");
   }
