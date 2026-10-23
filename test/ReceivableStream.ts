@@ -650,4 +650,70 @@ describe("ReceivableStream", async function () {
             ]),
         );
     });
+
+    it("B13 permits a self-recipient and settles the escrow without duplicating principal", async function () {
+        const stream = await viem.deployContract("ReceivableStream");
+        const { token, amount, endTime } = await createDefaultStream(stream, sender.account.address);
+        assert.equal((await stream.read.ownerOf([1n])).toLowerCase(), sender.account.address.toLowerCase());
+        assert.equal(await token.read.balanceOf([sender.account.address]), 0n);
+        assert.equal(await token.read.balanceOf([stream.address]), amount);
+        await networkHelpers.time.increaseTo(Number(endTime));
+        await stream.write.claim([1n]);
+        assert.equal(await token.read.balanceOf([sender.account.address]), amount);
+        assert.equal(await token.read.balanceOf([stream.address]), 0n);
+    });
+
+    it("B19 B20 B21 preserves one-raw and uneven amounts at exact start and end boundaries", async function () {
+        for (const amount of [1n, 1001n]) {
+            const stream = await viem.deployContract("ReceivableStream");
+            const token = await viem.deployContract("MockUSDC");
+            const start = BigInt(await networkHelpers.time.latest()) + 100n;
+            const end = start + 3n;
+            await token.write.mint([sender.account.address, amount]);
+            await token.write.approve([stream.address, amount]);
+            await stream.write.createStream([recipient.account.address, token.address, amount, start, end, true]);
+            for (const offset of [-1n, 0n, 1n, 2n, 3n, 4n]) {
+                const at = start + offset;
+                await networkHelpers.time.increaseTo(Number(at));
+                assert.equal(BigInt(await networkHelpers.time.latest()), at);
+                const expected = offset <= 0n ? 0n : offset >= 3n ? amount : amount * offset / 3n;
+                assert.equal(await stream.read.vestedAmount([1n]), expected);
+                assert.equal(await stream.read.claimableAmount([1n]), expected);
+            }
+            await stream.write.claim([1n], { account: recipient.account });
+            assert.equal(await token.read.balanceOf([recipient.account.address]), amount);
+            assert.equal(await stream.read.claimableAmount([1n]), 0n);
+        }
+    });
+
+    it("B30 conserves refund and vested rights at cancellation boundaries including prior claims", async function () {
+        for (const offset of [-1n, 0n, 5n, 10n, 11n]) {
+            for (const priorClaim of [false, true]) {
+                if (priorClaim && offset <= 2n) continue;
+                const stream = await viem.deployContract("ReceivableStream");
+                const token = await viem.deployContract("MockUSDC");
+                const amount = 1001n, start = BigInt(await networkHelpers.time.latest()) + 100n, end = start + 10n;
+                await token.write.mint([sender.account.address, amount]);
+                await token.write.approve([stream.address, amount]);
+                await stream.write.createStream([recipient.account.address, token.address, amount, start, end, true]);
+                if (priorClaim) {
+                    await networkHelpers.time.setNextBlockTimestamp(Number(start + 2n));
+                    await stream.write.claim([1n], { account: recipient.account });
+                }
+                const before = await stream.read.getStream([1n]);
+                const at = start + offset;
+                await networkHelpers.time.setNextBlockTimestamp(Number(at));
+                await stream.write.cancel([1n]);
+                const stored = await stream.read.getStream([1n]);
+                assert.equal(stored.canceledAt, at);
+                const vested = offset <= 0n ? 0n : offset >= 10n ? amount : amount * offset / 10n;
+                assert.equal(await token.read.balanceOf([sender.account.address]), amount - vested);
+                assert.equal(await stream.read.claimableAmount([1n]), vested - before.withdrawnAmount);
+                if (vested > before.withdrawnAmount) await stream.write.claim([1n], { account: recipient.account });
+                assert.equal(await token.read.balanceOf([recipient.account.address]), vested);
+                assert.equal(await token.read.balanceOf([stream.address]), 0n);
+                assert.equal((await token.read.balanceOf([sender.account.address])) + (await token.read.balanceOf([recipient.account.address])), amount);
+            }
+        }
+    });
 });

@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { serializeStream, serializeTrade } from "../serializers.js";
 import { withProjectionSnapshot, projectionSyncMeta } from "../sync-context.js";
 import { parseAddress } from "../validation.js";
+import { withLocalSpan } from "../local-spans.js";
 
 type AddressParams = {
   address: string;
@@ -36,7 +37,7 @@ export async function registerUserRoutes(app: FastifyInstance) {
     async (request) => {
       const address = parseAddress(request.params.address);
       return withProjectionSnapshot(async (prisma, syncContext) => {
-      const streams = await prisma.streamProjection.findMany({
+      const streams = await withLocalSpan("query.stream.find_many", () => prisma.streamProjection.findMany({
         where: {
           OR: [
             {
@@ -53,14 +54,14 @@ export async function registerUserRoutes(app: FastifyInstance) {
         orderBy: {
           streamId: "asc",
         },
-      });
-      const listings = await prisma.listingProjection.findMany({
+      }));
+      const listings = await withLocalSpan("query.listing.find_many", () => prisma.listingProjection.findMany({
         where: {
           streamId: {
             in: streams.map((stream) => stream.streamId),
           },
         },
-      });
+      }));
       const listingsByStreamId = new Map(
         listings.map((listing) => [listing.streamId.toString(), listing]),
       );
@@ -91,7 +92,7 @@ export async function registerUserRoutes(app: FastifyInstance) {
   app.get<{ Params: AddressParams }>("/users/:address/trades", async (request) => {
     const address = parseAddress(request.params.address);
     return withProjectionSnapshot(async (prisma, syncContext) => {
-    const trades = await prisma.tradeProjection.findMany({
+    const trades = await withLocalSpan("query.trade.find_many", () => prisma.tradeProjection.findMany({
       where: {
         OR: [
           {
@@ -103,7 +104,7 @@ export async function registerUserRoutes(app: FastifyInstance) {
         ],
       },
       orderBy: [{ tradedAt: "desc" }, { logIndex: "desc" }],
-    });
+    }));
 
     return {
       data: trades.map((trade) => ({

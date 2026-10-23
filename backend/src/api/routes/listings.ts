@@ -2,6 +2,7 @@ import { ListingStatus } from "@prisma/client";
 import type { FastifyInstance } from "fastify";
 
 import { badRequest } from "../errors.js";
+import { withLocalSpan } from "../local-spans.js";
 import { serializeListing } from "../serializers.js";
 import { withProjectionSnapshot, projectionSyncMeta } from "../sync-context.js";
 
@@ -32,19 +33,19 @@ export async function registerListingRoutes(app: FastifyInstance) {
   app.get<{ Querystring: ListingQuery }>("/listings", async (request) => {
     const status = parseListingStatus(request.query.status);
     return withProjectionSnapshot(async (prisma, syncContext) => {
-    const listings = await prisma.listingProjection.findMany({
+    const listings = await withLocalSpan("query.listing.find_many", () => prisma.listingProjection.findMany({
       where: {
         status,
       },
       orderBy: [{ listedAt: "desc" }, { streamId: "asc" }],
-    });
-    const streams = await prisma.streamProjection.findMany({
+    }));
+    const streams = await withLocalSpan("query.stream.find_many", () => prisma.streamProjection.findMany({
       where: {
         streamId: {
           in: listings.map((listing) => listing.streamId),
         },
       },
-    });
+    }));
     const streamsById = new Map(
       streams.map((stream) => [stream.streamId.toString(), stream]),
     );

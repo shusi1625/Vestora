@@ -100,6 +100,20 @@ Indexer performance settings:
 
 These metrics are observability evidence for the indexing/analytics layer. They are not settlement data; transaction-critical actions must still recheck the smart contracts.
 
+### Local Request Spans
+
+`LOCAL_API_SPANS` is off by default. Set it to the exact string `true` before starting an already-authorized local API process to enable request spans. Responses then include the server-generated `x-request-id` header. Span logs contain only a fixed route label, request ID, allowlisted span name, duration and status, plus the standard logger envelope. Raw URL/error logs are suppressed while enabled; response JSON, query order, transaction timeout and RPC/cache policies are unchanged.
+
+Run the offline regression from the repository root (Node 24 and existing backend dependencies required):
+
+```powershell
+node --experimental-vm-modules --test backend/scripts/test-local-spans.mjs
+```
+
+The script resolves sources and `node_modules` from its backend directory, independent of the working directory. For a partial staging tree, set `VESTORA_BACKEND_ROOT` to the backend directory providing installed dependencies and missing allowlisted source files; files beside the script take priority. Both off/on runs use the same current source. No prepublish manifest or old checkout is required. The fixed module allowlist rejects unexpected imports.
+
+The 12 tests use real `Fastify.inject` with fake RPC/DB/metrics dependencies, block server listen and outbound socket/fetch calls, and check current-source off/on JSON/calls, delays, failures, concurrent IDs and cache sharing. They do not prove equivalence to an older release, TypeScript type correctness, real Prisma isolation, RPC transport/cache behavior or deployed performance. VM Modules emits an experimental warning. Snapshot acquisition includes transaction setup; nested/parallel durations overlap and must not be summed. Server and client clocks must not be subtracted. The ID header is not added to CORS exposed headers.
+
 ## Container Runtime
 
 Build the backend container from this directory:

@@ -2,10 +2,11 @@ import { Prisma } from "@prisma/client";
 import { env } from "../config/env.js";
 import { prisma } from "../db/prisma.js";
 import { getSafeBlockNumber, publicClient } from "../indexer/chain.js";
+import { startLocalSpan, withLocalSpan } from "./local-spans.js";
 
 type Freshness = { latest: bigint | null; error?: string };
 async function readFreshness(): Promise<Freshness> {
-  try { return { latest: await publicClient.getBlockNumber() }; }
+  try { return { latest: await withLocalSpan("freshness.rpc", () => publicClient.getBlockNumber()) }; }
   catch { return { latest: null, error: "Chain freshness could not be verified" }; }
 }
 
@@ -14,8 +15,10 @@ export async function getProjectionSyncContext(
   freshness?: Freshness,
 ) {
   const head = freshness ?? await readFreshness();
-  const state = await db.syncState.findUnique({ where: { id: env.indexerSyncId } });
-  const applied = await db.projectionState.findUnique({ where: { id: env.indexerSyncId } });
+  const state = await withLocalSpan("sync.state", () =>
+    db.syncState.findUnique({ where: { id: env.indexerSyncId } }));
+  const applied = await withLocalSpan("sync.projection", () =>
+    db.projectionState.findUnique({ where: { id: env.indexerSyncId } }));
   const indexed = state?.latestIndexedBlock ?? 0n;
   const projected = applied?.latestProjectedBlock ?? null;
   const safe = head.latest === null ? null : getSafeBlockNumber(head.latest);
@@ -50,8 +53,20 @@ export async function withProjectionSnapshot<T>(
   read: (db: Prisma.TransactionClient, context: ProjectionSyncContext) => Promise<T>,
 ) {
   const freshness = await readFreshness();
-  return prisma.$transaction(async (db) => {
-    const context = await getProjectionSyncContext(db, freshness);
-    return read(db, context);
-  }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 30_000 });
+  return withLocalSpan("snapshot.transaction", async () => {
+    // Entry latency includes transaction setup; it is not a pure connection-pool metric.
+    const acquired = startLocalSpan("snapshot.acquire");
+    try {
+      return await prisma.$transaction(async (db) => {
+        acquired();
+        return withLocalSpan("snapshot.callback", async () => {
+          const context = await getProjectionSyncContext(db, freshness);
+          return withLocalSpan("snapshot.domain", () => read(db, context));
+        });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 30_000 });
+    } catch (error) {
+      acquired("error");
+      throw error;
+    }
+  });
 }

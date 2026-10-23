@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 
 import { notFound } from "../errors.js";
+import { withLocalSpan } from "../local-spans.js";
 import { serializeClaim, serializeStream } from "../serializers.js";
 import { withProjectionSnapshot, projectionSyncMeta } from "../sync-context.js";
 import { parseStreamId } from "../validation.js";
@@ -12,18 +13,18 @@ type StreamParams = {
 export async function registerStreamRoutes(app: FastifyInstance) {
   app.get("/streams", async () => {
     return withProjectionSnapshot(async (prisma, syncContext) => {
-    const streams = await prisma.streamProjection.findMany({
+    const streams = await withLocalSpan("query.stream.find_many", () => prisma.streamProjection.findMany({
       orderBy: {
         streamId: "asc",
       },
-    });
-    const listings = await prisma.listingProjection.findMany({
+    }));
+    const listings = await withLocalSpan("query.listing.find_many", () => prisma.listingProjection.findMany({
       where: {
         streamId: {
           in: streams.map((stream) => stream.streamId),
         },
       },
-    });
+    }));
     const listingsByStreamId = new Map(
       listings.map((listing) => [listing.streamId.toString(), listing]),
     );
@@ -53,27 +54,27 @@ export async function registerStreamRoutes(app: FastifyInstance) {
   app.get<{ Params: StreamParams }>("/streams/:streamId", async (request) => {
     return withProjectionSnapshot(async (prisma, syncContext) => {
     const streamId = parseStreamId(request.params.streamId);
-    const stream = await prisma.streamProjection.findUnique({
+    const stream = await withLocalSpan("query.stream.find_unique", () => prisma.streamProjection.findUnique({
       where: {
         streamId,
       },
-    });
+    }));
 
     if (!stream) {
       throw notFound(`stream ${streamId.toString()} was not found`);
     }
 
-    const listing = await prisma.listingProjection.findUnique({
+    const listing = await withLocalSpan("query.listing.find_unique", () => prisma.listingProjection.findUnique({
       where: {
         streamId,
       },
-    });
-    const claims = await prisma.claimProjection.findMany({
+    }));
+    const claims = await withLocalSpan("query.claim.find_many", () => prisma.claimProjection.findMany({
       where: {
         streamId,
       },
       orderBy: [{ claimedAt: "desc" }, { logIndex: "desc" }],
-    });
+    }));
 
     return {
       data: {

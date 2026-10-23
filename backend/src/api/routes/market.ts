@@ -2,31 +2,32 @@ import { ListingStatus } from "@prisma/client";
 import type { FastifyInstance } from "fastify";
 
 import { withProjectionSnapshot, projectionSyncMeta } from "../sync-context.js";
+import { withLocalSpan } from "../local-spans.js";
 
 export async function registerMarketRoutes(app: FastifyInstance) {
   app.get("/market/stats", async () => {
     return withProjectionSnapshot(async (prisma, syncContext) => {
     const [streamCount, listingCounts, listings, tradeCount, trades] =
       await Promise.all([
-        prisma.streamProjection.count(),
-        prisma.listingProjection.groupBy({
+        withLocalSpan("query.stream.count", () => prisma.streamProjection.count()),
+        withLocalSpan("query.listing.group_by", () => prisma.listingProjection.groupBy({
           by: ["status"],
           _count: {
             status: true,
           },
-        }),
-        prisma.listingProjection.findMany({
+        })),
+        withLocalSpan("query.listing.find_many", () => prisma.listingProjection.findMany({
           select: {
             price: true,
             status: true,
           },
-        }),
-        prisma.tradeProjection.count(),
-        prisma.tradeProjection.findMany({
+        })),
+        withLocalSpan("query.trade.count", () => prisma.tradeProjection.count()),
+        withLocalSpan("query.trade.find_many", () => prisma.tradeProjection.findMany({
           select: {
             price: true,
           },
-        }),
+        })),
       ]);
 
     const listingCountByStatus = Object.fromEntries(

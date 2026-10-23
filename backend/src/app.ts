@@ -1,8 +1,9 @@
 import cors from "@fastify/cors";
-import Fastify, { type FastifyInstance } from "fastify";
+import Fastify, { LogController, type FastifyInstance } from "fastify";
 import { performance } from "node:perf_hooks";
 
 import { ApiError, sendApiError, sendInternalError } from "./api/errors.js";
+import { localApiSpansEnabled, registerLocalApiSpans, withLocalSpan } from "./api/local-spans.js";
 import { getApiMetrics, recordApiResponse } from "./api/request-metrics.js";
 import { registerApiRoutes } from "./api/routes/index.js";
 import { env } from "./config/env.js";
@@ -28,48 +29,58 @@ function roundMetric(value: number) {
 }
 
 async function collectOperationalMetrics() {
-  const [indexer, database] = await Promise.all([
-    getIndexerMetrics(),
-    getDatabaseMetrics(),
-  ]);
-  const now = Date.now();
+  return withLocalSpan("metrics.collection", async () => {
+    const [indexer, database] = await Promise.all([
+      withLocalSpan("metrics.indexer", () => getIndexerMetrics()),
+      withLocalSpan("metrics.database", () => getDatabaseMetrics()),
+    ]);
+    const now = Date.now();
 
-  return {
-    indexer,
-    database,
-    collectedAt: new Date(now).toISOString(),
-    expiresAtMs: now + env.indexerMetricsCacheTtlMs,
-  } satisfies OperationalMetrics;
+    return {
+      indexer,
+      database,
+      collectedAt: new Date(now).toISOString(),
+      expiresAtMs: now + env.indexerMetricsCacheTtlMs,
+    } satisfies OperationalMetrics;
+  });
 }
 
 async function getCachedOperationalMetrics() {
   const now = Date.now();
 
   if (operationalMetricsCache && operationalMetricsCache.expiresAtMs > now) {
-    return {
+    const metrics = operationalMetricsCache;
+    return withLocalSpan("metrics.hit", () => ({
       cacheHit: true,
-      metrics: operationalMetricsCache,
-    };
+      metrics,
+    }));
   }
 
-  pendingOperationalMetrics ??= collectOperationalMetrics().finally(() => {
-    pendingOperationalMetrics = null;
+  return withLocalSpan(pendingOperationalMetrics ? "metrics.join" : "metrics.new", async () => {
+    pendingOperationalMetrics ??= collectOperationalMetrics().finally(() => {
+      pendingOperationalMetrics = null;
+    });
+
+    operationalMetricsCache = await pendingOperationalMetrics;
+
+    return {
+      cacheHit: false,
+      metrics: operationalMetricsCache,
+    };
   });
-
-  operationalMetricsCache = await pendingOperationalMetrics;
-
-  return {
-    cacheHit: false,
-    metrics: operationalMetricsCache,
-  };
 }
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({
+    ...(localApiSpansEnabled ? {
+      logController: new LogController({ disableRequestLogging: true }),
+    } : {}),
     logger: {
       level: env.logLevel,
     },
   });
+
+  registerLocalApiSpans(app);
 
   app.register(cors, {
     origin: true,
@@ -95,7 +106,7 @@ export function buildApp(): FastifyInstance {
       });
     }
 
-    app.log.info(
+    if (!localApiSpansEnabled) app.log.info(
       {
         method: request.method,
         url: request.url,
@@ -111,7 +122,7 @@ export function buildApp(): FastifyInstance {
       return sendApiError(reply, error);
     }
 
-    app.log.error({ error }, "unhandled api error");
+    if (!localApiSpansEnabled) app.log.error({ error }, "unhandled api error");
 
     return sendInternalError(reply);
   });
@@ -129,7 +140,7 @@ export function buildApp(): FastifyInstance {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      app.log.error({ error }, "health check failed");
+      if (!localApiSpansEnabled) app.log.error({ error }, "health check failed");
 
       return reply.code(503).send({
         status: "degraded",
