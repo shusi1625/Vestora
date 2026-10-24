@@ -10,7 +10,7 @@
     "build:prod": "vite build",
     "check": "npm run lint && npm run typecheck && npm run test:ui-model && npm run test:deployment && npm run audit:source",
     "test:deployment": "node --test tests/deployment.test.mjs",
-    "test:ui-model": "node --test tests/workspace-model.test.mjs tests/live-mapping.test.mjs tests/claim-runtime.test.mjs tests/create-payment.test.mjs tests/notice-ui.test.mjs",
+    "test:ui-model": "node --test tests/workspace-model.test.mjs tests/live-mapping.test.mjs tests/live-history.test.mjs tests/claim-runtime.test.mjs tests/create-payment.test.mjs tests/notice-ui.test.mjs tests/transaction-guard.test.mjs tests/market-actions.test.mjs tests/cancel-payment.test.mjs tests/mint-token.test.mjs tests/live-action-history.test.mjs tests/feature-layout.test.mjs",
     "test:load-safety": "node --test tests/performance/safety.test.mjs tests/performance/expiry.test.mjs tests/performance/scaled-data.test.mjs tests/performance/telemetry.test.mjs",
     "test:ui-performance": "node --test tests/performance-ui/*.test.mjs",
     "qa:ui-typecheck": "tsc -p tests/performance-ui/tsconfig.json --noEmit",

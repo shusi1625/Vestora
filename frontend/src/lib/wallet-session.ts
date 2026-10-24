@@ -46,12 +46,25 @@ export function createWalletSession(getProvider:()=>InjectedProvider|undefined){
     attach();
     if(revocation)return revocation.catch(()=>{});
     if(connection)return connection;
-    suppressed=false;
     if(!eth){commit({error:"live.noWallet"});return Promise.resolve();}
+    // Explicit connection must request account selection, not reuse a cached grant silently.
+    suppressed=true;
     const source=eth,version=++lifecycle;++ticket;commit({state:"connecting",error:""});
+    const current=()=>running&&source===eth&&getProvider()===source&&version===lifecycle;
     connection=(async()=>{
-      try{await source.request({method:"eth_requestAccounts"});if(running&&source===eth&&version===lifecycle&&!suppressed)await sync();}
-      catch(error){if(running&&source===eth&&version===lifecycle&&!suppressed)commit({address:null,chainId:null,state:"disconnected",error:walletRejected(error)?"live.walletRejected":"live.walletUnavailable"});}
+      try{
+        const permissions=await source.request({method:"wallet_requestPermissions",params:[{eth_accounts:{}}]});
+        if(!current())return;
+        if(!Array.isArray(permissions)||!permissions.some(p=>p?.parentCapability==="eth_accounts"))throw new Error("live.walletPermissionUnverified");
+        await source.request({method:"eth_requestAccounts"});
+        if(current()){suppressed=false;await sync();}
+      }catch(error){
+        if(current()){
+          suppressed=true;
+          const reason=walletHasCode(error,[4001,4100])?"live.walletRejected":walletHasCode(error,[-32601,4200])?"live.accountSelectionUnsupported":error instanceof Error&&error.message==="live.walletPermissionUnverified"?error.message:"live.walletUnavailable";
+          commit({address:null,chainId:null,state:"disconnected",error:reason});
+        }
+      }
       finally{if(version===lifecycle)connection=null;}
     })();return connection;
   };

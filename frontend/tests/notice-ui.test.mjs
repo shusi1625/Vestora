@@ -157,6 +157,74 @@ test("QA06 shared insufficient-balance copy is accurate in live and sample modes
   assert.doesNotMatch(locale["workspace.insufficientBalance"],/샘플/);
 });
 
+function paymentContextFixture(){
+  const node=(type,props)=>({type,props}),account="0x1111111111111111111111111111111111111111";
+  const draft={recipient:"0x2222222222222222222222222222222222222222",amount:1000000n,start:200n,end:800n,cancelable:true,name:"Salary"};
+  const calls=[],states={},live={connectedAddress:account,chainId:"0xaa36a7",creation:{states,engine:{review:d=>calls.push(["review",d]),execute:a=>calls.push(["execute",a])}}};
+  const model=load("src/lib/create-payment-model.ts",{"./live-config":{},"./transaction-safety":{}});
+  const ui=load("src/components/workspace/CreatePaymentAction.tsx",{
+    react:{useState:initial=>[initial,()=>{}],useRef:initial=>({current:initial}),useEffect:()=>{}},
+    "react/jsx-runtime":{jsx:node,jsxs:node},"react-i18next":{useTranslation:()=>({t:key=>locale[key]||key})},
+    "react-router-dom":{Link:"Link"},"lucide-react":{ExternalLink:"ExternalLink",RefreshCw:"RefreshCw",Loader2:"Loader2"},
+    "@/providers/live-context":{useLiveWorkspace:()=>live},"@/hooks/use-payment-names":{usePaymentNames:()=>({persisted:true,save:()=>assert.fail("no name save during render")})},
+    "@/components/ui/button":{Button:"button"},"@/lib/format":{formatFullUnits:raw=>String(raw)},
+    "@/lib/create-payment-model":model,"@/lib/live-config":{LIVE_STREAM:"0x3333333333333333333333333333333333333333"},
+    "@/lib/notice-policy":{canDismissTransactionNotice},"./DismissibleNotice":{DismissibleNotice:"DismissibleNotice"},"./GasReview":{GasReview:"GasReview"},
+  });
+  const walk=value=>Array.isArray(value)?value.flatMap(walk):value&&typeof value==="object"?[value,...walk(value.props?.children)]:[];
+  const set=state=>{states[account]=state;};
+  return{account,draft,states,calls,set,walk,ui,render:(patch={})=>ui.CreatePaymentAction({draft:{...draft,...patch}}),activity:()=>ui.CreatePaymentActivity()};
+}
+
+test("preflight context replaces only another draft's pure failure with recheck guidance",()=>{
+  const f=paymentContextFixture(),state={phase:"error",error:"create.startPassed",reviewDraft:{...f.draft}};
+  f.set(state);assert.ok(f.walk(f.render()).some(n=>n.props?.state===state));
+  for(const patch of [{start:201n},{end:801n},{amount:2n},{recipient:f.account},{cancelable:false},{name:"Changed"}]){
+    const nodes=f.walk(f.render(patch));
+    assert.equal(nodes.some(n=>n.props?.state===state),false);
+    assert.equal(nodes.find(n=>n.props?.role==="status").props.children,locale["create.draftChanged"]);
+    const button=nodes.find(n=>n.type==="button");assert.equal(button.props.disabled,false);
+    button.props.onClick();assert.equal(f.calls.at(-1)[0],"review");assert.equal(f.calls.at(-1)[1][Object.keys(patch)[0]],Object.values(patch)[0]);
+    assert.equal(f.states[f.account],state);
+  }
+  assert.ok(f.walk(f.render()).some(n=>n.props?.state===state));
+  assert.ok(f.calls.every(([action])=>action==="review"));
+});
+
+test("preflight context preserves pending, receipts and unscoped safety errors on draft edits",()=>{
+  const f=paymentContextFixture(),pending={draft:{...f.draft,amount:"1000000",start:"200",end:"800"},step:"create",createdAt:123};
+  for(const phase of ["checking","wallet","submitted","unknown","indexing"]){
+    const state={phase,pending,reviewDraft:{...f.draft},error:"create.startPassed"};f.set(state);
+    const nodes=f.walk(f.render({start:300n}));assert.ok(nodes.some(n=>n.props?.state===state));
+    assert.equal(nodes.find(n=>n.type==="button").props.disabled,true);assert.equal(state.pending,pending);
+  }
+  for(const error of ["create.pendingCorrupt","create.storageUnavailable","actions.otherPending","claim.deploymentHold","claim.sessionChanged"]){
+    const state={phase:"error",error};f.set(state);assert.ok(f.walk(f.render({start:300n})).some(n=>n.props?.state===state));
+  }
+  for(const extra of [{pending},{evidence:{hash:"0x"+"a".repeat(64),block:1n}}]){
+    const state={phase:"error",error:"create.startPassed",reviewDraft:{...f.draft},...extra};f.set(state);
+    assert.ok(f.walk(f.render({start:300n})).some(n=>n.props?.state===state));
+  }
+  assert.equal(f.calls.length,0);
+});
+
+test("preflight context keeps the last failure in activity with explicit historical labeling",()=>{
+  const f=paymentContextFixture(),state={phase:"error",error:"create.startPassed",reviewDraft:{...f.draft}};f.set(state);
+  const activity=f.activity();assert.equal(activity.props.state,state);
+  const nodes=f.walk(activity.type(activity.props));
+  assert.equal(nodes.find(n=>n.type==="strong").props.children[0],locale["create.lastPreflight"]);
+  assert.ok(nodes.some(n=>n.props?.children===locale["create.startPassed"]));
+  assert.equal(f.states[f.account],state);assert.equal(f.calls.length,0);
+});
+
+test("preflight context never exposes an old quote's execute action for changed input",()=>{
+  const f=paymentContextFixture(),quote={draft:{...f.draft},step:"create",block:10n,at:100n};f.set({phase:"review",quote});
+  const nodes=f.walk(f.render({start:300n})),buttons=nodes.filter(n=>n.type==="button");
+  assert.equal(buttons.length,1);assert.equal(buttons[0].props.children,locale["create.checkConditions"]);
+  buttons[0].props.onClick();assert.equal(f.calls[0][0],"review");assert.equal(f.calls[0][1].start,300n);
+  assert.equal(f.states[f.account].quote,quote);assert.equal(f.calls.some(([name])=>name==="execute"),false);
+});
+
 function marketLocationFixture(search="",initialState=null,blocked=false,listed=true){
   let params=new URLSearchParams(search),state=initialState;const moves=[],node=(type,props)=>({type,props});
   let cursor=0,calculations=0;const hooks=[],effects=[];
@@ -172,6 +240,7 @@ function marketLocationFixture(search="",initialState=null,blocked=false,listed=
     "@/lib/claim-math":{getClaimTotals:claim=>{calculations++;return{totalUnclaimed:{raw:claim.unclaimedRaw??1000000n},claimableNow:{raw:500000n},paymentStatus:"streaming"};},getListingMetrics:(_claim,_listing,_now,totals)=>{assert.ok(totals,"reuse the same snapshot totals");return{discountRate:.15,expectedProfit:{raw:150000n}};}},
     "@/lib/format":{formatDate:()=>"date",formatPercent:()=>"15%"},"@/lib/workspace-model":{sameAddress:(a,b)=>a===b},
     "@/components/workspace/ClaimReviewDialog":{ClaimReviewDialog:"ClaimReviewDialog"},"@/components/workspace/PaymentStatus":{PaymentStatus:"PaymentStatus"},
+    "@/components/workspace/ClaimLookup":{ClaimLookup:"ClaimLookup"},
     "@/components/workspace/WorkspaceUI":Object.fromEntries(["DetailButton","EmptyRows","Figure","PageHeading","Tag"].map(name=>[name,name])),
     "@/components/workspace/WorkspaceDataState":{WorkspaceDataState:"WorkspaceDataState"},
   },{URLSearchParams});
@@ -229,9 +298,10 @@ test("invalid pages normalize and a shrinking result clamps without destroying d
   for(const condition of ["loading","failure"]){const loading=marketWithCount(0,"page=25");loading.snapshot.scenario.dataCondition=condition;loading.nodes();loading.flushEffects();assert.equal(loading.params().get("page"),"25");}
 });
 
-test("off-page detail and close preserve the active page and never bypass a live buy guard",()=>{
+test("off-page live review preserves the active page and cannot bypass an account guard",()=>{
   const f=marketWithCount(81,"page=2&claim=3&intent=buy");f.snapshot.source="live";
-  assert.equal(shownIds(f).includes("3"),false);assert.equal(f.modal().props.claim.id,"3");assert.equal(f.modal().props.mode,"detail");
+  assert.equal(shownIds(f).includes("3"),false);assert.equal(f.modal().props.claim.id,"3");assert.equal(f.modal().props.mode,"buy");
+  f.snapshot.canTransact=false;assert.equal(f.modal().props.mode,"detail");
   f.modal().props.onClose();assert.equal(f.params().get("page"),"2");assert.equal(f.params().has("claim"),false);
 });
 
@@ -281,6 +351,7 @@ test("F08 asset scheduled/completed filters retain only the matching owned phase
     "@/hooks/use-workspace-snapshot":{useWorkspaceSnapshot:()=>snapshot},"@/lib/claim-math":math,"@/lib/workspace-model":model,
     "@/lib/ui-measurement":uiMeasurement,
     "@/components/workspace/ClaimReviewDialog":{ClaimReviewDialog:"ClaimReviewDialog"},"@/components/workspace/PaymentStatus":{PaymentStatus:"PaymentStatus"},"@/components/workspace/WorkspaceDataState":{WorkspaceDataState:"WorkspaceDataState"},"./AssetComposition":{AssetComposition:"AssetComposition"},
+    "@/components/ui/button":{Button:"button"},"lucide-react":{Coins:"Coins"},"@/components/workspace/MintTokenAction":{MintTokenDialog:"MintTokenDialog"},
     "@/components/workspace/WorkspaceUI":Object.fromEntries(["DetailButton","EmptyRows","Figure","FilterTabs","PageHeading","Tag","WalletGate"].map(v=>[v,v])),
   },{Date});
   const walk=v=>Array.isArray(v)?v.flatMap(walk):v&&typeof v==="object"?[v,...walk(v.props?.children)]:[];
@@ -307,9 +378,13 @@ test("QA07 opening market detail pushes one history entry and close returns to i
   assert.equal(f.modal().props.claim.id,"3");f.modal().props.onClose();assert.equal(f.moves.at(-1).delta,-1);
 });
 
-test("QA07 deep-linked close stays on market and blocked buy intent never bypasses guards",()=>{
+test("QA07 live review opens only for eligible rows and deep-linked close retains filters",()=>{
   const f=marketLocationFixture("token=MockUSDC&sort=price&claim=3&intent=buy",null,true);
-  assert.equal(f.modal().props.mode,"detail");f.modal().props.onClose();
+  assert.equal(f.modal().props.mode,"buy");
+  for(const mutate of [g=>g.snapshot.address="b",g=>g.snapshot.claims=[{...g.snapshot.claims[0],unclaimedRaw:0n}],g=>g.snapshot.claims=[{...g.snapshot.claims[0],owner:"c"}],g=>g.snapshot.canTransact=false]){
+    const guarded=marketLocationFixture("claim=3&intent=buy",null,true);mutate(guarded);assert.equal(guarded.modal().props.mode,"detail");
+  }
+  f.modal().props.onClose();
   assert.equal(f.params().has("claim"),false);assert.equal(f.params().has("intent"),false);assert.equal(f.params().get("token"),"MockUSDC");assert.equal(f.params().get("sort"),"price");assert.equal(f.moves.at(-1).options.replace,true);
   assert.equal(marketLocationFixture("claim=999").modal(),undefined);
 });

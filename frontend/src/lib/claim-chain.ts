@@ -3,7 +3,7 @@ import {sepolia} from "viem/chains";
 import {LIVE_RPC_URL,LIVE_STREAM,LIVE_USDC} from "./live-config";
 import type {WalletSession,WalletToken} from "./wallet-session";
 import {browserClaimStorage} from "./claim-storage";
-import {paymentStorage} from "./create-payment-model";
+import {assertNoOtherLivePending,withLiveTransactionLock} from "./transaction-guard";
 import {ClaimNotSubmitted,projectionHasClaim,type PendingClaim,type ClaimQuote,type ClaimEvidence} from "./claim-policy";
 import type {ClaimPorts} from "./claim-engine";
 import {readApi,detailSchema} from "./live-api";
@@ -69,11 +69,9 @@ export async function readClaimQuote(token:WalletToken,id:string):Promise<ClaimQ
 }
 export function browserClaimPorts(session:WalletSession,refresh:(account:string)=>Promise<void>):ClaimPorts{
   const storage=browserClaimStorage();
-  return {contract:LIVE_STREAM,session,storage:{...storage,read:account=>{if(paymentStorage().read(account))throw new Error("create.otherPending");return storage.read(account);}},quote:readClaimQuote,refresh,
-    lock:async(account,action)=>{
-      if(!navigator.locks)throw new Error("claim.lockUnavailable");
-      await navigator.locks.request(`vestora:claim:${LIVE_STREAM.toLowerCase()}:${account}`,{ifAvailable:true},async lock=>{if(!lock)throw new Error("claim.tabBusy");await action();});
-    },
+  return {contract:LIVE_STREAM,session,storage,quote:readClaimQuote,refresh,
+    assertNoOtherPending:account=>assertNoOtherLivePending(account,"claim"),
+    lock:(account,action)=>withLiveTransactionLock(account,"claim",action,{checkPending:false}),
     send:async quote=>{
       try{await session.assertCurrent(quote.token);}catch{throw new ClaimNotSubmitted("claim.sessionChanged");}
       const wallet=createWalletClient({chain:sepolia,account:quote.account as Address,transport:custom(quote.token.provider,{retryCount:0})});

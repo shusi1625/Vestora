@@ -66,6 +66,7 @@ export type Listing = {
 };
 
 export type TxKind =
+  | "mint"
   | "create"
   | "approve"
   | "list"
@@ -88,11 +89,15 @@ export type TxPhase =
   | "replaced";
 
 export type TxRecord = {
+  /** Local records are bounded display-only observations, never send authority. */
+  origin?: "local" | "api";
+  amountMeaning?: "transferred" | "price" | "allowance" | "requested" | "none" | "unknown";
+  relatedAction?: string;
   id: string;
   kind: TxKind;
   claimId: string;
   token: TokenSymbol;
-  /** 이 거래로 실제 이동한 수량 */
+  /** amountMeaning에 따른 수량. 요청·가격·승인 한도는 실제 이동액이 아님. */
   amountRaw: bigint;
   /** 조회한 지갑의 역할 */
   role: "owner" | "buyer" | "seller" | "payer" | "recipient";

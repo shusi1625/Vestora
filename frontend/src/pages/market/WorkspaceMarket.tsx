@@ -12,6 +12,7 @@ import { PaymentStatus } from "@/components/workspace/PaymentStatus";
 import { DetailButton, Figure, PageHeading, Tag } from "@/components/workspace/WorkspaceUI";
 import { WorkspaceDataState } from "@/components/workspace/WorkspaceDataState";
 import { runUiAction, useUiMeasurement } from "@/lib/ui-measurement";
+import { ClaimLookup } from "@/components/workspace/ClaimLookup";
 
 const PAGE_SIZE = 40;
 
@@ -36,7 +37,7 @@ export default function WorkspaceMarket() {
     const claim = claimsById.get(listing.claimId);
     if (!claim) return [];
     const totals = getClaimTotals(claim, now), metrics = getListingMetrics(claim, listing, now, totals);
-    const blocked = sameAddress(listing.seller, address) ? "workspace.ownListing" : totals.totalUnclaimed.raw === 0n ? "workspace.noRemaining" : source === "live" ? "live.readBlocked" : claim.cancelledAt ? "market.card.blocked.cancelled" : !sameAddress(listing.seller, claim.owner) || claim.ownership !== "verified" ? "workspace.ownershipBlocked" : !canTransact ? "workspace.connectToExecute" : "";
+    const blocked = sameAddress(listing.seller, address) ? "workspace.ownListing" : totals.totalUnclaimed.raw === 0n ? "workspace.noRemaining" : !sameAddress(listing.seller, claim.owner) || source!=="live"&&claim.ownership !== "verified" ? "workspace.ownershipBlocked" : source!=="live"&&claim.cancelledAt ? "market.card.blocked.cancelled" : !canTransact ? "workspace.connectToExecute" : "";
     return [{ listing, claim, totals, metrics, blocked }];
   }), [empty, listings, claimsById, now, address, source, canTransact]);
   const rows = useMemo(() => {
@@ -81,7 +82,7 @@ export default function WorkspaceMarket() {
     });
   };
   useUiMeasurement({data:claims,surface:"market",stateKey:params.toString(),rowCount:rows.length,condition});
-  return <div className="ws-page"><PageHeading title={t("market.title")} description={t("market.description")} onRefresh={refresh} />
+  return <div className="ws-page"><PageHeading title={t("market.title")} description={t("market.description")} action={source==="live"?<ClaimLookup/>:undefined} onRefresh={refresh} />
     <div className="ws-toolbar"><label>{t("workspace.token")}<select value={token} onChange={e => update({ token: e.target.value, ...(e.target.value === "all" && ["price", "unclaimed"].includes(sort) ? { sort: "review" } : {}) })}><option value="all">{t("workspace.allTokens")}</option>{snapshot.paymentTokens.map(token=><option key={token}>{token}</option>)}</select></label>
       <label>{t("workspace.cancellation")}<select value={cancel} onChange={e => update({ cancel: e.target.value })}><option value="all">{t("workspace.all")}</option><option value="yes">{t("workspace.cancelable")}</option><option value="no">{t("workspace.nonCancelable")}</option></select></label>
       <label>{t("workspace.paymentState")}<select value={phase} onChange={e => update({ phase: e.target.value })}><option value="all">{t("workspace.all")}</option><option value="streaming">{t("workspace.phase.streaming")}</option><option value="completed">{t("workspace.phase.completed")}</option><option value="cancelled">{t("workspace.phase.cancelled")}</option></select></label>

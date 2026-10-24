@@ -140,6 +140,7 @@ export const TX_PHASE_ORDER: TxPhase[] = [
 ];
 
 export const TX_KIND: Record<TxKind, string> = {
+  mint: "workspace.txKind.mint",
   create: "tx.kind.create",
   approve: "tx.kind.approve",
   list: "tx.kind.list",

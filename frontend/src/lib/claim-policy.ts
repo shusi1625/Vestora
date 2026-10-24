@@ -1,10 +1,11 @@
 import type { WalletToken } from "./wallet-session";
 import {validSubmissionFailure,type SubmissionFailure,type GasEstimate} from "./transaction-safety";
 export class ClaimNotSubmitted extends Error {}
-// An unresolved request on the old origin must not become a new send on this one.
+// B's static deployment hold was explicitly lifted by the user on 2026-10-24.
+// Stored unresolved reservations and ordinary cross-operation guards still apply.
+const heldDeploymentAccounts:readonly {account:string;contract:string}[]=[];
 export const deploymentAccountHeld=(account:string,contract:string)=>
-  account.toLowerCase()==="0xbf9bf852225899b667aa4c73bb082e830abb9de1"&&
-  contract.toLowerCase()==="0x2b6becf31c41c25f3a4ef73f6daeeff85db8ed1a";
+  heldDeploymentAccounts.some(held=>held.account.toLowerCase()===account.toLowerCase()&&held.contract.toLowerCase()===contract.toLowerCase());
 export function assertDeploymentWriteAllowed(account:string,contract:string){
   if(deploymentAccountHeld(account,contract))throw new Error("claim.deploymentHold");
 }

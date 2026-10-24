@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 import AssetsPage from "./pages/assets/WorkspaceAssets";
 import ClaimDetailPage from "./pages/claim-detail";
+import LiveClaimDetail from "./pages/claim-detail/LiveClaimDetail";
 import MarketPage from "./pages/market/WorkspaceMarket";
 import SalesPage from "./pages/sales";
 import IssuedPage from "./pages/issued";
@@ -35,12 +36,12 @@ export const routers = [
       {
         path: "claims/:id",
         name: "claimDetail",
-        element: LIVE_MODE ? <Navigate to="/assets" replace /> : <ClaimDetailPage />,
+        element: LIVE_MODE ? <LiveClaimDetail /> : <ClaimDetailPage />,
       },
       {
         path: "claims/:id/sell",
         name: "claimSell",
-        element: LIVE_MODE ? <Navigate to="/assets" replace /> : <SellPage />,
+        element: LIVE_MODE ? <LiveClaimDetail sell /> : <SellPage />,
       },
       {
         path: "my/sales",

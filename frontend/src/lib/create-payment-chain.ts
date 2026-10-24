@@ -2,7 +2,6 @@ import {createPublicClient,createWalletClient,http,custom,parseAbi,encodeFunctio
 import {sepolia} from "viem/chains";
 import {LIVE_RPC_URL,LIVE_STREAM,LIVE_USDC} from "./live-config";
 import {readApi,detailSchema} from "./live-api";
-import {browserClaimStorage} from "./claim-storage";
 import {PaymentNotSubmitted,paymentStorage,unpackPayment,validatePayment,type PaymentDraft,type PaymentQuote,type PendingPayment,type PaymentEvidence} from "./create-payment-model";
 import type {PaymentPorts} from "./create-payment-engine";
 import type {WalletSession,WalletToken} from "./wallet-session";
@@ -20,10 +19,15 @@ const client=createPublicClient({chain:sepolia,transport:http(LIVE_RPC_URL,{time
 const eq=(a?:string|null,b?:string|null)=>Boolean(a&&b&&a.toLowerCase()===b.toLowerCase());
 const approvalRequest=(draft:PaymentDraft)=>({address:LIVE_USDC,abi:paymentTokenAbi,functionName:"approve" as const,args:[LIVE_STREAM,draft.amount] as const});
 const creationRequest=(draft:PaymentDraft)=>({address:LIVE_STREAM,abi:paymentAbi,functionName:"createStream" as const,args:[draft.recipient as Address,LIVE_USDC,draft.amount,draft.start,draft.end,draft.cancelable] as const});
-export async function quotePayment(token:WalletToken,draft:PaymentDraft):Promise<PaymentQuote>{
-  validatePayment(draft);if(await client.getChainId()!==sepolia.id)throw new Error("claim.chainUnavailable");
-  const block=await client.getBlock();if(block.number===null)throw new Error("claim.chainUnavailable");
+async function paymentBlock(draft:PaymentDraft){
+  if(await client.getChainId()!==sepolia.id)throw new Error("claim.chainUnavailable");
+  const block=await client.getBlock(),number=block.number;
+  if(number===null)throw new Error("claim.chainUnavailable");
   if(draft.start<block.timestamp||draft.end<=block.timestamp)throw new Error("create.startPassed");
+  return {number,timestamp:block.timestamp};
+}
+export async function quotePayment(token:WalletToken,draft:PaymentDraft):Promise<PaymentQuote>{
+  validatePayment(draft);const block=await paymentBlock(draft);
   const account=token.account as Address,blockNumber=block.number;
   const [balance,allowance,gas]=await Promise.all([
     client.readContract({address:LIVE_USDC,abi:paymentTokenAbi,functionName:"balanceOf",args:[account],blockNumber,authorizationList:undefined}),
@@ -66,17 +70,24 @@ function evidence(r:PendingPayment,receipt:TransactionReceipt):PaymentEvidence|u
   }
   return matches.length===1?matches[0]:undefined;
 }
-export function browserPaymentPorts(session:WalletSession,refresh:PaymentPorts["refresh"]):PaymentPorts{
-  return{session,storage:paymentStorage(),quote:quotePayment,refresh,
-    lock:async(account,fn)=>{if(!navigator.locks)throw new Error("claim.lockUnavailable");await navigator.locks.request(`vestora:claim:${LIVE_STREAM.toLowerCase()}:${account}`,{ifAvailable:true},async lock=>{if(!lock)throw new Error("claim.tabBusy");if(browserClaimStorage().read(account))throw new Error("create.otherPending");await fn();});},
+export function browserPaymentPorts(session:WalletSession,refresh:PaymentPorts["refresh"],assertNoOtherPending?:PaymentPorts["assertNoOtherPending"]):PaymentPorts{
+  return{session,storage:paymentStorage(),quote:quotePayment,refresh,assertNoOtherPending,
+    lock:async(account,fn)=>{if(!navigator.locks)throw new Error("claim.lockUnavailable");await navigator.locks.request(`vestora:claim:${LIVE_STREAM.toLowerCase()}:${account}`,{ifAvailable:true},async lock=>{if(!lock)throw new Error("claim.tabBusy");await fn();});},
     send:async q=>{
+      try{await session.assertCurrent(q.token);}catch{throw new PaymentNotSubmitted("claim.sessionChanged");}
+      // Quotes may expire during simulation, fee estimation or reservation persistence.
+      try{await paymentBlock(q.draft);}catch(error){
+        throw new PaymentNotSubmitted(error instanceof Error&&error.message==="create.startPassed"?error.message:"claim.chainUnavailable");
+      }
       try{await session.assertCurrent(q.token);}catch{throw new PaymentNotSubmitted("claim.sessionChanged");}
       const wallet=createWalletClient({chain:sepolia,account:q.account as Address,transport:custom(q.token.provider,{retryCount:0})});
       return q.step==="approval"?wallet.writeContract({...approvalRequest(q.draft),account:q.account as Address,chain:sepolia,authorizationList:undefined}):wallet.writeContract({...creationRequest(q.draft),account:q.account as Address,chain:sepolia,authorizationList:undefined});
     },
     receipt:async(r,replaced)=>{
       if(!r.hash)throw new Error("create.unknownHash");
-      const receipt=await client.waitForTransactionReceipt({hash:r.hash,confirmations:2,timeout:120_000,pollingInterval:4_000,onReplaced:r=>replaced(r.transactionReceipt.transactionHash)});
+      let expectedHash=r.hash;
+      const receipt=await client.waitForTransactionReceipt({hash:r.hash,confirmations:2,timeout:120_000,pollingInterval:4_000,onReplaced:r=>{expectedHash=r.transactionReceipt.transactionHash;replaced(expectedHash);}});
+      if(!eq(receipt.transactionHash,expectedHash))throw new Error("create.receiptUnavailable");
       if(receipt.status!=="success")return "reverted";if(!await identity(r,receipt.transactionHash))return "replaced";
       const e=evidence(r,receipt);if(!e)throw new Error("create.receiptUnavailable");return e;
     },

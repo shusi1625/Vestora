@@ -8,6 +8,9 @@ import { useLiveWorkspace } from "@/providers/live-context";
 import { LiveConnection, LiveDataStatus } from "@/components/workspace/LiveConnection";
 import { ClaimActivity } from "@/components/workspace/ClaimAction";
 import { CreatePaymentActivity } from "@/components/workspace/CreatePaymentAction";
+import { MarketActivity } from "@/components/workspace/MarketAction";
+import { CancelPaymentActivity } from "@/components/workspace/CancelPaymentAction";
+import { MintTokenActivity } from "@/components/workspace/MintTokenAction";
 
 import { ScenarioPanel } from "@/components/prototype/ScenarioPanel";
 import { TxActivityDialog } from "@/components/tx/TxActivityDialog";
@@ -52,6 +55,9 @@ export const AppShell = () => {
         {LIVE_MODE && live?.connectedAddress && deploymentAccountHeld(live.connectedAddress,LIVE_STREAM) && <p className="ws-risk" role="status">{t("claim.deploymentHold")}</p>}
         {LIVE_MODE && <ClaimActivity />}
         {LIVE_MODE && <CreatePaymentActivity />}
+        {LIVE_MODE && <MarketActivity />}
+        {LIVE_MODE && <CancelPaymentActivity />}
+        {LIVE_MODE && <MintTokenActivity />}
         <Outlet key={live?.address || "public"} />
       </main>
 

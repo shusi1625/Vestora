@@ -15,9 +15,10 @@ export type ClaimPorts={
   projected:(record:PendingClaim,evidence:ClaimEvidence)=>Promise<boolean>;
   refresh:(account:string)=>Promise<void>;
   lock:(account:string,action:()=>Promise<void>)=>Promise<void>;
+  assertNoOtherPending?:(account:string)=>void|Promise<void>;
   now?:()=>number;
 };
-const message=(error:unknown)=>walletRejected(error)?"claim.rejected":error instanceof Error&&error.message.startsWith("claim.")?error.message:"claim.readFailed";
+const message=(error:unknown)=>walletRejected(error)?"claim.rejected":error instanceof Error&&/^(claim|actions)\./.test(error.message)?error.message:"claim.readFailed";
 
 /** Receipt evidence is never downgraded to a failed transaction by a subsequent read error. */
 export function createClaimEngine(ports:ClaimPorts){
@@ -66,6 +67,7 @@ export function createClaimEngine(ports:ClaimPorts){
         const existing=ports.storage.read(token.account);
         if(existing){put(token.account,{phase:"unknown",id:existing.id,pending:existing,error:submissionFailureMessage(existing.failure)});return;}
         assertDeploymentWriteAllowed(token.account,ports.contract);
+        await ports.assertNoOtherPending?.(token.account);
         put(token.account,{phase:"preparing",id});
         const quote=await ports.quote(token,id);await ports.session.assertCurrent(token);
         put(token.account,{phase:"review",id,quote});
@@ -80,10 +82,12 @@ export function createClaimEngine(ports:ClaimPorts){
         const existing=ports.storage.read(account);
         if(existing){put(account,{phase:"unknown",id:existing.id,pending:existing,error:submissionFailureMessage(existing.failure)});return;}
         assertDeploymentWriteAllowed(account,ports.contract);
+        await ports.assertNoOtherPending?.(account);
         put(account,{phase:"preparing",id:quote.id});
         await ports.session.assertCurrent(quote.token);
         const latest=await ports.quote(quote.token,quote.id);assertQuoteUnchanged(quote,latest);
         await ports.session.assertCurrent(quote.token);
+        await ports.assertNoOtherPending?.(account);
         record={version:1,account,contract:ports.contract,chainId:11155111,id:quote.id,createdAt:ports.now?.()??Date.now()};
         ports.storage.save(record); // Persist the reservation before opening the wallet.
         put(account,{phase:"wallet",id:quote.id,pending:record});

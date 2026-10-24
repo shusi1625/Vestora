@@ -9,9 +9,12 @@ import { issuedAmounts, paymentPhase } from "@/lib/workspace-model";
 import { FundFlow } from "@/components/workspace/FundFlow";
 import { PaymentStatus } from "@/components/workspace/PaymentStatus";
 import { ExecutionFooter, FieldRow, Figure, ReviewModal } from "@/components/workspace/WorkspaceUI";
+import { useLiveWorkspace } from "@/providers/live-context";
+import { CancelPaymentAction } from "@/components/workspace/CancelPaymentAction";
 
-export function PaymentDetails({ claim, now, name, onSave, persisted, onClose }: { claim: Claim; now: Date; name: string; onSave: (name: string) => void; persisted: boolean; onClose: () => void }) {
+export function PaymentDetails({ claim:initialClaim, now, name, onSave, persisted, onClose }: { claim: Claim; now: Date; name: string; onSave: (name: string) => void; persisted: boolean; onClose: () => void }) {
   const { t } = useTranslation();
+  const live=useLiveWorkspace(),claim=live?.claims.find(item=>item.id===initialClaim.id)||initialClaim;
   const [editing, setEditing] = useState(false), [draft, setDraft] = useState(name), [saved, setSaved] = useState(false), [cancelReview, setCancelReview] = useState(false);
   const amounts = issuedAmounts(claim, now), canCancel = claim.cancellable && !claim.cancelledAt && amounts.future > 0n;
   return <ReviewModal open onOpenChange={open => { if (!open) onClose(); }} title={`${t(cancelReview ? "workspace.cancelReview" : "workspace.issuedDetails")} · #${claim.id}`}>
@@ -23,6 +26,6 @@ export function PaymentDetails({ claim, now, name, onSave, persisted, onClose }:
     <div className={`ws-risk ${canCancel ? "warning" : "neutral"}`}>{t(claim.cancelledAt ? "workspace.cancelledRisk" : cancelReview ? "workspace.cancelImpact" : claim.cancellable ? "workspace.issuerCancelRisk" : "workspace.noCancelRisk")}</div>
     {cancelReview && <dl><FieldRow label={t("workspace.refundable")}><Figure raw={amounts.refundable} token={claim.token} /></FieldRow><FieldRow label={t("workspace.rightsRetained")}><Figure raw={amounts.claimable} token={claim.token} /></FieldRow></dl>}
     <p className="ws-caption">{t("workspace.claimedNotMyIncome")}</p>
-    {cancelReview ? <><Button variant="outline" onClick={() => setCancelReview(false)}>{t("workspace.back")}</Button><ExecutionFooter label={t("workspace.executeCancel")} /></> : <footer className="ws-review-footer"><span>{t(LIVE_MODE ? "live.executionDisabled" : "workspace.previewOnly")}</span>{canCancel && paymentPhase(claim, now) !== "completed" && <Button variant="outline" className="ws-danger-button" onClick={() => setCancelReview(true)}>{t("workspace.cancelReview")}</Button>}</footer>}
+    {cancelReview ? <><Button variant="outline" onClick={() => setCancelReview(false)}>{t("workspace.back")}</Button>{LIVE_MODE?<CancelPaymentAction id={claim.id}/>:<ExecutionFooter label={t("workspace.executeCancel")} />}</> : <footer className="ws-review-footer"><span>{t(LIVE_MODE ? "actions.cancelAmountNotice" : "workspace.previewOnly")}</span>{canCancel && paymentPhase(claim, now) !== "completed" && <Button variant="outline" className="ws-danger-button" onClick={() => setCancelReview(true)}>{t("workspace.cancelReview")}</Button>}</footer>}
   </ReviewModal>;
 }

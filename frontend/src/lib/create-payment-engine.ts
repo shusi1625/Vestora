@@ -6,15 +6,16 @@ import {assertDeploymentWriteAllowed} from "./claim-policy";
 import {LIVE_STREAM} from "./live-config";
 
 export type PaymentPhase="checking"|"review"|"wallet"|"submitted"|"approved"|"indexing"|"completed"|"rejected"|"reverted"|"replaced"|"unknown"|"error";
-export type PaymentState={phase:PaymentPhase;quote?:PaymentQuote;pending?:PendingPayment;evidence?:PaymentEvidence;error?:string;warning?:string};
+export type PaymentState={phase:PaymentPhase;quote?:PaymentQuote;reviewDraft?:PaymentDraft;pending?:PendingPayment;evidence?:PaymentEvidence;error?:string;warning?:string};
 export type PaymentPorts={session:WalletSession;storage:{read:(account:string)=>PendingPayment|null;save:(record:PendingPayment)=>void;clear:(record:PendingPayment)=>void};
+  assertNoOtherPending?:(account:string)=>void|Promise<void>;
   quote:(token:PaymentQuote["token"],draft:PaymentDraft)=>Promise<PaymentQuote>;
   send:(quote:PaymentQuote)=>Promise<`0x${string}`>;
   receipt:(record:PendingPayment,onReplacement:(hash:`0x${string}`)=>void)=>Promise<PaymentEvidence|"reverted"|"replaced">;
   verifyRecovery:(record:PendingPayment,hash:`0x${string}`)=>Promise<void>;
   projected:(record:PendingPayment,evidence:PaymentEvidence)=>Promise<boolean>;
   refresh:(account:string)=>Promise<void>;lock:(account:string,fn:()=>Promise<void>)=>Promise<void>;now?:()=>number};
-const message=(error:unknown)=>error instanceof Error&&/^(create|claim|workspace|live)\./.test(error.message)?error.message:"create.readFailed";
+const message=(error:unknown)=>error instanceof Error&&/^(create|claim|workspace|live|actions)\./.test(error.message)?error.message:"create.readFailed";
 /** Approval and escrow creation always require separate explicit wallet actions. */
 export function createPaymentEngine(ports:PaymentPorts){
   let states:Record<string,PaymentState>={};const listeners=new Set<()=>void>(),busy=new Set<string>();
@@ -44,13 +45,15 @@ export function createPaymentEngine(ports:PaymentPorts){
   const restore=(account:string)=>{try{const pending=ports.storage.read(account);if(pending&&!states[account])put(account,{phase:"unknown",pending,error:submissionFailureMessage(pending.failure)});}catch(error){put(account,{phase:"error",error:message(error)});}};
   const review=async(draft:PaymentDraft)=>{
     let token:PaymentQuote["token"];try{token=ports.session.capture();}catch{return;}
-    await run(token.account,async()=>{try{
+    await run(token.account,async()=>{let reviewDraft:PaymentDraft|undefined;try{
       const pending=ports.storage.read(token.account);if(pending){put(token.account,{phase:"unknown",pending,error:submissionFailureMessage(pending.failure)});return;}
       assertDeploymentWriteAllowed(token.account,LIVE_STREAM);
       validatePayment(draft);put(token.account,{phase:"checking"});
-      const quote=await ports.quote(token,{...draft});await ports.session.assertCurrent(token);
+      await ports.assertNoOtherPending?.(token.account);
+      reviewDraft={...draft};
+      const quote=await ports.quote(token,{...reviewDraft});await ports.session.assertCurrent(token);
       put(token.account,{phase:"review",quote});
-    }catch(error){put(token.account,{phase:"error",error:message(error)});}});
+    }catch(error){put(token.account,{phase:"error",error:message(error),reviewDraft});}});
   };
   const execute=async(account:string)=>run(account,async()=>{
     const q=states[account]?.quote;if(states[account]?.phase!=="review"||!q)return;
@@ -60,8 +63,10 @@ export function createPaymentEngine(ports:PaymentPorts){
         const pending=ports.storage.read(account);if(pending){put(account,{phase:"unknown",pending,error:submissionFailureMessage(pending.failure)});return;}
         assertDeploymentWriteAllowed(account,LIVE_STREAM);
         put(account,{phase:"checking"});await ports.session.assertCurrent(q.token);
+        await ports.assertNoOtherPending?.(account);
         const next=await ports.quote(q.token,q.draft);await ports.session.assertCurrent(q.token);
         if(next.account!==q.account||next.step!==q.step||!samePayment(next.draft,q.draft))throw new Error("create.conditionsChanged");
+        await ports.assertNoOtherPending?.(account);await ports.session.assertCurrent(q.token);
         record=paymentRecord(next,ports.now?.()??Date.now());ports.storage.save(record);
         put(account,{phase:"wallet",pending:record});walletRequested=true;const hash=await ports.send(next);
         if(!/^0x[\da-f]{64}$/i.test(hash))throw new Error("create.unknownHash");

@@ -6,39 +6,101 @@ import {createRequire} from "node:module";
 import vm from "node:vm";
 import ts from "typescript";
 const root=resolve(import.meta.dirname,".."),require=createRequire(import.meta.url);
+const snapshotActionHookStubs={
+  "./use-market-action":{useMarketAction:()=>({})},
+  "./use-cancel-payment":{useCancelPayment:()=>({})},
+  "./use-mint-token":{useMintToken:()=>({})},
+  "./use-live-action-history":{useLiveActionHistory:(_address,apiRows,_engines)=>{
+    if(!Array.isArray(apiRows))throw new TypeError("Expected useLiveActionHistory API rows argument");
+    return {records:apiRows,warning:undefined};
+  }},
+};
 const realViem=require("viem"),a="0x1111111111111111111111111111111111111111",b="0x2222222222222222222222222222222222222222";
 const contract="0x2b6beCf31c41c25f3A4eF73F6dAEEff85dB8eD1a",usdc="0xD8E66a5bfbf8DEa75DfbDc0C1EE65612504Fb7F9",hash="0x"+"a".repeat(64),hash2="0x"+"b".repeat(64);
-function loader(overrides={},DateValue=Date){
+function loader(overrides={},DateValue=Date,globals={}){
   const cache=new Map();
   function load(file){const path=resolve(root,file.endsWith(".ts")?file:`${file}.ts`);if(cache.has(path))return cache.get(path);const module={exports:{}};cache.set(path,module.exports);
     const code=ts.transpileModule(readFileSync(path,"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
     const localRequire=id=>id in overrides?overrides[id]:id==="viem"?realViem:id==="viem/chains"?require(id):id==="./live-config"?{LIVE_STREAM:contract,LIVE_USDC:usdc,LIVE_RPC_URL:"https://example.invalid"}:id==="./live-api"?{readApi:async()=>{throw Error("No external API in tests");},detailSchema:{}}:load(id.startsWith("@/")?resolve(root,"src",id.slice(2)):resolve(dirname(path),id));
-    vm.runInNewContext(`(function(require,module,exports){${code}\n})`,{Date:DateValue,BigInt,Intl,Error,console,localStorage:{getItem:()=>null,setItem:()=>{},removeItem:()=>{}},navigator:{locks:{request:async(_key,_options,fn)=>fn({})}}})(localRequire,module,module.exports);return module.exports;
+    vm.runInNewContext(`(function(require,module,exports){${code}\n})`,{Date:DateValue,BigInt,Intl,Error,console,localStorage:{getItem:()=>null,setItem:()=>{},removeItem:()=>{}},navigator:{locks:{request:async(_key,_options,fn)=>fn({})}},...globals})(localRequire,module,module.exports);return module.exports;
   }return load;
 }
 const load=loader(),{createWalletSession,walletRejected}=load("src/lib/wallet-session"),{createClaimEngine}=load("src/lib/claim-engine"),policy=load("src/lib/claim-policy");
-test("known unresolved account is held even on a new origin with empty storage",async()=>{
+test("explicit B reuse removes only the static hold and retains own unresolved claims",async()=>{
   const f=await fixture(),account="0xbf9bf852225899b667aa4c73bb082e830abb9de1";
   f.wallet.accounts=[account];f.wallet.emit("accountsChanged",[account]);
-  let reads=0;f.ports.quote=async()=>{reads++;throw Error("must not quote");};
+  let reads=0;f.ports.quote=async()=>{reads++;throw Error("claim.readFailed");};
   const engine=createClaimEngine(f.ports);
   await engine.review("3");
-  assert.equal(engine.getSnapshot()[account].error,"claim.deploymentHold");
+  assert.equal(engine.getSnapshot()[account].error,"claim.readFailed");
   await engine.review("4");await engine.execute(account);
-  assert.equal(reads,0);assert.equal(f.stored(),null);assert.equal(f.counts().sendCount,0);
-  assert.equal(policy.deploymentAccountHeld(account.toUpperCase(),contract.toUpperCase()),true);
+  assert.equal(reads,2);assert.equal(f.stored(),null);assert.equal(f.counts().sendCount,0);
+  assert.equal(policy.deploymentAccountHeld(account.toUpperCase(),contract.toUpperCase()),false);
   assert.equal(policy.deploymentAccountHeld(a,contract),false);
   assert.equal(policy.deploymentAccountHeld(account,"0x"+"1".repeat(40)),false);
+  const pending={version:1,account,contract,chainId:11155111,id:"3",createdAt:123};
+  f.ports.storage.save(pending);await engine.review("4");await engine.execute(account);
+  assert.equal(engine.getSnapshot()[account].phase,"unknown");assert.equal(f.stored(),pending);
+  assert.equal(reads,2);assert.equal(f.counts().sendCount,0);
   f.session.stop();
+});
+
+test("shared pending callback fails closed at review and both execute checks with no reservation or send",async()=>{
+  for(const key of ["actions.otherPending","actions.storageUnavailable"])for(const stage of ["review","execute","after-requote"]){
+    const f=await fixture();let checks=0,quotes=0;
+    const quote=f.ports.quote;f.ports.quote=async(...args)=>{quotes++;return quote(...args);};
+    f.ports.assertNoOtherPending=async account=>{assert.equal(account,a);checks++;if(stage==="review"||stage==="execute"&&checks===2||stage==="after-requote"&&checks===3)throw Error(key);};
+    try{
+      await f.engine.review("2");await f.engine.execute(a);
+      assert.equal(f.engine.getSnapshot()[a].phase,"error");assert.equal(f.engine.getSnapshot()[a].error,key);
+      assert.equal(f.counts().sendCount,0);assert.equal(f.counts().receiptCount,0);assert.equal(f.stored(),null);
+      assert.equal(quotes,stage==="review"?0:stage==="execute"?1:2);assert.equal(checks,stage==="review"?1:stage==="execute"?2:3);
+    }finally{f.session.stop();}
+  }
+});
+
+test("claim resume and hash recovery remain read-only with a corrupt foreign reservation",async()=>{
+  const guard=load("src/lib/transaction-guard");
+  for(const method of ["resume","recover"]){
+    const f=await fixture(),foreignKey=guard.livePendingKeys(a).market,foreign=new Map([[foreignKey,"{unresolved-market"]]);let checks=0,verifies=0;
+    f.ports.assertNoOtherPending=async account=>{checks++;guard.assertNoOtherLivePending(account,"claim",{getItem:key=>foreign.get(key)??null});};
+    f.ports.verifyRecovery=async(record,candidate)=>{verifies++;assert.equal(record.id,"2");assert.equal(candidate,hash);};
+    f.ports.quote=async()=>{assert.fail("Read-only recovery cannot quote a new claim");};
+    f.ports.storage.save({version:1,account:a,contract,chainId:11155111,id:"2",createdAt:123,...(method==="resume"?{hash}:{})});
+    try{
+      f.engine.restore(a);if(method==="resume")await f.engine.resume(a);else await f.engine.recover(a,hash);
+      assert.equal(f.engine.getSnapshot()[a].phase,"completed");assert.equal(f.engine.getSnapshot()[a].evidence.hash,hash);
+      assert.equal(checks,0);assert.equal(verifies,method==="recover"?1:0);assert.equal(f.counts().receiptCount,1);assert.equal(f.counts().sendCount,0);
+      assert.equal(f.stored(),null);assert.equal(foreign.get(foreignKey),"{unresolved-market");
+      assert.ok(!f.wallet.calls.some(method=>["eth_sendTransaction","eth_sign","personal_sign","eth_signTypedData_v4","wallet_sendCalls"].includes(method)));
+    }finally{f.session.stop();}
+  }
+});
+
+test("browserClaimPorts applies the foreign guard only to new-send checks, preserving storage and recovery locks",async()=>{
+  const f=await receiptFixture(),ownKey=policy.claimPendingKey(a,contract),foreignKey=`vestora:market-pending:11155111:${contract.toLowerCase()}:${a}`;
+  const entries=new Map([[ownKey,JSON.stringify(f.record)],[foreignKey,"foreign-corrupt"]]),locks=[];
+  const storage={getItem:key=>entries.get(key)??null,setItem:(key,value)=>entries.set(key,value),removeItem:key=>entries.delete(key)};
+  const adapter=loader({viem:{...realViem,createPublicClient:()=>f.rpc,createWalletClient:()=>{assert.fail("Recovery cannot create a signing client");}}},Date,
+    {localStorage:storage,navigator:{locks:{request:async(key,options,fn)=>{locks.push({key,options});await fn({});}}}})("src/lib/claim-chain");
+  const ports=adapter.browserClaimPorts(f.session,async()=>{});
+  try{
+    assert.throws(()=>ports.assertNoOtherPending(a),/actions.otherPending/);
+    assert.equal(ports.storage.read(a).hash,hash);
+    await ports.lock(a,async()=>{await ports.verifyRecovery(f.record,hash);});
+    const evidence=await ports.receipt(f.record,()=>{assert.fail("No replacement expected");});assert.equal(evidence.amount,3066667n);
+    assert.equal(locks.length,1);assert.equal(locks[0].key,`vestora:claim:${contract.toLowerCase()}:${a}`);assert.equal(locks[0].options.ifAvailable,true);
+    assert.equal(entries.get(foreignKey),"foreign-corrupt");assert.equal(JSON.parse(entries.get(ownKey)).hash,hash);
+  }finally{f.session.stop();}
 });
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return{promise,resolve,reject};};
 function fakeWallet(){
   const listeners=new Map();
-  const provider={accounts:[a],chain:"0xaa36a7",calls:[],authorize:null,revoke:null,permissions:[{parentCapability:"eth_accounts"}],requests:[],
+  const provider={accounts:[a],chain:"0xaa36a7",calls:[],authorize:null,permissionRequest:null,revoke:null,permissions:[{parentCapability:"eth_accounts"}],requests:[],
     on:(name,fn)=>{if(!listeners.has(name))listeners.set(name,new Set());listeners.get(name).add(fn);},
     removeListener:(name,fn)=>listeners.get(name)?.delete(fn),emit:(name,value)=>listeners.get(name)?.forEach(fn=>fn(value)),
-    async request({method,params}){this.calls.push(method);this.requests.push({method,params});if(method==="eth_accounts")return this.accounts;if(method==="eth_chainId")return this.chain;if(method==="eth_requestAccounts")return this.authorize?this.authorize():this.accounts;if(method==="wallet_revokePermissions"){if(this.revoke)return this.revoke();this.permissions=[];this.accounts=[];this.emit("accountsChanged",[]);return null;}if(method==="wallet_getPermissions")return this.permissions;if(method==="wallet_switchEthereumChain"){this.chain=params[0].chainId;this.emit("chainChanged",this.chain);return null;}throw Error(`Unexpected wallet method ${method}`);},
+    async request({method,params}){this.calls.push(method);this.requests.push({method,params});if(method==="eth_accounts")return this.accounts;if(method==="eth_chainId")return this.chain;if(method==="wallet_requestPermissions")return this.permissionRequest?this.permissionRequest():this.permissions;if(method==="eth_requestAccounts")return this.authorize?this.authorize():this.accounts;if(method==="wallet_revokePermissions"){if(this.revoke)return this.revoke();this.permissions=[];this.accounts=[];this.emit("accountsChanged",[]);return null;}if(method==="wallet_getPermissions")return this.permissions;if(method==="wallet_switchEthereumChain"){this.chain=params[0].chainId;this.emit("chainChanged",this.chain);return null;}throw Error(`Unexpected wallet method ${method}`);},
     listenerCount:()=>[...listeners.values()].reduce((sum,s)=>sum+s.size,0),
   };return provider;
 }
@@ -94,6 +156,64 @@ test("explicit disconnect revokes and verifies only this site's account permissi
 test("local watch-only detach never revokes wallet permission",async()=>{
   const f=await fixture();f.session.disconnect();assert.equal(f.session.getSnapshot().address,null);
   assert.equal(f.wallet.calls.includes("wallet_revokePermissions"),false);assert.equal(f.wallet.accounts[0],a);f.session.stop();
+});
+
+test("explicit connect requests account selection even when a cached grant already exists",async()=>{
+  const f=await fixture();assert.equal(f.wallet.calls.includes("wallet_requestPermissions"),false);
+  f.wallet.permissionRequest=async()=>{f.wallet.accounts=[b];return f.wallet.permissions;};
+  await f.session.connect();assert.equal(f.session.getSnapshot().address,b);
+  const request=f.wallet.requests.find(r=>r.method==="wallet_requestPermissions");
+  assert.equal(JSON.stringify(request.params),JSON.stringify([{eth_accounts:{}}]));
+  assert.ok(f.wallet.calls.indexOf("wallet_requestPermissions")<f.wallet.calls.indexOf("eth_requestAccounts"));
+  assert.equal(f.wallet.calls.includes("wallet_revokePermissions"),false);f.session.stop();
+});
+
+test("account selection deduplicates requests and blocks quotes until selection settles",async()=>{
+  const f=await fixture(),gate=deferred(),token=f.session.capture();f.wallet.permissionRequest=()=>gate.promise;
+  const first=f.session.connect(),second=f.session.connect();assert.equal(first,second);
+  assert.equal(f.session.getSnapshot().state,"connecting");assert.throws(()=>f.session.capture());await assert.rejects(()=>f.session.assertCurrent(token));
+  f.wallet.accounts=[b];f.wallet.emit("accountsChanged",[b]);f.wallet.emit("chainChanged","0x1");
+  assert.equal(f.session.getSnapshot().state,"connecting");assert.equal(f.session.getSnapshot().address,a);
+  gate.resolve([{parentCapability:"eth_accounts"}]);await first;assert.equal(f.session.getSnapshot().address,b);
+  assert.equal(f.wallet.calls.filter(method=>method==="wallet_requestPermissions").length,1);assert.equal(f.counts().sendCount,0);f.session.stop();
+});
+
+test("declining account selection never silently reconnects the previously permitted account",async()=>{
+  for(const code of [4001,4100]){
+    const f=await fixture();f.wallet.permissionRequest=async()=>{throw {code};};await f.session.connect();
+    assert.equal(f.session.getSnapshot().address,null);assert.equal(f.session.getSnapshot().error,"live.walletRejected");
+    assert.equal(f.wallet.calls.includes("eth_requestAccounts"),false);f.wallet.emit("accountsChanged",[a]);
+    assert.equal(f.session.getSnapshot().address,null);assert.equal(f.counts().sendCount,0);f.session.stop();
+  }
+});
+
+test("unsupported account selection has no silent cached-account fallback",async()=>{
+  for(const code of [-32601,4200]){
+    const f=await fixture();f.wallet.permissionRequest=async()=>{throw {cause:{code}};};await f.session.connect();
+    assert.equal(f.session.getSnapshot().address,null);assert.equal(f.session.getSnapshot().error,"live.accountSelectionUnsupported");
+    assert.equal(f.wallet.calls.includes("eth_requestAccounts"),false);f.session.stop();
+  }
+});
+
+test("missing or malformed account permission never establishes a connection",async()=>{
+  for(const value of [null,[],[null],[{parentCapability:"other"}]]){
+    const f=await fixture();f.wallet.permissionRequest=async()=>value;await f.session.connect();
+    assert.equal(f.session.getSnapshot().address,null);assert.equal(f.session.getSnapshot().error,"live.walletPermissionUnverified");
+    assert.equal(f.wallet.calls.includes("eth_requestAccounts"),false);f.session.stop();
+  }
+});
+
+test("a late account selection after local detach never requests accounts or reconnects",async()=>{
+  const f=await fixture(),gate=deferred();f.wallet.permissionRequest=()=>gate.promise;
+  const pending=f.session.connect();f.session.disconnect();gate.resolve([{parentCapability:"eth_accounts"}]);await pending;
+  assert.equal(f.session.getSnapshot().address,null);assert.equal(f.wallet.calls.includes("eth_requestAccounts"),false);f.session.stop();
+});
+
+test("reselecting an account preserves unresolved reservations and never signs or sends",async()=>{
+  const f=await fixture(),record={version:1,account:a,contract,chainId:11155111,id:"2",createdAt:123,hash};f.ports.storage.save(record);
+  f.wallet.permissionRequest=async()=>{f.wallet.accounts=[b];return f.wallet.permissions;};await f.session.connect();
+  assert.equal(f.stored(),record);assert.equal(f.counts().sendCount,0);
+  assert.equal(f.wallet.calls.some(method=>method.includes("sign")||method.includes("send")),false);f.session.stop();
 });
 
 test("revocation invalidates quotes immediately and shares duplicate requests",async()=>{
@@ -300,7 +420,7 @@ test("B28 the actual snapshot hook is fresh at 119999 and 120000ms, stale at 120
   for(const [age,expected] of [[119999,"normal"],[120000,"normal"],[120001,"stale"]]){
     const clock=class extends Date{static now(){return age;}};
     const data={claims:[],listings:[],history:[],balance:{balances:[],gasRaw:0n},unsupported:0,now:new Date(0),projection:{projectionStatus:"applied",latestProjectedBlock:"100",latestIndexedBlock:"100",status:"synced"}};
-    const hook=loader({react:{useState:()=>[null,()=>{}]},"@tanstack/react-query":{useQuery:()=>({data,isPending:false,isError:false,isFetching:false,refetch:async()=>({data})})},
+    const hook=loader({...snapshotActionHookStubs,react:{useState:()=>[null,()=>{}]},"@tanstack/react-query":{useQuery:()=>({data,isPending:false,isError:false,isFetching:false,refetch:async()=>({data})})},
       "./use-injected-wallet":{useInjectedWallet:()=>({address:null,session:{}})},"./use-claim-transaction":{useClaimTransaction:()=>({})},"./use-create-payment":{useCreatePayment:()=>({})},
       "@/lib/live-api":{},"@/lib/live-config":{LIVE_API_BASE:"http://fixture.invalid"},"@/lib/live-mapping":{},"@/lib/live-chain":{},
     },clock)("src/hooks/use-live-snapshot");

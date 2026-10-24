@@ -9,6 +9,15 @@ import {z} from "zod";
 import {scaledStream} from "../manual-qa/scaled-data.mjs";
 
 const root = resolve(import.meta.dirname, "../..");
+const snapshotActionHookStubs={
+  "./use-market-action":{useMarketAction:()=>({})},
+  "./use-cancel-payment":{useCancelPayment:()=>({})},
+  "./use-mint-token":{useMintToken:()=>({})},
+  "./use-live-action-history":{useLiveActionHistory:(_address,apiRows,_engines)=>{
+    if(!Array.isArray(apiRows))throw new TypeError("Expected useLiveActionHistory API rows argument");
+    return {records:apiRows,warning:undefined};
+  }},
+};
 const addressA = "0x1111111111111111111111111111111111111111";
 const addressB = "0x2222222222222222222222222222222222222222";
 const usdc = "0xD8E66a5bfbf8DEa75DfbDc0C1EE65612504Fb7F9";
@@ -71,6 +80,7 @@ function fixture({qa = true} = {}) {
     disconnect() {}, connect() {}, switchChain() {},
   };
   const imports = {
+    ...snapshotActionHookStubs,
     react: {useState: initial => {
       if (!initialized) { watched = initial; initialized = true; }
       return [watched, value => { watched = value; }];
@@ -212,7 +222,9 @@ for (const delayed of ["list", "balance", "trades", "detail"]) {
     await old.settled;
     assert.equal(old.outcome, "rejected");
     assert.equal(old.error.name, "AbortError");
-    assert.deepEqual(old.delivered.sort(), ["detail", "list", "trades"]);
+    const expectedDelivered=delayed==="list"?["list"]:delayed==="trades"?["list","trades"]:["detail","list","trades"];
+    assert.deepEqual(old.delivered.sort(), expectedDelivered);
+    assert.equal(f.apiCalls.filter(call=>call.signal===old.controller.signal).length,oldCalls.length);
     assert.equal(f.bindings.length, 1);
     assert.ok(!f.queryCache.has(keyOf(first.config)));
     assert.ok(f.failures.some(failure => failure.batchId === old.batchId && failure.kind === "AbortError"));

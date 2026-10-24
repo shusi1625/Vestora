@@ -24,6 +24,7 @@ import { KeyValue, KeyValueDivider } from "@/components/common/Section";
 import { TxStatusTimeline } from "./TxStatusTimeline";
 
 const AMOUNT_LABEL_KEY: Record<TxKind, string> = {
+  mint: "mint.actualAmount",
   create: "receipt.amount.deposited",
   approve: "receipt.amount.approved",
   list: "receipt.amount.listPrice",

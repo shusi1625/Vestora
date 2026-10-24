@@ -2,10 +2,11 @@ import {useEffect,useRef,useState,useSyncExternalStore} from "react";
 import type {WalletSession} from "@/lib/wallet-session";
 import {createPaymentEngine} from "@/lib/create-payment-engine";
 import {browserPaymentPorts} from "@/lib/create-payment-chain";
+import {assertNoOtherLivePending} from "@/lib/transaction-guard";
 
 export function useCreatePayment(session:WalletSession,refresh:(account:string)=>Promise<void>){
   const refreshRef=useRef(refresh);refreshRef.current=refresh;
-  const [engine]=useState(()=>createPaymentEngine(browserPaymentPorts(session,a=>refreshRef.current(a))));
+  const [engine]=useState(()=>createPaymentEngine(browserPaymentPorts(session,a=>refreshRef.current(a),a=>assertNoOtherLivePending(a,"create"))));
   const states=useSyncExternalStore(engine.subscribe,engine.getSnapshot),wallet=useSyncExternalStore(session.subscribe,session.getSnapshot);
   useEffect(()=>{engine.invalidate();},[engine,wallet.revision]);
   useEffect(()=>{

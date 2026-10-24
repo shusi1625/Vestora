@@ -1,11 +1,38 @@
 # Code Guideline
 
+## Feature Parity Integration (2026-10-24, local work)
+
+- `pages/assets/AssetComposition.tsx` keeps category selection and Figure precision disclosure as sibling controls, avoiding nested buttons when balances have hidden precision. `tests/feature-layout.test.mjs` guards this interactive structure.
+
+- `lib/live-action-history.ts` and `hooks/use-live-action-history.ts` observe five engines synchronously and merge bounded, account/deployment-scoped local display history with indexed API events. Local history cannot clear reservations or authorize a send. `amountMeaning` distinguishes transfers from requests, asking prices, approval limits and unavailable amounts. Measurement builds use memory-only history. `tests/live-action-history.test.mjs` validates persistence and deduplication.
+
+- `lib/market-action-{model,storage,engine,chain}.ts` implement exact NFT/payment approvals, non-custodial listing/unlisting, and protected purchases. Every approval stops before the next separately reviewed wallet request. `tests/market-actions.test.mjs` verifies the network-free state machine and receipt/projection boundaries.
+- `lib/cancel-payment-{model,storage,engine,chain}.ts` implement issuer cancellation, receipt-block refund accounting and surviving owner rights. Listed streams remain cancellable; cancellation does not remove the marketplace listing. `tests/cancel-payment.test.mjs` covers this policy and failure/recovery.
+- `lib/mint-token-{model,storage,engine,chain}.ts` implement self-minting test MockUSDC with exact Transfer proof and receipt-block balance. This does not replace the API projection balance. `tests/mint-token.test.mjs` covers wallet/session/evidence/storage failures.
+- `create-payment` retains absolute `createStream` semantics matching the date/time form. The final pre-wallet block check rejects an expired start; version-1 absolute reservations remain recoverable. Duration-based creation would require a distinct duration UI and mining-relative terms.
+
+- `lib/transaction-guard.ts` shares the existing account/stream lock across claim, creation, marketplace, cancellation and test-token mint operations. Foreign reservations, including malformed records, block new writes; it never migrates, clears or retries a record. The known B deployment hold remains independent of storage/origin.
+- `tests/transaction-guard.test.mjs` validates cross-operation isolation, fail-closed storage and shared-lock behavior with no network or real wallet.
+- `hooks/use-market-action.ts`, `use-cancel-payment.ts`, `use-mint-token.ts` bind the new transaction engines to wallet revisions and visible-tab receipt monitoring. They never execute a transaction automatically.
+- `components/workspace/LiveActionGate.tsx` gates write reviews on a connected Sepolia wallet, independently of watch-only lookup. `TransactionProgress.tsx` shares result presentation, exact-hash links and explicit recovery; hiding a verified notice never changes tracking or reservation state.
+- `components/workspace/MarketAction.tsx`, `CancelPaymentAction.tsx`, `MintTokenAction.tsx` own explicit quote/confirmation/result UI for restored features. NFT/payment approval never automatically advances to a list/buy send. Cancellation separates estimated versus actual refunds and retained rights. Mint shows receipt-block balances separately from API projection balances.
+- `components/workspace/ClaimLookup.tsx` restores direct receivable-ID lookup; `pages/claim-detail/LiveClaimDetail.tsx` resolves real data for `/claims/:id` and `/claims/:id/sell` instead of dropping the ID through a redirect. Missing data never becomes a fabricated claim.
+
+## Deployed QA Reliability Follow-up (2026-10-23, local changes)
+
+- `tests/manual-qa/balance-fault.test.mjs` checks separate native-ETH and MockUSDC-balance faults through the actual balance/claim adapters with a bounded ephemeral loopback server. Portfolio balance snapshots fail closed, while token-balance failure alone does not invent a requirement for an incoming claim. The existing manual fixture exposes both modes for browser checks; no product behavior or production network is changed.
+- `use-live-snapshot.ts` reads personal history details sequentially, below the public API's two-slot concurrency guard. Abort/failure stops further detail requests; incomplete history never becomes a successful empty result. This reduces this tab's fan-out, not the API's global rate/capacity limits.
+- `acquisitionFor` accepts history readiness. Assets and owned detail use its unknown label rather than inferring direct receipt when personal history is unavailable.
+- Acquisition/personal-claim summaries exclude `origin: local` display-journal records even after their receipt is confirmed. Only the projection-cutoff API history (or original prototype rows without an origin) determines those figures. The transaction page still shows local diagnostics independently. Two `DEP-D11` regressions in `workspace-model.test.mjs` guard ahead-of-projection and mixed-history accounting without clearing any journal or pending record.
+- Transaction detail stays outside the list's loading/error boundary. A failed refresh leaves the previously confirmed receipt visible with an explicit stale-detail notice; account changes clear the selection.
+- `tests/live-history.test.mjs` exercises actual history/API/mapping code against a network-free two-slot transport plus component-contract VM regressions. QueryObserver timeout cases use a shortened test deadline while asserting the production 20-second request and retry policy; they verify query failure/recovery and partial-history readiness, not browser timing. These tests neither establish the HTTP cause of the prior live failure nor replace actual React/browser/deployed verification.
+
 ## Frontend Promotion and Vercel (2026-10-23)
 
 - This Vite app now lives in `frontend/`; the previous Next app is preserved in `frontend-legacy/`. Dated capture/performance documents retain their original paths as historical evidence.
 - `api/read.js` is the Vercel Web Request handler; `server/read-proxy.mjs` is a GET-only, fixed-origin API adapter with an explicit path allowlist, no forwarded cookies/authorization, no redirects/retries/cache and bounded time/response size. Its upstream remains the existing HTTP backend, not end-to-end TLS.
 - `vercel.json` selects the Vite production build, Sydney function region and explicit SPA routes. `.vercelignore` excludes local environment files, original capture archives, QA builds/tests and dependencies from source uploads. No QA entry is part of the product deployment.
-- `tests/deployment.test.mjs` tests the adapter with injected local transport only. `tests/claim-runtime.test.mjs` covers the known unresolved account hold across empty/new-origin storage.
+- `tests/deployment.test.mjs` tests the adapter with injected local transport only. The user's 2026-10-24 B reuse instruction lifted the static deployment hold, not stored reservations. Claim-runtime and shared-guard tests cover read-only B preflight plus unchanged own/foreign unresolved-record blocking; historical hold results do not establish old #3 settlement.
 - `claim-policy.ts` holds the exact known account/deployment with unresolved B #3. Claim/create review and execution refuse new writes independently of localStorage. This is a release safety hold, not invented on-chain/pending evidence. Read/receipt recovery remains available; release requires an explicit evidence-backed code change, not automatic timeout or new-origin reset.
 - `AGENTS.md` documents this Vite application's commands and transaction boundaries. `docs/vercel-deployment.md` records deployment steps, evidence and remaining constraints.
 
@@ -93,7 +120,7 @@
 
 - `components/workspace/DisconnectWalletDialog.tsx`: account-scoped confirmation, safe cancel focus, in-flight guard and truthful error feedback. Opening/canceling never calls the wallet.
 - `LiveConnection.tsx`: distinguishes wallet permission revocation from ending watch-only lookup. Confirmation shows the selected account; permissions apply to this origin and all its connected accounts/tabs.
-- `lib/wallet-session.ts`: keeps local `disconnect` for lookup/session use. Explicit `revokeConnection(expectedAccount)` invalidates quotes, requests `wallet_revokePermissions`, verifies permissions and exposed accounts, then detaches. It never clears pending transaction records or changes on-chain approvals.
+- `lib/wallet-session.ts`: keeps local `disconnect` for lookup/session use. Explicit connect/account change requests `wallet_requestPermissions` before accessing accounts; cancelled/unsupported selection never falls back silently, and pending selection invalidates quotes. Startup restores existing permission without a prompt. Explicit `revokeConnection(expectedAccount)` invalidates quotes, requests `wallet_revokePermissions`, verifies permissions and exposed accounts, then detaches. None of these flows clear pending transaction records or change on-chain approvals.
 - `tests/disconnect-fixture.html` / `.tsx`: dev-only actual-component UI fixture with an in-memory provider, no injected wallet, storage, RPC or API. No production route.
 - `tests/claim-runtime.test.mjs` and `tests/notice-ui.test.mjs`: permission revocation, account/provider races, failure, duplicate confirmation and pending-record safety coverage.
 

@@ -40,13 +40,14 @@ export const portfolioForToken = (claims: Claim[], balances: Amount[], address: 
 export const activeListing = (listings: Listing[], id: string) =>
   listings.find(l => l.claimId === id && l.status === "active");
 
-/** No purchase price is inferred from a stream's global withdrawn amount. */
-export const acquisitionFor = (claim: Claim, records: TxRecord[], accountKey: string) => {
-  const own = records.filter(r => r.claimId === claim.id && r.accountKey === accountKey && r.phase === "completed");
+/** Projection-pinned summaries exclude browser diagnostics and inferred global withdrawals. */
+export const acquisitionFor = (claim: Claim, records: TxRecord[], accountKey: string, historyReady = true) => {
+  const own = records.filter(r => r.origin !== "local" && r.claimId === claim.id && r.accountKey === accountKey && r.phase === "completed");
   const purchases = own.filter(r => r.kind === "buy" && r.role !== "seller").sort((a, b) => Date.parse(b.requestedAt) - Date.parse(a.requestedAt));
   const purchase = purchases[0];
   const received = own.filter(r => r.kind === "claim").reduce((sum, r) => sum + r.amountRaw, 0n);
-  return { purchase, received, label: purchase ? "purchased" : "direct-or-transfer" };
+  const label = !historyReady ? "unknown" : purchase ? "purchased" : sameAddress(claim.originalRecipient, accountKey) ? "direct" : "transferUnknown";
+  return { purchase, received, label };
 };
 
 export const isPaymentToken = (value: string): value is "MockUSDC" | "mWETH" =>

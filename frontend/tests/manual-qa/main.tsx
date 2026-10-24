@@ -1,34 +1,50 @@
 import {useEffect,useState} from "react";
 import {createRoot} from "react-dom/client";
 import App from "../../src/App";
-import {qaWallet,A,B} from "./wallet";
+import {qaWallet,A,B,C} from "./wallet";
 import {claimPendingKey} from "../../src/lib/claim-policy";
 import {pendingPaymentKey} from "../../src/lib/create-payment-model";
-import {LIVE_STREAM} from "../../src/lib/live-config";
+import {LIVE_STREAM,LIVE_USDC} from "../../src/lib/live-config";
 import {installQaPerformance,qaPerformanceSnapshot,qaPerformanceReset} from "./performance";
 import "../../src/i18n/config";
 import "../../src/index.css";
 
 const base="http://127.0.0.1:4391";
 const cases=["normal","E01-timeout","E02-refresh","E03-429","E03-500","E03-502","E03-json","E03-schema","E04-chain","E04-address","E04-accounting","E04-sync","E04-token","E05-balance","E06-trades","E06-detail","E07-null","E07-pending","E07-time-mismatch","E07-computed-time","E07-not-started","E08-chain","E08-simulate","E09-missing","E09-reject","E10-account","E10-network","E11-reject","E12-nohash","E12-wallet-gas","E13-storage","E13-locks","E14-legacy","E14-corrupt","E14-version","E14-contract","E14-account","E14-chain","E15-double","E16-owner","E16-withdrawn","E16-balance","E16-allowance","E17-receipt","E18-reprice","E19-replaced","E20-revert","E21-wrapper","E22-event","E22-recipient","E22-amount","E22-contract","E22-missing","E22-duplicate","E23-api","E23-rpc","E24-proof","E25-recovery","E25-id","E25-sender","E25-pending","E26-late","B22-zero","B22-one","B23-equal","B23-plus","B23-minus","B24-zero","B24-minus","B24-equal","B24-plus","B24-maxfee","B25-empty","B25-one","B25-two","B25-zero-assets","B26-tied"];
-type Status={mode:string;apiRequests:number;rpcRequests:number;sendCount:number;projected:boolean;lastMethods:string[]};
+cases.push("E03-503","E05-eth-balance","E05-token-balance","B31-cancelled","parity-market","parity-cancel","parity-mint");
+type Status={mode:string;apiRequests:number;rpcRequests:number;sendCount:number;projected:boolean;lastMethods:string[];head?:number;projectedBlock?:number;miningPaused?:boolean;autoProject?:boolean;pendingHashes?:string[];lastHash?:string|null};
+if(!["http://127.0.0.1:4212","http://127.0.0.1:4213"].includes(window.location.origin))throw Error("Manual QA refuses non-fixture origin");
 const nativeStorage=window.localStorage;
-const pendingKeys=[A,B].flatMap(account=>[claimPendingKey(account,LIVE_STREAM),pendingPaymentKey(account)]);
-async function control(path:string,body:object={}){return fetch(`${base}/qa/${path}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});}
+const pendingKeys=[A,B,C].flatMap(account=>[claimPendingKey(account,LIVE_STREAM),pendingPaymentKey(account),
+  `vestora:market-pending:11155111:${LIVE_STREAM.toLowerCase()}:${account}`,
+  `vestora:cancel-payment-pending:11155111:${LIVE_STREAM.toLowerCase()}:${account}`,
+  `vestora:mint-pending:11155111:${LIVE_USDC.toLowerCase()}:${account}`]);
+async function control(path:string,body:object={}){const response=await fetch(`${base}/qa/${path}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body),signal:AbortSignal.timeout(5000),redirect:"error"});if(!response.ok)throw Error("Fixture control failed");return response;}
 
 export function Controls({initialMode}:{initialMode:string}){
   const [mode,setMode]=useState(initialMode),[status,setStatus]=useState<Status|null>(null);
   const [perf,setPerf]=useState<ReturnType<typeof qaPerformanceSnapshot>|null>(null);
+  const parity=Boolean(status?.mode.startsWith("parity-"));
   const read=()=>fetch(`${base}/qa/status`).then(r=>r.json()).then(setStatus);
   useEffect(()=>{void read();},[]);
   return <aside style={{padding:12,borderBottom:"2px solid #96571a",background:"#fff7e8",fontSize:13}} aria-label="격리 테스트 제어"><strong>LOCAL FIXTURE · 실제 지갑·백엔드·온체인 사용 안 함</strong><div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:8}}>
     <label>테스트 케이스 <select value={mode} onChange={e=>setMode(e.target.value)}>{[...cases,"P01-10","P01-100","P01-1000","P02-harness"].map(value=><option key={value}>{value}</option>)}</select></label>
     <button onClick={async()=>{await control("case",{mode});for(const key of pendingKeys)nativeStorage.removeItem(key);location.reload();}}>케이스 적용·테스트 기록 초기화</button>
-    <button onClick={()=>qaWallet.select(A)}>모의 계정 A</button><button onClick={()=>qaWallet.select(B)}>모의 계정 B</button>
+    <button onClick={()=>qaWallet.select(A)}>모의 계정 A</button><button onClick={()=>qaWallet.select(B)}>모의 계정 B</button><button onClick={()=>qaWallet.select(C)}>모의 계정 C</button>
     <button onClick={()=>qaWallet.network("0x1")}>모의 잘못된 네트워크</button><button onClick={()=>qaWallet.network("0xaa36a7")}>모의 Sepolia</button><button onClick={()=>qaWallet.inject()}>모의 지갑 주입</button>
-    <button onClick={async()=>{await control("failure");await read();}}>다음 API 갱신 실패</button><button onClick={async()=>{await control("recover");await read();}}>통신·인덱서 복구</button><button onClick={()=>void read()}>관측 수치 읽기</button></div>
+    <button onClick={async()=>{await control("failure");await read();}}>다음 API 갱신 실패</button><button onClick={async()=>{await control("history-failure");await read();}}>개인 이력 조회 실패</button><button onClick={async()=>{await control("recover");await read();}}>통신·인덱서 복구</button><button onClick={()=>void read()}>관측 수치 읽기</button></div>
     <button onClick={async()=>{await control("applied");await read();}}>인덱서 체크포인트만 적용</button>
     <button onClick={async()=>{await control("change");await read();}}>검토 후 온체인 조건 변경</button>
+    {parity&&<div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:8}} aria-label="신규 거래 모의 채굴과 API 반영">
+      <button onClick={async()=>{await control("mining",{paused:true});await read();}}>채굴 보류</button>
+      <button onClick={async()=>{await control("mine");await read();}}>보류 거래 채굴</button>
+      <button onClick={async()=>{await control("mining",{paused:false});await read();}}>자동 채굴 재개</button>
+      <button onClick={async()=>{await control("projection",{paused:true});await read();}}>API 반영 보류</button>
+      <button onClick={async()=>{await control("applied");await read();}}>API 스냅샷 최신 블록 반영</button>
+      <button onClick={async()=>{await control("projection",{paused:false});await read();}}>API 자동 반영 재개</button>
+      <button onClick={async()=>{await control("advance",{seconds:60});await read();}}>모의 블록 시간 +60초</button>
+      <button onClick={()=>qaWallet.loseNextResponse()}>다음 전송의 해시 응답 유실</button>
+    </div>}
     <button onClick={()=>setPerf(qaPerformanceSnapshot())}>성능 관측 읽기</button>
     <button onClick={()=>{qaPerformanceReset();setPerf(null);}}>입력 관측 초기화</button>
     {perf&&<details open><summary>성능 관측 원문</summary><output aria-label="성능 관측" style={{display:"block",maxHeight:180,overflow:"auto",whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{JSON.stringify(perf)}</output></details>}

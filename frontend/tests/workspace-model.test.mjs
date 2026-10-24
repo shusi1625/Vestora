@@ -76,6 +76,32 @@ test("purchases and personal receipts cannot be inferred from global withdrawals
   assert.equal(acquisition.received,20n); assert.equal(acquisition.purchase.amountRaw,850n);
   assert.equal(model.acquisitionFor(base,records,"C").purchase,undefined);
 });
+
+test("DEP-D11 local completed receipts never change projection-pinned personal accounting", () => {
+  const claim={...base,originalRecipient:"A",claimed:0n};
+  const records=[
+    {id:"local-claim",origin:"local",claimId:"1",accountKey:"A",kind:"claim",phase:"completed",amountMeaning:"transferred",amountRaw:250n,requestedAt:"2026-10-20T00:00:00Z"},
+    {id:"local-buy",origin:"local",claimId:"1",accountKey:"A",kind:"buy",role:"buyer",phase:"completed",amountMeaning:"price",amountRaw:850n,requestedAt:"2026-10-20T00:00:00Z"},
+  ];
+  const acquisition=model.acquisitionFor(claim,records,"A",true);
+  assert.equal(acquisition.received,0n);
+  assert.equal(acquisition.purchase,undefined);
+  assert.equal(acquisition.label,"direct");
+  assert.equal(model.acquisitionFor(claim,records,"A",false).label,"unknown");
+  assert.equal(records.length,2);assert.equal(records[0].amountRaw,250n);
+});
+
+test("DEP-D11 indexed history replaces display-only receipts without double counting", () => {
+  const indexedClaim={id:"api-claim",origin:"api",claimId:"1",accountKey:"A",kind:"claim",phase:"completed",amountMeaning:"transferred",amountRaw:250n,requestedAt:"2026-10-18T00:00:00Z"};
+  const indexedBuy={...indexedClaim,id:"api-buy",kind:"buy",role:"buyer",amountRaw:800n};
+  const records=[indexedClaim,indexedBuy,{...indexedClaim,id:"local-claim",origin:"local"},{...indexedBuy,id:"local-buy",origin:"local",amountRaw:850n,requestedAt:"2026-10-20T00:00:00Z"}];
+  const acquisition=model.acquisitionFor(base,records,"A",true);
+  assert.equal(acquisition.received,250n);
+  assert.equal(acquisition.purchase.id,"api-buy");
+  assert.equal(acquisition.purchase.amountRaw,800n);
+  assert.equal(acquisition.label,"purchased");
+  assert.equal(model.acquisitionFor(base,records,"B",true).received,0n);
+});
 test("large amounts never pass through floating point accounting", () => {
   const deposited = 10n ** 32n, claimed = 10n ** 30n;
   const v = model.issuedAmounts({ ...base, deposited, claimed },now);

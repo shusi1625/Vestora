@@ -10,17 +10,17 @@ const account="0x1111111111111111111111111111111111111111",recipient="0x22222222
 function loader(overrides={}){const cache=new Map();return function load(file){const path=resolve(root,file.endsWith(".ts")?file:`${file}.ts`);if(cache.has(path))return cache.get(path);const module={exports:{}};cache.set(path,module.exports);
   const code=ts.transpileModule(readFileSync(path,"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
   const get=id=>id in overrides?overrides[id]:id==="viem"?viem:id==="viem/chains"?require(id):id==="./live-config"?{LIVE_STREAM:contract,LIVE_USDC:usdc,LIVE_RPC_URL:"https://example.invalid"}:id==="./live-api"?{readApi:async()=>{throw Error("No external API");},detailSchema:{}}:load(id.startsWith("@/")?resolve(root,"src",id.slice(2)):resolve(dirname(path),id));
-  vm.runInNewContext(`(function(require,module,exports){${code}\n})`,{Date,BigInt,Intl,Error,console,localStorage:{getItem:()=>null,setItem:()=>{},removeItem:()=>{}},navigator:{locks:{request:async(_k,_o,fn)=>fn({})}}})(get,module,module.exports);return module.exports;};}
+  vm.runInNewContext(`(function(require,module,exports){${code}\n})`,{Date,BigInt,Intl,Error,console,localStorage:{getItem:()=>null,setItem:()=>{},removeItem:()=>{}},navigator:overrides.navigator||{locks:{request:async(_k,_o,fn)=>fn({})}}})(get,module,module.exports);return module.exports;};}
 const load=loader(),model=load("src/lib/create-payment-model"),{createPaymentEngine}=load("src/lib/create-payment-engine");
 const draft={recipient,amount:1000000n,start:200n,end:800n,cancelable:true,name:"Test payment"};
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
-test("new-origin empty storage cannot bypass the known unresolved account hold for creation",async()=>{
+test("explicit B reuse permits read-only creation review without automatic sending",async()=>{
   const f=fixture(),held="0xbf9bf852225899b667aa4c73bb082e830abb9de1";
   f.session.capture=()=>({account:held,chainId:"0xaa36a7",revision:1,provider:{}});
-  let reads=0;f.ports.quote=async()=>{reads++;throw Error("must not quote");};
+  let reads=0;f.ports.quote=async()=>{reads++;throw Error("create.readFailed");};
   const engine=createPaymentEngine(f.ports);await engine.review(draft);await engine.execute(held);
-  assert.equal(engine.getSnapshot()[held].error,"claim.deploymentHold");
-  assert.equal(reads,0);assert.equal(f.sends(),0);assert.equal(f.stored(),null);
+  assert.equal(engine.getSnapshot()[held].error,"create.readFailed");
+  assert.equal(reads,1);assert.equal(f.sends(),0);assert.equal(f.stored(),null);
 });
 function fixture(){let stored=null,sends=0,receipts=0,allowance=0n,changed=false,failSave=false;const token={account,chainId:"0xaa36a7",revision:1,provider:{request:async()=>{throw Error("No real wallet");}}};
   const session={capture:()=>token,assertCurrent:async()=>{if(changed)throw Error("claim.sessionChanged");}};
@@ -31,6 +31,31 @@ function fixture(){let stored=null,sends=0,receipts=0,allowance=0n,changed=false
 }
 test("payment drafts reject zero recipients, amounts, invalid ranges and oversized integers",()=>{
   model.validatePayment(draft);for(const patch of [{recipient:"0x"+"0".repeat(40)},{amount:0n},{amount:2n**256n},{start:-1n},{end:200n},{end:2n**64n},{cancelable:"true"},{name:"x".repeat(61)}])assert.throws(()=>model.validatePayment({...draft,...patch}));
+});
+
+test("preflight context snapshots the attempted draft without clearing or sending",async()=>{
+  const f=fixture(),input={...draft};let release;
+  f.ports.quote=async()=>{await new Promise(resolve=>{release=resolve;});throw Error("create.startPassed");};
+  const review=f.engine.review(input);await tick();input.start=300n;release();await review;
+  const state=f.engine.getSnapshot()[account];
+  assert.equal(state.phase,"error");assert.equal(state.error,"create.startPassed");
+  assert.equal(state.reviewDraft?.start,200n);assert.equal(state.reviewDraft?.end,800n);
+  assert.notEqual(state.reviewDraft,input);assert.equal(state.quote,undefined);
+  assert.equal(state.pending,undefined);assert.equal(f.stored(),null);assert.equal(f.sends(),0);
+  await f.engine.execute(account);assert.equal(f.sends(),0);
+});
+
+test("preflight context never scopes storage or shared-pending guards to editable input",async()=>{
+  for(const guard of ["storage","pending"]){
+    const f=fixture();let quotes=0;
+    if(guard==="storage")f.ports.storage.read=()=>{throw Error("create.pendingCorrupt");};
+    else f.ports.assertNoOtherPending=()=>{throw Error("actions.otherPending");};
+    f.ports.quote=async()=>{quotes++;throw Error("must not quote");};
+    await f.engine.review(draft);
+    assert.equal(f.engine.getSnapshot()[account].reviewDraft,undefined);
+    assert.equal(f.engine.getSnapshot()[account].error,guard==="storage"?"create.pendingCorrupt":"actions.otherPending");
+    assert.equal(quotes,0);assert.equal(f.sends(),0);
+  }
 });
 test("creation reservations strictly isolate deployment, account, chain and exact draft",()=>{
   const f=fixture(),r=model.paymentRecord({draft,account,step:"create"},123);assert.equal(model.decodePendingPayment(JSON.stringify(r),account).draft.amount,"1000000");
@@ -105,7 +130,7 @@ test("missing or duplicate creation events, wrong approval amount and reverted r
   a.receipt.status="reverted";assert.equal(await a.ports.receipt(a.record,()=>{}),"reverted");
 });
 test("approval send is exact-amount and creation uses reviewed fields with transport retry disabled",async()=>{
-  const f=fixture();let sent;const adapter=loader({viem:{...viem,createPublicClient:()=>({}),custom:(_p,o)=>{assert.equal(o.retryCount,0);return{};},createWalletClient:()=>({writeContract:async q=>{sent=q;return hash;}})}})("src/lib/create-payment-chain"),ports=adapter.browserPaymentPorts(f.session,async()=>{});
+  const f=fixture();let sent;const adapter=loader({viem:{...viem,createPublicClient:()=>({getChainId:async()=>11155111,getBlock:async()=>({number:120n,timestamp:100n})}),custom:(_p,o)=>{assert.equal(o.retryCount,0);return{};},createWalletClient:()=>({writeContract:async q=>{sent=q;return hash;}})}})("src/lib/create-payment-chain"),ports=adapter.browserPaymentPorts(f.session,async()=>{});
   const q=await f.ports.quote(f.session.capture(),draft);await ports.send(q);assert.equal(sent.address,usdc);assert.equal(sent.functionName,"approve");assert.equal(sent.args[0],contract);assert.equal(sent.args[1],1000000n);
   q.step="create";await ports.send(q);assert.equal(sent.address,contract);assert.equal(sent.functionName,"createStream");assert.deepEqual([...sent.args],[recipient,usdc,draft.amount,draft.start,draft.end,true]);assert.equal(sent.account,account);assert.equal(sent.chain.id,11155111);
   f.change();sent=null;await assert.rejects(()=>ports.send(q),/sessionChanged/);assert.equal(sent,null);
@@ -118,10 +143,17 @@ test("all payment phase, error and UI translation keys exist",()=>{
 test("account revision changes invalidate a reviewed payment before execution",async()=>{
   const f=fixture();await f.engine.review(draft);f.session.capture=()=>({account:recipient,revision:2});f.engine.invalidate();assert.equal(f.engine.getSnapshot()[account].phase,"error");await f.engine.execute(account);assert.equal(f.sends(),0);
 });
-test("creation shares the claim lock and refuses an unresolved claim before sending",async()=>{
-  const f=fixture();let requestedKey;
-  const adapter=loader({"./claim-storage":{browserClaimStorage:()=>({read:()=>({hash})})},viem:{...viem,createPublicClient:()=>({})}})("src/lib/create-payment-chain");
-  const ports=adapter.browserPaymentPorts(f.session,async()=>{});await assert.rejects(()=>ports.lock(account,async()=>{requestedKey="must not run";}),/otherPending/);assert.equal(requestedKey,undefined);
+test("creation uses only own storage and keeps the shared lock free of foreign-pending guards",async()=>{
+  const f=fixture();let requestedKey,ran=false,foreignReads=0,guardCalls=0;
+  const guard=()=>{guardCalls++;throw Error("actions.otherPending");};
+  const adapter=loader({"./claim-storage":{browserClaimStorage:()=>({read:()=>{foreignReads++;return{hash};}})},
+    navigator:{locks:{request:async(key,options,fn)=>{requestedKey=key;assert.equal(options.ifAvailable,true);await fn({});}}},
+    viem:{...viem,createPublicClient:()=>({})}})("src/lib/create-payment-chain");
+  const ports=adapter.browserPaymentPorts(f.session,async()=>{},guard);
+  assert.equal(ports.assertNoOtherPending,guard);assert.equal(ports.storage.read(account),null);
+  await ports.lock(account,async()=>{ran=true;});
+  assert.equal(requestedKey,`vestora:claim:${contract.toLowerCase()}:${account}`);
+  assert.equal(ran,true);assert.equal(foreignReads,0);assert.equal(guardCalls,0);
 });
 test("API creation proof requires applied checkpoint, exact hash and all original payment terms",async()=>{
   const f=fixture(),r=model.paymentRecord({draft,account,step:"create"},123);r.hash=hash;
@@ -215,4 +247,227 @@ test("creation recovery does not settle after a captured session changes",async(
   const f=fixture(),r=model.paymentRecord({draft,account,step:"create"},123);f.ports.storage.save(r);f.engine.restore(account);
   f.ports.verifyRecovery=async()=>f.change();await f.engine.recover(account,hash);
   assert.equal(f.stored(),r);assert.equal(f.engine.getSnapshot()[account].error,"claim.sessionChanged");assert.equal(f.receipts(),0);assert.equal(f.sends(),0);
+});
+
+function sendingFixture(){
+  const f=adapterFixture();let requests=0,sent,onWrite=()=>{};
+  const adapter=loader({"./create-payment-model":model,viem:{...viem,createPublicClient:()=>f.rpc,
+    custom:(_provider,options)=>{assert.equal(options.retryCount,0);return{};},
+    createWalletClient:()=>({writeContract:async q=>{requests++;sent=q;onWrite();return hash;}})}})("src/lib/create-payment-chain");
+  const browser=adapter.browserPaymentPorts(f.session,async()=>{});
+  f.ports.quote=adapter.quotePayment;f.ports.send=browser.send;
+  return{...f,browser,requests:()=>requests,sent:()=>sent,onWrite:fn=>{onWrite=fn;}};
+}
+
+test("absolute wallet requests keep exact timestamps at the start boundary for both steps",async()=>{
+  for(const approved of [false,true]){
+    const f=sendingFixture();if(approved)f.setAllowance(draft.amount);
+    const q=await f.ports.quote(f.session.capture(),draft);f.setTime(200n);
+    await f.browser.send(q);assert.equal(f.requests(),1);
+    assert.equal(f.sent().functionName,approved?"createStream":"approve");
+    if(approved)assert.deepEqual([...f.sent().args],[recipient,usdc,draft.amount,200n,800n,true]);
+    assert.equal(q.draft.start,200n);assert.equal(q.draft.end,800n);
+  }
+});
+
+test("a start expiring after the last quote releases only the unsent reservation",async()=>{
+  for(const approved of [false,true]){
+    const f=sendingFixture();if(approved)f.setAllowance(draft.amount);
+    await f.engine.review(draft);
+    const save=f.ports.storage.save;f.ports.storage.save=r=>{save(r);f.setTime(201n);};
+    await f.engine.execute(account);
+    assert.equal(f.requests(),0);assert.equal(f.stored(),null);
+    assert.equal(f.engine.getSnapshot()[account].phase,"error");
+    assert.equal(f.engine.getSnapshot()[account].error,"create.startPassed");
+    assert.equal(f.engine.getSnapshot()[account].pending,undefined);
+  }
+});
+
+test("chain failure immediately before the wallet is a proven unsent error",async()=>{
+  for(const approved of [false,true]){
+    const f=sendingFixture();if(approved)f.setAllowance(draft.amount);
+    await f.engine.review(draft);
+    const save=f.ports.storage.save;f.ports.storage.save=r=>{save(r);f.rpc.getBlock=async()=>{throw Error("offline");};};
+    await f.engine.execute(account);
+    assert.equal(f.requests(),0);assert.equal(f.stored(),null);
+    assert.equal(f.engine.getSnapshot()[account].error,"claim.chainUnavailable");
+  }
+});
+
+test("account changes while the final chain guard is pending never reach writeContract",async()=>{
+  const f=sendingFixture(),q=await f.ports.quote(f.session.capture(),draft);
+  f.rpc.getBlock=async()=>{f.change();return{number:121n,timestamp:101n};};
+  await assert.rejects(()=>f.browser.send(q),/sessionChanged/);assert.equal(f.requests(),0);
+});
+
+test("an approval confirmed after start cannot silently shift or submit the absolute creation",async()=>{
+  const f=sendingFixture();await f.engine.review(draft);
+  f.onWrite(()=>{f.setTime(201n);f.setAllowance(draft.amount);});
+  await f.engine.execute(account);
+  assert.equal(f.requests(),1);assert.equal(f.sent().functionName,"approve");
+  assert.equal(f.engine.getSnapshot()[account].phase,"approved");assert.equal(f.stored(),null);
+  await f.engine.review(draft);await f.engine.execute(account);
+  assert.equal(f.requests(),1);assert.equal(f.engine.getSnapshot()[account].error,"create.startPassed");
+  assert.equal(draft.start,200n);assert.equal(draft.end,800n);
+});
+
+test("delayed creation confirmation preserves the exact successful absolute receipt",async()=>{
+  const f=sendingFixture(),proof=receiptFixture();f.setAllowance(draft.amount);
+  f.ports.receipt=proof.ports.receipt;await f.engine.review(draft);
+  f.onWrite(()=>f.setTime(900n));await f.engine.execute(account);
+  assert.equal(f.requests(),1);assert.equal(f.engine.getSnapshot()[account].phase,"completed");
+  assert.equal(f.engine.getSnapshot()[account].evidence.streamId,"3");
+  assert.deepEqual([...f.sent().args],[recipient,usdc,draft.amount,200n,800n,true]);
+  assert.equal(f.stored(),null);await f.engine.execute(account);assert.equal(f.requests(),1);
+});
+
+test("post-wallet transport errors remain unresolved and never release a possibly submitted creation",async()=>{
+  const f=sendingFixture();f.setAllowance(draft.amount);await f.engine.review(draft);
+  f.onWrite(()=>{throw Error("wallet transport lost");});await f.engine.execute(account);
+  assert.equal(f.requests(),1);assert.equal(f.engine.getSnapshot()[account].phase,"unknown");
+  assert.ok(f.stored());assert.equal(f.stored().hash,undefined);
+  await f.engine.review(draft);await f.engine.execute(account);
+  assert.equal(f.requests(),1);assert.ok(f.stored());
+});
+
+function legacyFiveFixture(withHash=true){
+  const f=receiptFixture();
+  const old={version:1,chainId:11155111,account,contract,tokenAddress:usdc,step:"create",createdAt:123,
+    draft:{recipient,amount:"1000000",start:"200",end:"800",cancelable:true,name:"Legacy absolute #5"},
+    ...(withHash?{hash}:{})};
+  let saved=model.decodePendingPayment(JSON.stringify(old),account),ready=false,sends=0,waits=0;
+  f.tx.to=contract;f.tx.input=viem.encodeFunctionData({abi:f.adapter.paymentAbi,functionName:"createStream",args:[recipient,usdc,1000000n,200n,800n,true]});
+  f.log.topics=viem.encodeEventTopics({abi:f.adapter.paymentAbi,eventName:"StreamCreated",args:{streamId:5n,sender:account,recipient}});
+  f.rpc.getBlock=async()=>{throw Error("Old absolute recovery must not quote or check today's start");};
+  f.rpc.waitForTransactionReceipt=async options=>{waits++;assert.equal(options.confirmations,2);return f.receipt;};
+  const ports={...f.ports,storage:{read:()=>saved,save:r=>{saved=r;},clear:()=>{saved=null;}},
+    send:async()=>{sends++;throw Error("Recovery must not resend");},projected:async()=>ready};
+  return{...f,old,ports,engine:createPaymentEngine(ports),saved:()=>saved,ready:()=>{ready=true;},sends:()=>sends,waits:()=>waits};
+}
+
+test("version 1 absolute #5 pending resumes after both dates and retains chain evidence on API failure",async()=>{
+  const f=legacyFiveFixture();f.engine.restore(account);await f.engine.resume(account);
+  assert.equal(f.engine.getSnapshot()[account].phase,"indexing");
+  assert.equal(f.engine.getSnapshot()[account].evidence.streamId,"5");
+  assert.equal(f.saved().version,1);assert.equal(f.saved().draft.start,"200");assert.equal(f.saved().draft.end,"800");
+  f.ready();f.rpc.waitForTransactionReceipt=async()=>{throw Error("RPC offline after proof");};
+  await f.engine.resume(account);
+  assert.equal(f.engine.getSnapshot()[account].phase,"completed");assert.equal(f.saved(),null);
+  assert.equal(f.waits(),1);assert.equal(f.sends(),0);
+});
+
+test("hashless version 1 absolute #5 recovers its original calldata without resubmitting",async()=>{
+  const f=legacyFiveFixture(false);f.engine.restore(account);await f.engine.resume(account);
+  assert.equal(f.engine.getSnapshot()[account].phase,"unknown");assert.equal(f.waits(),0);
+  assert.equal(JSON.stringify(f.saved()),JSON.stringify(f.old));
+  f.ready();await f.engine.recover(account,hash);
+  assert.equal(f.engine.getSnapshot()[account].phase,"completed");
+  assert.equal(f.engine.getSnapshot()[account].evidence.streamId,"5");
+  assert.equal(f.engine.getSnapshot()[account].pending.draft.start,"200");
+  assert.equal(f.engine.getSnapshot()[account].pending.draft.end,"800");
+  assert.equal(f.sends(),0);assert.equal(f.saved(),null);
+});
+
+test("an old absolute pending never accepts duration calldata with the same numeric arguments",async()=>{
+  const f=receiptFixture();
+  const durationAbi=viem.parseAbi(["function createStreamWithDuration(address recipient,address token,uint256 amount,uint256 startDelay,uint256 duration,bool cancelable) returns (uint256 streamId)"]);
+  f.tx.to=contract;f.tx.input=viem.encodeFunctionData({abi:durationAbi,functionName:"createStreamWithDuration",args:[recipient,usdc,draft.amount,draft.start,draft.end,true]});
+  assert.equal(await f.ports.receipt(f.record,()=>{}),"replaced");
+  await assert.rejects(()=>f.ports.verifyRecovery(f.record,hash),/recoveryMismatch/);
+});
+
+test("old absolute #5 recovery still rejects any changed schedule, source or calldata",async()=>{
+  for(const patch of [{draft:{...draft,amount:1000000n,start:201n}},{draft:{...draft,amount:1000000n,end:801n}}]){
+    const f=legacyFiveFixture(false),r=f.saved();r.draft.start=patch.draft.start.toString();r.draft.end=patch.draft.end.toString();
+    f.engine.restore(account);await f.engine.recover(account,hash);
+    assert.equal(f.engine.getSnapshot()[account].phase,"unknown");assert.equal(f.saved().hash,undefined);
+    assert.equal(f.engine.getSnapshot()[account].error,"create.recoveryMismatch");assert.equal(f.sends(),0);
+  }
+  for(const change of [f=>{f.tx.from=recipient;},f=>{f.log.address=usdc;},f=>{f.tx.input="0xabcdef01";}]){
+    const f=legacyFiveFixture(false);change(f);f.engine.restore(account);await f.engine.recover(account,hash);
+    assert.equal(f.engine.getSnapshot()[account].error,"create.recoveryMismatch");
+    assert.equal(f.saved().hash,undefined);assert.equal(f.sends(),0);
+  }
+});
+
+test("a receipt for an unannounced hash never completes approval or creation",async()=>{
+  for(const step of ["approval","create"]){
+    const f=receiptFixture(step);f.receipt.transactionHash=hash2;
+    await assert.rejects(()=>f.ports.receipt(f.record,()=>{}),/receiptUnavailable/);
+    await assert.rejects(()=>f.ports.verifyRecovery(f.record,hash),/recoveryMismatch/);
+  }
+});
+
+test("announced replacement receipts still require exact original absolute terms",async()=>{
+  for(const step of ["approval","create"]){
+    const f=receiptFixture(step);let replaced;
+    f.receipt.transactionHash=hash2;
+    f.rpc.waitForTransactionReceipt=async options=>{options.onReplaced({transactionReceipt:f.receipt});return f.receipt;};
+    const e=await f.ports.receipt(f.record,value=>{replaced=value;});
+    assert.equal(replaced,hash2);assert.equal(e.hash,hash2);
+    assert.equal(e.streamId,step==="create"?"3":undefined);
+  }
+});
+
+test("foreign pending guards refuse review before any quote and preserve actions errors",async()=>{
+  for(const asynchronous of [false,true]){
+    const f=fixture();let quotes=0,checks=0;
+    f.ports.quote=async()=>{quotes++;throw Error("must not quote");};
+    const guard=a=>{checks++;assert.equal(a,account);throw Error("actions.otherPending");};
+    f.ports.assertNoOtherPending=asynchronous?async a=>guard(a):guard;
+    await f.engine.review(draft);await f.engine.execute(account);
+    assert.equal(checks,1);assert.equal(quotes,0);assert.equal(f.sends(),0);assert.equal(f.stored(),null);
+    assert.equal(f.engine.getSnapshot()[account].error,"actions.otherPending");
+  }
+});
+
+test("foreign pending appearing after review prevents the locked execution quote",async()=>{
+  const f=fixture(),quote=f.ports.quote;let foreign=false,locked=false,quotes=0,checks=0;
+  f.ports.quote=async(...args)=>{quotes++;return quote(...args);};
+  f.ports.lock=async(_a,fn)=>{locked=true;try{await fn();}finally{locked=false;}};
+  f.ports.assertNoOtherPending=async a=>{checks++;assert.equal(a,account);if(checks>1)assert.equal(locked,true);if(foreign)throw Error("actions.otherPending");};
+  await f.engine.review(draft);foreign=true;await f.engine.execute(account);
+  assert.equal(checks,2);assert.equal(quotes,1);assert.equal(f.sends(),0);assert.equal(f.stored(),null);
+  assert.equal(f.engine.getSnapshot()[account].error,"actions.otherPending");
+});
+
+test("foreign pending appearing during quote is caught before saving a creation reservation",async()=>{
+  const f=fixture(),quote=f.ports.quote;let foreign=false,locked=false,quotes=0,checks=0,saves=0;
+  f.ports.quote=async(...args)=>{quotes++;const q=await quote(...args);if(quotes===2)foreign=true;return q;};
+  f.ports.lock=async(_a,fn)=>{locked=true;try{await fn();}finally{locked=false;}};
+  f.ports.assertNoOtherPending=async()=>{checks++;if(checks>1)assert.equal(locked,true);if(foreign)throw Error("actions.otherPending");};
+  f.ports.storage.save=()=>{saves++;};
+  await f.engine.review(draft);await f.engine.execute(account);
+  assert.equal(checks,3);assert.equal(quotes,2);assert.equal(saves,0);assert.equal(f.sends(),0);
+  assert.equal(f.engine.getSnapshot()[account].error,"actions.otherPending");assert.equal(f.stored(),null);
+});
+
+test("an asynchronous final guard cannot hide a changed wallet session",async()=>{
+  const f=fixture();let checks=0;
+  f.ports.assertNoOtherPending=async()=>{if(++checks===3)f.change();};
+  await f.engine.review(draft);await f.engine.execute(account);
+  assert.equal(checks,3);assert.equal(f.sends(),0);assert.equal(f.stored(),null);
+  assert.equal(f.engine.getSnapshot()[account].error,"claim.sessionChanged");
+});
+
+test("foreign pending never blocks read-only resume or hash recovery of an old absolute #5",async()=>{
+  for(const withHash of [true,false]){
+    const f=legacyFiveFixture(withHash);let checks=0;
+    f.ports.assertNoOtherPending=()=>{checks++;throw Error("actions.otherPending");};
+    f.ready();f.engine.restore(account);
+    if(withHash)await f.engine.resume(account);else await f.engine.recover(account,hash);
+    assert.equal(checks,0);assert.equal(f.engine.getSnapshot()[account].phase,"completed");
+    assert.equal(f.engine.getSnapshot()[account].evidence.streamId,"5");
+    assert.equal(f.sends(),0);assert.equal(f.saved(),null);
+  }
+});
+
+test("the browser creation lock still refuses unavailable or busy Web Locks",async()=>{
+  const f=fixture();let ran=false;
+  for(const navigator of [{},{locks:{request:async(_key,_options,fn)=>fn(null)}}]){
+    const adapter=loader({navigator,viem:{...viem,createPublicClient:()=>({})}})("src/lib/create-payment-chain");
+    const ports=adapter.browserPaymentPorts(f.session,async()=>{});
+    await assert.rejects(()=>ports.lock(account,async()=>{ran=true;}),/lockUnavailable|tabBusy/);
+  }
+  assert.equal(ran,false);
 });
