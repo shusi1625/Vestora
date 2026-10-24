@@ -5,6 +5,7 @@ import { performance } from "node:perf_hooks";
 import { ApiError, sendApiError, sendInternalError } from "./api/errors.js";
 import { localApiSpansEnabled, registerLocalApiSpans, withLocalSpan } from "./api/local-spans.js";
 import { getApiMetrics, recordApiResponse } from "./api/request-metrics.js";
+import { registerPublicReadProtection } from "./api/public-read.js";
 import { registerApiRoutes } from "./api/routes/index.js";
 import { env } from "./config/env.js";
 import { checkDatabaseConnection, prisma } from "./db/prisma.js";
@@ -72,7 +73,9 @@ async function getCachedOperationalMetrics() {
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({
-    ...(localApiSpansEnabled ? {
+    trustProxy: false,
+    ...(env.publicReadMode ? { bodyLimit: 1_024, requestTimeout: 10_000, connectionTimeout: 10_000 } : {}),
+    ...(localApiSpansEnabled || env.publicReadMode ? {
       logController: new LogController({ disableRequestLogging: true }),
     } : {}),
     logger: {
@@ -81,8 +84,9 @@ export function buildApp(): FastifyInstance {
   });
 
   registerLocalApiSpans(app);
+  registerPublicReadProtection(app, env.publicReadMode);
 
-  app.register(cors, {
+  if (!env.publicReadMode) app.register(cors, {
     origin: true,
   });
 
@@ -106,7 +110,7 @@ export function buildApp(): FastifyInstance {
       });
     }
 
-    if (!localApiSpansEnabled) app.log.info(
+    if (!localApiSpansEnabled && !env.publicReadMode) app.log.info(
       {
         method: request.method,
         url: request.url,

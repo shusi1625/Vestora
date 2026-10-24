@@ -17,6 +17,7 @@ const repoRequire = createRequire(resolve(sourceBackend, "package.json"));
 const ts = repoRequire("typescript");
 const Fastify = repoRequire("fastify");
 const cors = repoRequire("@fastify/cors");
+const rateLimit = repoRequire("@fastify/rate-limit");
 const { isAddress } = repoRequire("viem");
 const networkCalls = { listen: 0, connect: 0, fetch: 0 };
 for (const [target, method, key] of [
@@ -117,6 +118,7 @@ function transpile(source, fileName) {
 // Only these modules can be evaluated. Real env/Prisma/chain modules never load.
 const readableModules = new Set([
   "src/app.ts", "src/api/local-spans.ts", "src/api/sync-context.ts", "src/api/errors.ts",
+  "src/api/public-read.ts",
   "src/api/serializers.ts", "src/api/validation.ts", "src/api/routes/index.ts",
   "src/api/routes/streams.ts", "src/api/routes/listings.ts", "src/api/routes/market.ts", "src/api/routes/users.ts",
 ]);
@@ -125,7 +127,7 @@ function sourceFile(id) {
   const local = resolve(scriptBackend, id);
   return existsSync(local) ? local : resolve(sourceBackend, id);
 }
-async function harness(t, { flag = "true", fake = fixture(), decorate } = {}) {
+async function harness(t, { flag = "true", fake = fixture(), decorate, publicMode = false } = {}) {
   const logs = [];
   const output = new Writable({ write(chunk, _encoding, done) {
     for (const line of String(chunk).trim().split("\n")) if (line) logs.push(JSON.parse(line));
@@ -148,11 +150,12 @@ async function harness(t, { flag = "true", fake = fixture(), decorate } = {}) {
   const deps = {
     fastify: { default: (opts) => Fastify({ ...opts, logger: { ...opts.logger, stream: output } }), LogController: Fastify.LogController },
     "@fastify/cors": { default: cors },
+    "@fastify/rate-limit": { default: rateLimit },
     "@prisma/client": { Prisma: { TransactionIsolationLevel: { RepeatableRead: "RepeatableRead" } }, ListingStatus: listingStatus },
     viem: { isAddress },
     "node:async_hooks": { AsyncLocalStorage: asyncHooks.AsyncLocalStorage },
     "node:perf_hooks": { performance: perfHooks.performance },
-    "src/config/env.ts": { env: { logLevel: "info", indexerMetricsCacheTtlMs: 10_000, indexerSyncId: "fixture", sepoliaChainId: 11155111 } },
+    "src/config/env.ts": { env: { logLevel: "info", publicReadMode: publicMode, indexerMetricsCacheTtlMs: 10_000, indexerSyncId: "fixture", sepoliaChainId: 11155111 } },
     "src/db/prisma.ts": { prisma: fake.prisma, checkDatabaseConnection: fake.health },
     "src/indexer/chain.ts": { publicClient: { getBlockNumber: fake.rpc }, getSafeBlockNumber: (n) => n - 2n },
     "src/db/metrics.ts": { getDatabaseMetrics: fake.database },
@@ -416,4 +419,30 @@ test("12. privacy whitelist, early error, string payload and serialization-error
   assert.equal(JSON.stringify(h.logs).includes(secret), false);
   assert.equal(JSON.stringify(h.logs).includes(address), false);
   assert.deepEqual(networkCalls, { listen: 0, connect: 0, fetch: 0 });
+});
+
+test("13. public mode blocks operational routes and writes before real app dependencies", async (t) => {
+  const h = await harness(t, { flag: null, publicMode: true });
+  for (const [method, url, expected] of [["GET", "/metrics", 404], ["GET", "/listings", 404], ["POST", "/streams", 405], ["OPTIONS", "/streams", 405]]) {
+    const response = await h.inject({ method, url, remoteAddress: "203.0.113.10" });
+    assert.equal(response.statusCode, expected);
+    assert.equal(response.headers["cache-control"], "private, no-store");
+    assert.equal(response.headers["x-vestora-read-policy"], "public-v1");
+  }
+  assert.equal(h.fake.calls.some((call) => call.name !== "record.response"), false);
+  assert.equal(h.logs.length, 0);
+});
+
+test("14. public mode keeps actual projection JSON and dependency calls unchanged", async (t) => {
+  const internal = await harness(t, { flag: null });
+  const publicApp = await harness(t, { flag: null, publicMode: true });
+  for (const url of ["/health", "/streams", "/streams/1", `/users/${address}/trades`]) {
+    const before = await internal.inject(url);
+    const after = await publicApp.inject({ method: "GET", url, remoteAddress: "203.0.113.10", headers: { origin: "https://untrusted.invalid" } });
+    assert.equal(after.statusCode, 200);
+    assert.deepEqual(after.json(), before.json());
+    assert.equal(after.headers["access-control-allow-origin"], undefined);
+  }
+  const dependencyCalls = (h) => h.fake.calls.filter((call) => call.name !== "record.response");
+  assert.deepEqual(structuredClone(dependencyCalls(publicApp)), structuredClone(dependencyCalls(internal)));
 });

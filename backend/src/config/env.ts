@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { readPublicReadMode } from "../api/public-read.js";
 
 function readPort(value: string | undefined) {
   const port = Number(value ?? "3001");
@@ -57,6 +58,7 @@ export const env = {
   host: process.env.HOST ?? "127.0.0.1",
   port: readPort(process.env.PORT),
   logLevel: process.env.LOG_LEVEL ?? "info",
+  publicReadMode: readPublicReadMode(process.env.PUBLIC_READ_MODE),
   databaseUrl:
     process.env.DATABASE_URL ??
     "postgresql://vestora:vestora@127.0.0.1:5433/vestora?schema=public",

@@ -64,6 +64,23 @@ cd C:\GitHub\Vestora\backend
 pnpm api:smoke
 ```
 
+## Public Read Demo Mode
+
+`PUBLIC_READ_MODE=true` enables `src/api/public-read.ts` before internet ingress is opened. It allows only exact, query-free GET requests for `/health`, `/streams`, `/streams/:streamId` and `/users/:address/trades`. Other paths, including `/metrics`, `/listings`, `/market/stats` and user-stream diagnostics, are blocked even when callers bypass the Vercel proxy. Browser CORS reflection is disabled. Internal/local mode defaults off; invalid flag spellings fail startup.
+
+The Fastify rate-limit plugin enforces 90 requests per real socket IP per minute and 300 total requests per process per minute. Forwarded headers do not define the key. At most two admitted public reads execute at once; excess requests receive 429 or 503 with Retry-After before DB/RPC handlers. Only real socket-loopback GET `/health` bypasses public budgets, for container health checks. Public responses are no-store. Request logging is suppressed in this mode to avoid per-request log amplification; errors still use the existing handler.
+
+This is a small public-read demo, not authentication, a distributed limiter, an edge DDoS defense, a spending cap or end-to-end TLS. Budgets reset on process restart and multiply across API replicas. The Vercel function is a shared source, not the original user's identity. Do not scale replicas, open database ports, or send credentials over the HTTP origin hop. Task replacement can change the public origin IP. Revoke the added internet ingress before rolling back to an image without this guard.
+
+Offline checks (no sockets, DB, RPC or AWS):
+
+```powershell
+corepack pnpm test:public-read
+node --experimental-vm-modules --test scripts/test-local-spans.mjs
+```
+
+The guard has 13 focused tests; the app harness adds two public-mode integration cases to the 12 existing cases. Real deployment/ingress and wallet behavior require separate evidence.
+
 ## Indexer
 
 Run a one-shot backfill from the last stored sync point:
@@ -112,7 +129,7 @@ node --experimental-vm-modules --test backend/scripts/test-local-spans.mjs
 
 The script resolves sources and `node_modules` from its backend directory, independent of the working directory. For a partial staging tree, set `VESTORA_BACKEND_ROOT` to the backend directory providing installed dependencies and missing allowlisted source files; files beside the script take priority. Both off/on runs use the same current source. No prepublish manifest or old checkout is required. The fixed module allowlist rejects unexpected imports.
 
-The 12 tests use real `Fastify.inject` with fake RPC/DB/metrics dependencies, block server listen and outbound socket/fetch calls, and check current-source off/on JSON/calls, delays, failures, concurrent IDs and cache sharing. They do not prove equivalence to an older release, TypeScript type correctness, real Prisma isolation, RPC transport/cache behavior or deployed performance. VM Modules emits an experimental warning. Snapshot acquisition includes transaction setup; nested/parallel durations overlap and must not be summed. Server and client clocks must not be subtracted. The ID header is not added to CORS exposed headers.
+The 14 tests use real `Fastify.inject` with fake RPC/DB/metrics dependencies, block server listen and outbound socket/fetch calls, and check current-source off/on JSON/calls, delays, failures, concurrent IDs and cache sharing, plus public-mode rejection/response compatibility. They do not prove equivalence to an older release, TypeScript type correctness, real Prisma isolation, RPC transport/cache behavior or deployed performance. VM Modules emits an experimental warning. Snapshot acquisition includes transaction setup; nested/parallel durations overlap and must not be summed. Server and client clocks must not be subtracted. The ID header is not added to CORS exposed headers.
 
 ## Container Runtime
 
