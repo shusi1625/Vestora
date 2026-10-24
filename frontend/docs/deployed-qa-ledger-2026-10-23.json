@@ -1,0 +1,1321 @@
+{
+  "schemaVersion": 1,
+  "suite": "deployed-followup-2026-10-23",
+  "goalStatus": "active",
+  "previousDeployment": {
+    "id": "dpl_3maxBhcQspcZUaTSrpuQgbei2YyL",
+    "immutableUrl": "https://vestora-7o7vy0z8h-shusi1625s-projects.vercel.app",
+    "productAsset": "index-BiUzrgH2.js",
+    "readyObservedAt": "2026-10-23T20:10:18.9777536Z",
+    "scope": "Restored feature parity, history reliability, journal accounting; read-only release smoke, not signed market/cancel/mint proof",
+    "releaseReport": "source:frontend/docs/frontend-parity-release-2026-10-24.md",
+    "smokeEvidence": "followup:parity-release-2026-10-24/browser-smoke.json"
+  },
+  "currentDeployment": {
+    "id": "dpl_Dka5S4d6fW9QiMUEK262BfqVVttp",
+    "immutableUrl": "https://vestora-k5w8lmxwr-shusi1625s-projects.vercel.app",
+    "productAsset": "index-Bg3LFlH_.js",
+    "readyObservedAt": "2026-10-23T21:20:04.6821896Z",
+    "scope": "Explicitly approved B static hold removal and draft-error context correction; exact JS and bounded GET smoke verified, not actual B market or demo completion",
+    "releaseReport": "source:frontend/docs/post-release-local-fixes-2026-10-24.md",
+    "smokeEvidence": "followup:demo-preparation-2026-10-24/post-smoke.json"
+  },
+  "accountSelectionChange": {
+    "state": "human-picker-confirmed-and-actual-connected-A-and-C-verified",
+    "uiModelTests": 179,
+    "limits": "Initial picker appearance was user-reported; actual A/C connected labels observed. New release C/A/C and picker rejection/disconnection now observed in releasedWalletChecks; C-retention expectation NOT_MET. Original full A/B, open-receipt across switch and actual permission revoke remain incomplete."
+  },
+  "actualFlow": {
+    "account": "0xe079002e5e40e691ab716df6a3686c0eb4da60ad",
+    "recipient": "0x4ad967Db096Dc2B2a3a9f7fDe7aE76fd877dbb9c",
+    "amountRaw": "1000000",
+    "start": "2026-10-23T17:15:00Z",
+    "end": "2026-10-23T17:30:00Z",
+    "cancelable": false,
+    "approvalHash": "0xfe034ca91fe085f0dd474c2dde0f3dc8d1efae56c1f503dd0e2cbaee00ad2f90",
+    "creationHash": "0x14eccdbec4efd2680b654cf556c307125dabca264c0d93cdd6a4a48e3cc179c3",
+    "streamId": "5",
+    "creation": "exact-event-owner-and-escrow-transfer-independently-verified",
+    "creationActualGasCostWei": "1754314515204059"
+  },
+  "cPrerequisite": {
+    "address": "0x4ad967Db096Dc2B2a3a9f7fDe7aE76fd877dbb9c",
+    "verifiedBlock": "11977930",
+    "balanceWei": "1000000000000000",
+    "aMockUsdcRaw": "9400000",
+    "aAllowanceRaw": "0",
+    "gasSufficiency": "Fresh app quote at11979063 shows0.001ETH; direct RPC estimate is not wallet maximum. Current MetaMask maximum/funds still needs human review; archived0.001043711ETH is historical, not a current quote.",
+    "evidence": "followup:c-funding-read.json",
+    "latestBalanceEvidence": "followup:released-wallet-lifecycle-2026-10-24/T06-C-fresh-final-review-after-reconnect.txt",
+    "historicalPendingRequestEvidence": "followup:ACT-T05-C-pending-market-fee-insufficient.txt",
+    "latestHumanClarification": "Has not pressed the app wallet-claim-approval button for the current review. Earlier current-prompt assumption superseded; no rejection, pending cleanup or transaction inferred.",
+    "latestUiObservedAt": "2026-10-23T20:28:57.818Z",
+    "currentReviewEvidence": "followup:released-wallet-lifecycle-2026-10-24/T06-C-fresh-final-review-after-reconnect.txt",
+    "currentReviewState": "Released C/A/C invalidated prior read-only quote; after picker cancellation and explicit C reconnect, a fresh read-only final review was observed. Human asked to open exactly one wallet preview; final signing not authorized or inferred. Current prompt state must be read live."
+  },
+  "productUrl": "https://vestora-alpha.vercel.app",
+  "localUrl": "http://127.0.0.1:4212",
+  "deployedEvidenceRoot": "C:/Users/AAAAA/.codex/visualizations/2026/08/26/01a03f12-2ef4-76b2-a500-d626b17f045e/deployed-qa-2026-10-23",
+  "isolatedEvidenceRoot": "C:/Users/AAAAA/.codex/visualizations/2026/08/26/01a03f12-2ef4-76b2-a500-d626b17f045e/goal-qa-2026-10-23",
+  "featureEvidenceRoot": "C:/Users/AAAAA/.codex/visualizations/2026/08/26/01a03f12-2ef4-76b2-a500-d626b17f045e/goal-qa-2026-10-23/feature-parity-2026-10-24",
+  "sourceRoot": "C:/GitHub/Vestora",
+  "localParity": {
+    "report": "source:frontend/docs/feature-parity-2026-10-24.md",
+    "implemented": "mint, NFT approval/list/unlist, token approval/protected buy, issuer cancellation, direct ID routes, shared pending guard and browser-local history",
+    "policy": "Later explicit local restoration request supersedes older disabled-action source scope; user permits cancellation while listed with risk disclosure. Deployment/signatures remain separate gates.",
+    "creationDecision": "Keep absolute createStream because reviewed dates must not silently shift to mined-block-relative dates; recheck chain time before wallet. Existing version1 recovery unchanged.",
+    "deployed": true,
+    "deploymentApproval": "consumed-for-dpl_3maxBhcQspcZUaTSrpuQgbei2YyL",
+    "localVerification": {
+      "uiModel": 473,
+      "deploymentTests": 8,
+      "loadSafety": 32,
+      "uiPerformanceRegression": 180,
+      "loopbackIntegration": 9,
+      "loopbackBalanceFaults": 2,
+      "lintTypesQaBuild": "PASS",
+      "outsideOriginAttemptsInLoopbackIntegration": 0
+    },
+    "productAsset": "index-BiUzrgH2.js",
+    "limits": "Local tests Node24; Node22-configured hosting build passed, not a Node22 full test run. Main JS~1.31MB. Separate suite counts are not whole deployed manual cases; B hold and unresolved reservations unchanged."
+  },
+  "supplementalObservations": [
+    {
+      "group": "draft-review-error-context-correction",
+      "environment": "isolated-real-React-Codex-IAB-loopback",
+      "capturedAt": "2026-10-23T21:06:09.103Z",
+      "caseIds": [
+        "DEP-E03"
+      ],
+      "result": "CORRECTED_AND_PASS_SUBCASES",
+      "evidence": [
+        "followup:draft-review-context-2026-10-24/draft-review-followup.json",
+        "followup:draft-review-context-2026-10-24/same-past-draft-failure-retained.txt",
+        "followup:draft-review-context-2026-10-24/edited-future-draft-recheck-guidance-desktop.txt",
+        "followup:draft-review-context-2026-10-24/edited-future-draft-recheck-guidance-mobile.txt",
+        "followup:draft-review-context-2026-10-24/fresh-preflight-after-edit.txt",
+        "source:frontend/tests/notice-ui.test.mjs",
+        "source:frontend/tests/create-payment.test.mjs"
+      ],
+      "limits": "Original 3-of6 targeted regressions failed before; all6 passed after. Same input retains failure; changed input requests recheck; pending/evidence and global guards not hidden or cleared. Desktop1280x720/mobile390x844 no overflow or nested button; sendCount0. Local UI observation; exact corrected code later delivered in the approved release, not a production error-transition or full E03 pass."
+    },
+    {
+      "group": "explicit-B-reuse-policy-change",
+      "environment": "local-source-and-memory-tests-plus-read-only-public-RPC",
+      "capturedAt": "2026-10-23T21:07:45.609Z",
+      "caseIds": [
+        "DEP-D19",
+        "DEP-E08"
+      ],
+      "result": "USER_DIRECTED_POLICY_CHANGE_NOT_TRANSACTION_RESOLUTION",
+      "evidence": [
+        "followup:demo-preparation-2026-10-24/demo-balances.json",
+        "source:frontend/src/lib/claim-policy.ts",
+        "source:frontend/tests/transaction-guard.test.mjs",
+        "source:frontend/tests/claim-runtime.test.mjs"
+      ],
+      "limits": "User explicitly requested B reuse after hold explanation. Eight focused tests failed before/passed after; own unresolved and foreign pending records still block. Public RPC observed B latest/pending nonce0/0 but this is not proof that an off-chain wallet request resolved. No real wallet/store modification by the agent; exact code later delivered under separate explicit frontend release approval."
+    },
+    {
+      "group": "native-date-and-amount-length-followup",
+      "environment": "isolated-real-React-Codex-IAB-loopback",
+      "capturedAt": "2026-10-23T20:50:46.229Z",
+      "caseIds": [
+        "DEP-E01",
+        "DEP-E03"
+      ],
+      "evidence": [
+        "followup:boundary-followup-2026-10-24/amount-long-input-partial.png",
+        "followup:boundary-followup-2026-10-24/amount-long-input-partial.txt",
+        "followup:boundary-followup-2026-10-24/amount-native-100-cap.png",
+        "followup:boundary-followup-2026-10-24/amount-native-100-cap.txt",
+        "followup:boundary-followup-2026-10-24/boundary-followup.json",
+        "followup:boundary-followup-2026-10-24/datetime-fill-inconclusive.png",
+        "followup:boundary-followup-2026-10-24/datetime-fill-inconclusive.txt",
+        "followup:boundary-followup-2026-10-24/end-before-start.png",
+        "followup:boundary-followup-2026-10-24/end-before-start.txt",
+        "followup:boundary-followup-2026-10-24/equal-start-end.png",
+        "followup:boundary-followup-2026-10-24/equal-start-end.txt",
+        "followup:boundary-followup-2026-10-24/final-isolated-status.png",
+        "followup:boundary-followup-2026-10-24/final-isolated-status.txt",
+        "followup:boundary-followup-2026-10-24/future-date-fresh-preflight.png",
+        "followup:boundary-followup-2026-10-24/future-date-fresh-preflight.txt",
+        "followup:boundary-followup-2026-10-24/missing-end.png",
+        "followup:boundary-followup-2026-10-24/missing-end.txt",
+        "followup:boundary-followup-2026-10-24/missing-start-native-delete.png",
+        "followup:boundary-followup-2026-10-24/missing-start-native-delete.txt",
+        "followup:boundary-followup-2026-10-24/native-valid-20min-review.png",
+        "followup:boundary-followup-2026-10-24/native-valid-20min-review.txt",
+        "followup:boundary-followup-2026-10-24/one-minute-review.png",
+        "followup:boundary-followup-2026-10-24/one-minute-review.txt",
+        "followup:boundary-followup-2026-10-24/past-start-client-review.png",
+        "followup:boundary-followup-2026-10-24/past-start-client-review.txt",
+        "followup:boundary-followup-2026-10-24/past-start-preflight-blocked.png",
+        "followup:boundary-followup-2026-10-24/past-start-preflight-blocked.txt",
+        "followup:boundary-followup-2026-10-24/valid-recovery-review.png",
+        "followup:boundary-followup-2026-10-24/valid-recovery-review.txt"
+      ],
+      "result": "PASS_SUBCASES_WITH_FINDING",
+      "counts": {
+        "passSubcases": 10,
+        "inconclusiveAutomation": 2,
+        "focusedUnitTests": 5,
+        "newWholeCasePasses": 0
+      },
+      "limits": "Native missing/equal/reversed dates blocked; exact20min and1min reviews; past-start read-only preflight blocked before wallet;100-character amount cap; fresh valid preflight recovered. Prior failure notice survives edited draft until recheck, OBSERVED_NOT_FIXED. Initial fill-only date and long typing timeout retained as inconclusive. Final130API/139RPC/sendCount0/no transaction. Counters cumulative, not load/performance. Not production, real Chrome/wallet/one-second UI or whole E01/E03."
+    },
+    {
+      "group": "unsupported-token-exclusion-and-recovery",
+      "environment": "isolated-real-React-Codex-IAB-loopback",
+      "capturedAt": "2026-10-23T20:38:55.452Z",
+      "caseIds": [
+        "DEP-E05"
+      ],
+      "evidence": [
+        "followup:unsupported-token-2026-10-24/normal-before.txt",
+        "followup:unsupported-token-2026-10-24/unsupported-assets.txt",
+        "followup:unsupported-token-2026-10-24/unsupported-market.txt",
+        "followup:unsupported-token-2026-10-24/unsupported-direct-detail.txt",
+        "followup:unsupported-token-2026-10-24/unsupported-market-settled.txt",
+        "followup:unsupported-token-2026-10-24/unsupported-status.json",
+        "followup:unsupported-token-2026-10-24/normal-recovered-market.txt",
+        "followup:unsupported-token-2026-10-24/normal-recovered-assets.txt",
+        "followup:unsupported-token-2026-10-24/unsupported-token-followup.json",
+        "source:frontend/tests/live-mapping.test.mjs",
+        "source:frontend/tests/claim-runtime.test.mjs"
+      ],
+      "result": "PASS_SUBCASE",
+      "limits": "Existing all-unsupported2-stream dataset only. Explicit exclusion notice, supported wallet-only holdings2, no direct claim action, non-reset recovery holdings3.25API/24RPC/sendCount0 at captured final status. IAB, not Chrome/production/wallet/full E05; RPC fixture getStream remains USDC, adapter rejection proved separately by existing unit test."
+    },
+    {
+      "group": "released-C-A-C-and-picker-cancellation",
+      "environment": "actual-production-Chrome-human-account-selection",
+      "deploymentId": "dpl_3maxBhcQspcZUaTSrpuQgbei2YyL",
+      "capturedAt": "2026-10-23T20:28:57.818Z",
+      "caseIds": [
+        "DEP-D01",
+        "DEP-D11",
+        "DEP-D19"
+      ],
+      "evidence": [
+        "followup:released-wallet-lifecycle-2026-10-24/session.json",
+        "followup:released-wallet-lifecycle-2026-10-24/A-assessment.json",
+        "followup:released-wallet-lifecycle-2026-10-24/D19-C-picker-cancelled.txt",
+        "followup:released-wallet-lifecycle-2026-10-24/D19-C-explicit-reconnect-after-cancel.txt"
+      ],
+      "result": "ROUND_TRIP_SUBCASES_PASS_PICKER_RETENTION_NOT_MET",
+      "limits": "A assets1/2 and8.4, issued5, history4; C assets5 and1, history0; old readonly quote invalidated. Picker cancellation deliberately disconnects instead of retaining C. Actual wrong-chain, revoke/restart, original A/B and full cases remain incomplete."
+    },
+    {
+      "group": "parity-market",
+      "environment": "isolated-real-React-loopback",
+      "capturedAt": "2026-10-23T18:37:11.402Z..2026-10-23T18:44:48.084Z",
+      "caseIds": [
+        "DEP-D08",
+        "DEP-D16",
+        "DEP-E07"
+      ],
+      "evidence": [
+        "feature:market-approval-only.txt",
+        "feature:buy-indexing.txt",
+        "feature:buy-completed-history.txt",
+        "feature:nft-approval-only.txt",
+        "feature:list-indexing-cross-action-block.txt",
+        "feature:unlist-indexing.txt",
+        "feature:unlist-completed.txt"
+      ],
+      "result": "PASS_SUBCASES",
+      "limits": "Approval/main calls separate; cross-action pending blocked; no whole-case or actual wallet pass."
+    },
+    {
+      "group": "parity-cancel",
+      "environment": "isolated-real-React-loopback",
+      "capturedAt": "2026-10-23T18:46:16.152Z..2026-10-23T18:47:40.844Z",
+      "caseIds": [
+        "DEP-D10",
+        "DEP-D12",
+        "DEP-D13",
+        "DEP-E07"
+      ],
+      "evidence": [
+        "feature:cancel-listed-review.txt",
+        "feature:cancel-actual-refund-indexing.txt",
+        "feature:cancel-owner-rights-listed.txt",
+        "feature:cancel-retained-rights-claimed.txt"
+      ],
+      "result": "PASS_SUBCASES",
+      "limits": "Mock refund749500 differs from quote750000; owner250500 and listing persist; later owner claim is not actual Sepolia or EVM proof."
+    },
+    {
+      "group": "parity-mint-recovery",
+      "environment": "isolated-real-React-loopback",
+      "capturedAt": "2026-10-23T18:48:29.295Z..2026-10-23T18:49:40.218Z",
+      "caseIds": [
+        "DEP-D17",
+        "DEP-D22",
+        "DEP-E08"
+      ],
+      "evidence": [
+        "feature:mint-receipt-balance.txt",
+        "feature:mint-hash-loss-blocked.txt",
+        "feature:mint-recovery-completed-once.txt",
+        "feature:history-reloaded.txt"
+      ],
+      "result": "PASS_SUBCASES",
+      "limits": "Exact mock receipt/balance; hashless record survived ordinary reload and account changes; supplied existing hash recovery did not increment sendCount4. Not full Chrome restart or live proof."
+    },
+    {
+      "group": "parity-layout",
+      "environment": "isolated-real-React-loopback",
+      "capturedAt": "2026-10-23T18:50:13.087Z..2026-10-23T18:51:48.144Z",
+      "caseIds": [
+        "DEP-D03",
+        "DEP-D07",
+        "DEP-D23"
+      ],
+      "evidence": [
+        "feature:all-action-history-desktop.txt",
+        "feature:all-action-history-mobile.txt",
+        "feature:mint-receipt-mobile-dialog.txt",
+        "feature:direct-id-mobile.txt",
+        "feature:asset-precision-mobile.txt"
+      ],
+      "result": "PASS_SUBCASES",
+      "limits": "Desktop2560x1257/mobile390x844, no horizontal overflow/nested button, ID route and selected keyboard/precision interactions. Viewport override reset; not real zoom or physical device."
+    },
+    {
+      "group": "parity-history-fault",
+      "environment": "isolated-real-React-loopback",
+      "capturedAt": "2026-10-23T19:12:23.896Z onward; exact completion in evidence JSON",
+      "caseIds": [
+        "DEP-D17",
+        "DEP-E06"
+      ],
+      "evidence": [
+        "feature:history-open-receipt-before-fault.txt",
+        "feature:history-open-receipt-during-fault.txt",
+        "feature:history-open-receipt-recovered.txt",
+        "feature:history-fault-followup.json"
+      ],
+      "result": "PASS_SUBCASE",
+      "limits": "Same indexed claim3 receipt/hash/raw250500 retained under failure with stale-detail warning; browser-only6 rows explicitly incomplete; recovery7 deduped rows; fake sendCount stayed4. No reset, new send or actual AWS fault."
+    },
+    {
+      "group": "independent-balance-faults",
+      "environment": "isolated-real-React-loopback",
+      "capturedAt": "2026-10-23T19:22:50Z..2026-10-23T19:25:39.519Z",
+      "caseIds": [
+        "DEP-E05"
+      ],
+      "evidence": [
+        "feature:E05-native-only-assets.txt",
+        "feature:E05-native-only-claim-blocked.txt",
+        "feature:E05-native-only-recovered.txt",
+        "feature:E05-token-only-assets.txt",
+        "feature:E05-token-only-claim-review.txt",
+        "feature:E05-token-only-recovered.txt",
+        "feature:balance-fault-followup.json",
+        "source:frontend/tests/manual-qa/balance-fault.test.mjs"
+      ],
+      "result": "PASS_SUBCASES",
+      "limits": "Totals unknown on either bundle failure; ETH-only blocks claim before wallet; token-balance-only allows incoming-claim review without send. Both recover holdings3. SendCount0/no transaction; fixture journal labels excluded from accounting proof. Adapter tests2/2,53/96 loopback requests,0outside/wallet attempts. Not real fees or whole E05/deployed pass."
+    },
+    {
+      "group": "journal-accounting-provenance",
+      "environment": "isolated-real-React-loopback-and-actual-model",
+      "capturedAt": "2026-10-23T19:30:10.495Z..2026-10-23T19:34:24.649Z",
+      "caseIds": [
+        "DEP-D11"
+      ],
+      "evidence": [
+        "feature:D11-local-journal-before.txt",
+        "feature:D11-local-journal-after-assets.txt",
+        "feature:D11-local-journal-after-detail.txt",
+        "feature:D11-local-journal-retained-history.txt",
+        "feature:D11-indexed-positive-after.txt",
+        "feature:D11-local-journal-unavailable-history.txt",
+        "feature:D11-local-journal-recovered.txt",
+        "feature:history-provenance-followup.json",
+        "source:frontend/tests/workspace-model.test.mjs",
+        "source:frontend/src/lib/workspace-model.ts"
+      ],
+      "result": "CORRECTED_AND_PASS_SUBCASES",
+      "limits": "Local-only completed records previously influenced projection summaries.2model tests failed before/passed after; local records now excluded only from acquisition/personal claims, retained in6 transaction rows. Indexed0.05 included; absent history unknown; sendCount0. Initial visual mismatch used repeated mock resets, not a captured live incident. Not deployed."
+    }
+  ],
+  "rules": [
+    "DEP identifiers are not the older 100-case suite identifiers.",
+    "Environment-specific results never promote deployed results automatically.",
+    "A captured subcase is not an independent whole-case pass.",
+    "Historical live HTTP failure cause is unconfirmed; the two-slot conflict was reproduced only in isolation.",
+    "Two separately approved frontend deployments completed; user-reported MetaMask picker and actual A connection observed. Cancellation/revoke and same-release round trip are separate tests.",
+    "Human rejected one approval, then separately signed exact token approval and creation of stream5. The agent never signs/sends. No AWS mutation, new load run, commit or push in this goal.",
+    "The user later explicitly lifted B static deployment hold for demo reuse and approved its frontend release; historical unresolved evidence and stored pending guards remain unchanged."
+  ],
+  "deployedUiSummary": {
+    "PASS": 8,
+    "PARTIAL": 13,
+    "NOT_RUN": 3
+  },
+  "completionAuditNotes": [
+    "D07 was downgraded until actual nonzero scroll evidence existed; it now passes after deployed Escape/focus/362px restoration and market history navigation observations. Temporary viewport is not real zoom.",
+    "D15 was downgraded until real valid-date review/back evidence existed; it now passes for the actual deployed watch-only client form. This does not establish issuer-wallet preflight, token approval or creation.",
+    "D16 formerly described all sold/unlisted/invalidated data as absent. Archived API already had SOLD#1; actual A watch-only UI now verifies it. Only positive unlisted/invalidated records remain absent."
+  ],
+  "legacy100Summary": {
+    "UI": 63,
+    "UI_AND_UNIT": 3,
+    "UNIT_ONLY": 12,
+    "PARTIAL": 7,
+    "FAIL": 1,
+    "PERFORMANCE_FOLLOWUP": 8,
+    "DISCONNECTED_HOLD": 6
+  },
+  "evidencePrefixes": {
+    "deployed": "deployedEvidenceRoot",
+    "isolated": "isolatedEvidenceRoot",
+    "followup": "isolatedEvidenceRoot",
+    "feature": "featureEvidenceRoot",
+    "source": "sourceRoot",
+    "planning": "planningEvidenceRoot"
+  },
+  "historicalDeploymentSnapshots": [
+    {
+      "id": "dpl_6ERvKHwVxG7qtz2ErBF6TY5yNTN5",
+      "immutableUrl": "https://vestora-lvvkqtrsx-shusi1625s-projects.vercel.app",
+      "productAsset": "index-DC8wiL3n.js",
+      "readyAt": "2026-10-23T16:42:25.551Z",
+      "scope": "history sequencing, acquisition readiness and retained receipt; not the later account-selection correction"
+    },
+    {
+      "id": "dpl_45AszhS4a5i3Vx8hSBhTkcjVHQHB",
+      "immutableUrl": "https://vestora-geqaw0ufk-shusi1625s-projects.vercel.app",
+      "productAsset": "index-DyM0ahtv.js",
+      "readyAt": "2026-10-23T16:56:27.975Z",
+      "scope": "previous history corrections plus explicit account permission selection and account-change control",
+      "smokeEvidence": "followup:reconnect-release-smoke.json"
+    },
+    {
+      "id": "dpl_3maxBhcQspcZUaTSrpuQgbei2YyL",
+      "immutableUrl": "https://vestora-7o7vy0z8h-shusi1625s-projects.vercel.app",
+      "productAsset": "index-BiUzrgH2.js",
+      "readyObservedAt": "2026-10-23T20:10:18.9777536Z",
+      "scope": "Restored feature parity, history reliability, journal accounting; read-only release smoke, not signed market/cancel/mint proof",
+      "releaseReport": "source:frontend/docs/frontend-parity-release-2026-10-24.md",
+      "smokeEvidence": "followup:parity-release-2026-10-24/browser-smoke.json"
+    }
+  ],
+  "caseStatusCohortPolicy": "Latest release metadata does not promote historical case statuses. Original cohort-specific evidence remains; new actual subcases are explicitly identified below.",
+  "releasedWalletChecks": {
+    "deploymentId": "dpl_3maxBhcQspcZUaTSrpuQgbei2YyL",
+    "observedAt": "2026-10-23T20:28:57.818Z",
+    "result": "ROUND_TRIP_SUBCASES_PASS_PICKER_RETENTION_NOT_MET",
+    "networkDisposition": "Do not repeat network-switch request without a newly verified UI path; inability to perform this step is not proof MetaMask cannot switch networks.",
+    "pickerRetentionExpectation": "NOT_MET",
+    "summary": "followup:released-wallet-lifecycle-2026-10-24/session.json",
+    "limits": "C/A/C is not original A/B; picker cancellation disconnected app, not retained C and not proven permission revocation. Explicit reconnect observed; no signature/transaction."
+  },
+  "cases": [
+    {
+      "id": "DEP-D01",
+      "target": "Connected list and complete personal history",
+      "deployedStatus": "PARTIAL",
+      "priorDeployedStatus": "FAIL",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "deployed:D01-initial.txt",
+        "source:frontend/tests/live-history.test.mjs",
+        "followup:release-smoke-2026-10-24.json",
+        "followup:REL-D01-D11-B-assets.txt",
+        "followup:REL-D01-B-history.txt",
+        "followup:REL-D01-B-refresh.txt",
+        "followup:REL-D01-A-history.txt",
+        "followup:released-wallet-lifecycle-2026-10-24/D19-A-account-history.txt",
+        "followup:released-wallet-lifecycle-2026-10-24/D19-C-return-history-cleared.txt"
+      ],
+      "next": "Corrected release renders actual B empty history and A four-record history with ordinary refresh/polling. User reported A load failure during connection attempts; not reproduced/captured in this observation. Revalidate after real account selection; do not claim sustained reliability or an established live HTTP cause. New parity release actual connected A4/C0 history observed through C/A/C, with no old-account leakage. Healthy observations do not establish sustained reliability or original HTTP cause."
+    },
+    {
+      "id": "DEP-D02",
+      "target": "Verified basis block/time and freshness",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "deployed:D09-assets.txt",
+        "source:frontend/tests/live-mapping.test.mjs",
+        "followup:DEP-D02-D09-basis-before.txt",
+        "followup:DEP-D02-D09-basis-after.txt",
+        "followup:deployed-basis-read.json",
+        "followup:deployed-ui-pinned-basis.json",
+        "followup:verify-deployed-basis.mjs",
+        "followup:verify-ui-pinned-basis.mjs"
+      ],
+      "next": "API block11977613 and captured UI block11977614 timestamps now independently match chain. API status was lagging with applied/equal checkpoints and age45.552s; exact raw freshness-status cohort for UI11977614 was not captured. Full freshness-state transitions remain unverified; no wall-clock valuation fallback."
+    },
+    {
+      "id": "DEP-D03",
+      "target": "Direct route, reload and create-close behavior",
+      "deployedStatus": "PASS",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "deployed:D03-transactions.txt",
+        "deployed:D15.txt",
+        "followup:DEP-D03-market-direct.txt",
+        "followup:DEP-D03-market-reload.txt",
+        "followup:DEP-D03-assets-direct.txt",
+        "followup:DEP-D03-assets-reload.txt",
+        "followup:DEP-D03-sales-direct.txt",
+        "followup:DEP-D03-sales-reload.txt",
+        "followup:DEP-D03-issued-direct.txt",
+        "followup:DEP-D03-issued-reload.txt",
+        "followup:DEP-D03-create-direct.txt",
+        "followup:DEP-D03-create-reload.txt",
+        "followup:DEP-D03-create-close.txt",
+        "followup:DEP-D03-history-direct.txt",
+        "followup:DEP-D03-history-reload.txt"
+      ],
+      "limits": "Observed on existing deployed release with actual B: all six routes resolve on direct navigation and hard reload; create Escape closes to issued. Route resolution PASS does not pass history/data reliability or unsubmitted creation execution. No new deployment."
+    },
+    {
+      "id": "DEP-D04",
+      "target": "Card/table preserves values and view state",
+      "deployedStatus": "PASS",
+      "localStatus": "PASS",
+      "evidence": [
+        "deployed:D04.txt",
+        "isolated:DEP-D04-D06-keyboard-view-reset.txt"
+      ],
+      "limits": "Deployed observation had one listing, not large-data performance evidence."
+    },
+    {
+      "id": "DEP-D05",
+      "target": "Market filters, counts and empty states",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PASS",
+      "evidence": [
+        "deployed:D05-empty.txt",
+        "source:frontend/tests/notice-ui.test.mjs",
+        "isolated:DEP-D05-cancelled-positive.txt",
+        "isolated:DEP-D05-cancelled-incompatible-empty.txt",
+        "isolated:DEP-D05-streaming-positive.txt",
+        "isolated:DEP-D05-cancelled-filter-matrix.json",
+        "isolated:DEP-D05-normal-filter-matrix.json",
+        "isolated:DEP-D05-cancelled-matrix.txt",
+        "isolated:DEP-D05-normal-matrix.txt"
+      ],
+      "next": "All48 local combinations across normal/cancelled datasets match IDs and counts, including verified empty matches. They are one D05 matrix, not48 whole/deployed cases. Actual positive cancellation variants remain absent."
+    },
+    {
+      "id": "DEP-D06",
+      "target": "Token-safe stable sort, reset and navigation",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "deployed:D06-sort.txt",
+        "isolated:DEP-D06-D23-keyboard-sort.txt",
+        "isolated:DEP-D04-D06-keyboard-view-reset.txt",
+        "followup:DEP-D06-D07-market-detail-url.txt",
+        "followup:DEP-D06-D07-market-back.txt",
+        "followup:DEP-D06-D07-market-forward.txt",
+        "followup:DEP-D06-D07-market-X-close.txt",
+        "source:frontend/tests/notice-ui.test.mjs"
+      ],
+      "limits": "Actual market Back/Forward/X preserves token/sort. Two-row isolated sort is not deployed multirow/tie/pagination evidence."
+    },
+    {
+      "id": "DEP-D07",
+      "target": "Detail open/close, keyboard trap, focus and scroll restoration",
+      "deployedStatus": "PASS",
+      "localStatus": "PASS",
+      "evidence": [
+        "deployed:D07.txt",
+        "isolated:DEP-D07-D23-keyboard-modal-settled.txt",
+        "isolated:keyboard-focus-settled.json",
+        "isolated:DEP-D07-nonzero-scroll.txt",
+        "isolated:DEP-D07-nonzero-scroll.json",
+        "followup:DEP-D07-keyboard-dialog.txt",
+        "followup:DEP-D07-nonzero-scroll.txt",
+        "followup:DEP-D07-deployed-scroll.json",
+        "followup:DEP-D07-X-close.txt",
+        "followup:DEP-D06-D07-market-back.txt",
+        "followup:DEP-D06-D07-market-forward.txt",
+        "followup:DEP-D06-D07-market-X-close.txt"
+      ],
+      "limits": "Actual deployed assets: Enter/Tab/Shift+Tab/Escape and focus restoration; Escape restored362px to362px at temporary1440x900. Explicit X closed and restored focus; its second-opening scrollTop was292px, not the exact362px assertion. Market detail URL/Back/Forward/X also verified. No real zoom, physical-device or transaction action claim."
+    },
+    {
+      "id": "DEP-D08",
+      "target": "Own/zero/foreign-right purchase guards",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "deployed:D08.txt",
+        "isolated:DEP-D06-D23-keyboard-sort.txt",
+        "source:frontend/tests/market-actions.test.mjs",
+        "feature:list-indexing-cross-action-block.txt",
+        "followup:parity-release-2026-10-24/market-desktop.txt"
+      ],
+      "limits": "Feature-parity source is now deployed with protected-buy paths. Actual current listing2 has zero remaining rights and correctly disables buy. This is one zero-rights subcase; own/foreign drift and positive signed buy still need actual evidence. Earlier disabled-build observation remains historical."
+    },
+    {
+      "id": "DEP-D09",
+      "target": "Token-separated holdings and no double count",
+      "deployedStatus": "PASS",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "deployed:D09-assets.txt",
+        "deployed:D19-B-assets.txt",
+        "source:frontend/tests/workspace-model.test.mjs",
+        "followup:DEP-D02-D09-basis-after.txt",
+        "followup:deployed-ui-pinned-basis.json",
+        "followup:verify-ui-pinned-basis.mjs"
+      ],
+      "limits": "PASS for actual B and current supported MockUSDC dataset at captured UI block11977614: nextStreamId5 and ownerOf1..4 establish owned IDs3/4; each has1000000 raw remaining/claimable, future0; wallet0; holding2000000 exactly matches UI. No later-mint, other-token, price or wallet-authority claim."
+    },
+    {
+      "id": "DEP-D10",
+      "target": "Asset filters distinguish empty from errors",
+      "deployedStatus": "PASS",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "deployed:D10-scheduled.txt",
+        "deployed:D10-ended-listed.txt",
+        "deployed:D10-claimable.txt",
+        "isolated:DEP-D10-cancelled-assets.txt",
+        "isolated:DEP-D10-cancelled-claimable.txt",
+        "isolated:DEP-D10-cancelled-not-completed.txt"
+      ],
+      "limits": "Deployed PASS applies to observed A filter dataset. Local cancelled #3 with0.35 remaining stays claimable but is not normally completed; this is not a real cancellation."
+    },
+    {
+      "id": "DEP-D11",
+      "target": "Unknown history must not assert acquisition or personal amounts",
+      "deployedStatus": "PARTIAL",
+      "priorDeployedStatus": "FAIL",
+      "localStatus": "PASS",
+      "evidence": [
+        "deployed:D11-acquisition-flips.txt",
+        "isolated:DEP-D11-unknown-acquisition.txt",
+        "source:frontend/tests/live-history.test.mjs",
+        "followup:REL-D01-D11-B-assets.txt",
+        "followup:REL-D11-A-assets-known.txt",
+        "source:frontend/tests/workspace-model.test.mjs",
+        "feature:history-provenance-followup.json",
+        "followup:released-wallet-lifecycle-2026-10-24/D19-A-assets-connected.txt",
+        "followup:released-wallet-lifecycle-2026-10-24/D19-C-return-assets.txt"
+      ],
+      "next": "Earlier readiness correction deployed; actual known history correctly shows A#1 purchased0.40/claims1.00, A#2 direct/claims5.00, B direct/zero. Later local journal-consumer regression corrected and2tests fail-before/pass-after; actual local UI keeps diagnostic rows out of projection accounting and preserves unknown-history behavior. New source is now deployed; live unavailable-history transition still absent. No forced live fault. New parity release normal actual A/C acquisition and personal amounts observed; unavailable-history transitions still require their own evidence."
+    },
+    {
+      "id": "DEP-D12",
+      "target": "Issuer versus current recipient selection",
+      "deployedStatus": "PASS",
+      "localStatus": "PASS",
+      "evidence": [
+        "deployed:D12-D13-issued.txt",
+        "deployed:D12-B-issued.txt",
+        "deployed:D19-B-assets.txt"
+      ],
+      "limits": "PASS applies to the observed A/B four-payment dataset, not a newly created C payment."
+    },
+    {
+      "id": "DEP-D13",
+      "target": "Deposit and remaining-right accounting identities",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "deployed:D13-composition.txt",
+        "source:frontend/tests/workspace-model.test.mjs",
+        "followup:deployed-basis-read.json",
+        "followup:verify-deployed-basis.mjs",
+        "isolated:DEP-D13-cancelled-issued-composition.txt",
+        "isolated:DEP-D13-cancelled-issued-filter.txt",
+        "isolated:DEP-D13-cancelled-detail-readonly.txt",
+        "isolated:DEP-D13-cancelled-fixture-check.json",
+        "isolated:check-cancelled-fixture.mjs"
+      ],
+      "next": "Actual API/chain11977613 A totals8=6+2+0+0. New read-only local cancellation/streaming UI conserves3=0.10+1.35+1.00+0.55 and remaining2.35=1.35+1.00; cancellation leaves0.35 claimable. Actual future-positive and cancellation/refund transactions remain absent."
+    },
+    {
+      "id": "DEP-D14",
+      "target": "Name save/reload/account separation",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "deployed:D14-persisted.txt",
+        "deployed:D14-restored.txt",
+        "isolated:DEP-E04-native-name-boundary.json",
+        "isolated:DEP-D14-name-A-saved.txt",
+        "isolated:DEP-D14-name-A-reload.txt",
+        "isolated:DEP-D14-name-B-isolation.txt",
+        "isolated:DEP-D14-name-A-restored.txt"
+      ],
+      "next": "Repeat account-isolated names on deployed wallet accounts. Local natural-role A/B UI passed; B has no issued rows, so this does not prove same-id hook collisions."
+    },
+    {
+      "id": "DEP-D15",
+      "target": "Creation form/review/back/close without implicit send",
+      "deployedStatus": "PASS",
+      "localStatus": "PASS",
+      "evidence": [
+        "deployed:D15.txt",
+        "isolated:DEP-E01-one-raw-ui.txt",
+        "isolated:DEP-E01-exact-balance-ui.txt",
+        "followup:DEP-D15-valid-native-dates.txt",
+        "followup:DEP-D15-watch-review.txt",
+        "followup:DEP-D15-review-back.txt",
+        "followup:DEP-D15-B-restored.txt"
+      ],
+      "limits": "Actual A public watch-only form accepts B/1MockUSDC/native-valid dates, shows exact review and wallet-required denial, Back retains inputs and Escape returns to issued; B connection restored. No quote/approval/send, no actual issuer-wallet session, and no T-case pass. The dated disposable draft must not be reused for a later transaction."
+    },
+    {
+      "id": "DEP-D16",
+      "target": "Sales count/value/status distinctions",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "deployed:D16.txt",
+        "deployed:D19-B-sales.txt",
+        "source:frontend/tests/live-mapping.test.mjs",
+        "followup:deployed-basis-read.json",
+        "followup:DEP-D16-A-watch-active.txt",
+        "followup:DEP-D16-A-watch-sold.txt",
+        "followup:DEP-D16-A-watch-all.txt",
+        "followup:DEP-D16-A-watch-unlisted-empty.txt",
+        "followup:DEP-D16-A-watch-void-empty.txt",
+        "followup:DEP-D16-B-restored.txt"
+      ],
+      "next": "Corrected false absence assumption: actual watch-only A has SOLD#1 at0.40 and ACTIVE#2 at4.00; all table has both, active asking total4.00 stays separate from completed price. #1 seller=buyer=A is a self-purchase, not external net income. Unlisted/invalidated tabs are empty; their positive actual variants remain absent."
+    },
+    {
+      "id": "DEP-D17",
+      "target": "History rows, receipt and refresh recovery",
+      "deployedStatus": "PARTIAL",
+      "priorDeployedStatus": "FAIL",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "deployed:D17.txt",
+        "deployed:D17-recovered-detail.txt",
+        "isolated:DEP-D17-open-receipt-preserved.txt",
+        "isolated:DEP-D17-history-recovered.txt",
+        "followup:REL-D01-A-history.txt",
+        "followup:REL-D17-A-receipt-after-poll.txt"
+      ],
+      "next": "Actual #2 receipt/hash stays open while corrected-release projection advances11977966 to11977969. Healthy polling is not a live failure/recovery test; that branch remains isolated evidence."
+    },
+    {
+      "id": "DEP-D18",
+      "target": "Watch-only address is not wallet authority",
+      "deployedStatus": "PASS",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "deployed:D18.txt",
+        "deployed:D18-restored.txt",
+        "followup:DEP-D15-watch-review.txt",
+        "followup:DEP-D15-B-restored.txt"
+      ],
+      "limits": "Actual A watch-only client review explicitly requires issuer wallet before creation. No permission or claim authority inferred from an address; ordinary connect restores full B, not a MetaMask A/B account-switch test."
+    },
+    {
+      "id": "DEP-D19",
+      "target": "Actual A/B round trip clears stale account state",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "deployed:D19-B-assets.txt",
+        "deployed:D19-B-hold.txt",
+        "isolated:DEP-D19-fake-B-to-A.txt",
+        "isolated:DEP-D19-fake-A-to-B.txt",
+        "source:frontend/tests/claim-runtime.test.mjs",
+        "followup:RECONNECT-release-B-ready.txt",
+        "followup:reconnect-release-smoke.json",
+        "followup:RECONNECT-release-A-connected.txt",
+        "followup:RECONNECT-release-A-issued.txt",
+        "followup:RECONNECT-release-A-history.txt",
+        "followup:released-wallet-lifecycle-2026-10-24/session.json",
+        "followup:released-wallet-lifecycle-2026-10-24/A-assessment.json",
+        "followup:released-wallet-lifecycle-2026-10-24/D19-C-picker-cancelled.txt",
+        "followup:released-wallet-lifecycle-2026-10-24/D19-C-explicit-reconnect-after-cancel.txt"
+      ],
+      "next": "New parity release actual C readonly quote -> A -> C verified with full connected addresses, role/account data separation and old quote invalidation. Human picker cancellation observed app disconnect, not expected C retention; this explicit expectation remains NOT_MET. Explicit C reconnect recovered assets. Original same-release A/B, open receipt across switch and revoke remain incomplete; no whole-case PASS."
+    },
+    {
+      "id": "DEP-D20",
+      "target": "Wrong network blocks and Sepolia restores",
+      "deployedStatus": "NOT_RUN",
+      "localStatus": "PASS",
+      "evidence": [
+        "isolated:DEP-D20-wrong-network.txt",
+        "isolated:DEP-D20-restored.txt"
+      ],
+      "next": "Actual wrong-network transition remains NOT_RUN. User reconfirmed the available MetaMask UI could not perform the requested switch. Do not repeat the same request or guess menus without newly verified UI evidence. Isolated PASS is separate and does not establish actual Mainnet/Sepolia behavior."
+    },
+    {
+      "id": "DEP-D21",
+      "target": "Disconnect cancel/confirm/reconnect preserves records",
+      "deployedStatus": "NOT_RUN",
+      "localStatus": "PASS",
+      "evidence": [
+        "isolated:DEP-D21-cancel.txt",
+        "isolated:DEP-D21-confirm-reconnect.txt",
+        "source:frontend/tests/claim-runtime.test.mjs"
+      ],
+      "next": "Actual wallet permission revoke/reconnect requires human-approved action."
+    },
+    {
+      "id": "DEP-D22",
+      "target": "Reload/full restart preserves unresolved reservations",
+      "deployedStatus": "NOT_RUN",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "isolated:DEP-D22-no-reseed-normal-reload.txt",
+        "source:frontend/tests/claim-runtime.test.mjs"
+      ],
+      "next": "Human full Chrome restart and deployed origin still required; isolated normal reload does not prove them."
+    },
+    {
+      "id": "DEP-D23",
+      "target": "Desktop/mobile, keyboard, real zoom and devices",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "isolated:DEP-D23-desktop-pending.txt",
+        "isolated:DEP-D23-mobile-pending.txt",
+        "isolated:DEP-D07-D23-keyboard-modal-settled.txt",
+        "isolated:DEP-D06-D23-keyboard-sort.txt",
+        "followup:DEP-D07-keyboard-dialog.txt",
+        "followup:DEP-D07-deployed-scroll.json"
+      ],
+      "next": "Selected modal/market keyboard paths now have deployed evidence. Real 200% zoom, wider keyboard coverage and physical device are not replaced by viewport overrides."
+    },
+    {
+      "id": "DEP-D24",
+      "target": "Dismiss notices without changing unresolved transaction state",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "isolated:DEP-D24-stale-close.txt",
+        "isolated:DEP-D22-reload-DEP-D24-pending.txt",
+        "followup:DEP-D24-stale-before.txt",
+        "followup:DEP-D24-stale-after.txt",
+        "source:frontend/tests/notice-ui.test.mjs",
+        "followup:ACT-D24-rejection-notice-dismissed.txt",
+        "followup:ACT-T01-requote-after-rejection.txt",
+        "followup:ACT-T05-C-pending-market-fee-insufficient.txt",
+        "followup:ACT-T05-C-before-wallet-clarified.txt"
+      ],
+      "next": "Actual stale-detail X and modal-scoped rejected-approval X observed without clearing tracking; read-only requote worked. Archived C pending UI remains historical; latest human clarification/current DOM show before-wallet review, not current pending prompt. Completed/indexing dismissal remains unobserved; attempted success dismissal after account switch is inconclusive, not PASS."
+    },
+    {
+      "id": "DEP-E01",
+      "target": "Amount/precision/balance/integer boundaries",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "isolated:DEP-E01-zero-ui-valid-dates.txt",
+        "isolated:DEP-E01-seven-decimals-ui.txt",
+        "isolated:DEP-E01-balance-plus-one-ui.txt",
+        "isolated:DEP-E01-one-raw-ui.txt",
+        "isolated:DEP-E01-exact-balance-ui.txt",
+        "source:frontend/tests/create-payment.test.mjs",
+        "source:frontend/tests/live-history.test.mjs",
+        "followup:ACT-E01-zero.txt",
+        "followup:ACT-E01-seven-decimals.txt",
+        "followup:ACT-E01-balance-plus-one.txt",
+        "followup:ACT-create-native-values.json",
+        "followup:boundary-followup-2026-10-24/boundary-followup.json"
+      ],
+      "limits": "New actual connected-A form with valid02:15/02:30 native dates rejected0,0.0000001 and9.400001 against9.4 balance, before quote/wallet. Other boundaries remain unexecuted in production. Earlier date-blocked attempts remain historically inconclusive. New isolated native date/100-character follow-up has10 passing subcases and2 automation inconclusives, not whole-case or deployed proof. That edited-draft display finding was subsequently reproduced, corrected and included in the later approved release; actual production error-transition retest remains separate."
+    },
+    {
+      "id": "DEP-E02",
+      "target": "Recipient zero/malformed/case/self/third-party",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "isolated:DEP-E02-zero-address-valid-dates.txt",
+        "source:frontend/tests/live-history.test.mjs",
+        "source:frontend/tests/create-payment.test.mjs",
+        "followup:ACT-E02-zero-address.txt",
+        "followup:ACT-create-native-values.json",
+        "followup:ACT-D15-C-client-review.txt"
+      ],
+      "limits": "Actual valid-date/amount1 form rejects zero address and accepts supplied C into review. Remaining recipient variants retain their actual evidence layer; historical date-blocked attempts are not retroactively passed."
+    },
+    {
+      "id": "DEP-E03",
+      "target": "Date requirements, period ordering and chain-time drift",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "isolated:DEP-E03-equal-period-ui.txt",
+        "isolated:DEP-E03-reversed-period-ui-corrected.txt",
+        "isolated:DEP-E03-reversed-period-native-values.json",
+        "source:frontend/tests/create-payment.test.mjs",
+        "followup:ACT-create-native-values.json",
+        "followup:ACT-T01-preflight-awaiting-rejection.txt",
+        "followup:boundary-followup-2026-10-24/boundary-followup.json",
+        "followup:draft-review-context-2026-10-24/draft-review-followup.json"
+      ],
+      "limits": "Actual valid future native dates reach chain quote11978033. Missing/equal/reversed/past/drift branches remain separate isolated evidence, not actual browser passes. New isolated native date/100-character follow-up has10 passing subcases and2 automation inconclusives, not whole-case or deployed proof. That edited-draft display finding was subsequently reproduced, corrected and included in the later approved release; actual production error-transition retest remains separate."
+    },
+    {
+      "id": "DEP-E04",
+      "target": "Name 0/1/59/60/61 UTF-16 units and persistence",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "isolated:DEP-E04-native-name-boundary.json",
+        "source:frontend/tests/create-payment.test.mjs",
+        "deployed:D14-persisted.txt",
+        "deployed:D14-restored.txt"
+      ],
+      "next": "Deployed cross-account saved-name separation remains pending."
+    },
+    {
+      "id": "DEP-E05",
+      "target": "Unknown token/balance, allowance and fee uncertainty",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "source:frontend/tests/claim-runtime.test.mjs",
+        "source:frontend/tests/create-payment.test.mjs",
+        "followup:ACT-T01-preflight-awaiting-rejection.txt",
+        "followup:ACT-T02-approval-chain.json",
+        "followup:ACT-T03-creation-chain.json",
+        "followup:ACT-T05-C-pending-market-fee-insufficient.txt",
+        "followup:ACT-T05-C-before-wallet-clarified.txt",
+        "isolated:DEP-E05-balance-unavailable-assets.txt",
+        "isolated:DEP-E05-balance-unavailable-claim-blocked.txt",
+        "isolated:DEP-E05-balance-unavailable-metrics.json",
+        "feature:balance-fault-followup.json",
+        "source:frontend/tests/manual-qa/balance-fault.test.mjs",
+        "followup:unsupported-token-2026-10-24/unsupported-token-followup.json",
+        "source:frontend/tests/live-mapping.test.mjs"
+      ],
+      "limits": "Exact actual A approval/creation and fees observed. Public-RPC quote is not a wallet cost cap. Archived C Market0.001043711ETH exceeded last verified0.001ETH; current review is before wallet approval per human/DOM, not a prompt to reject. Fresh maximum/funds review remains needed. Combined fault and independently isolated ETH-only/token-balance-only UI/adapter/recovery subcases now pass with no sends. Existing all-unsupported-token UI exclusion/recovery and separate adapter rejection now have isolated evidence. Whole E05, mixed/unknown-decimal and actual fee/funding combinations remain incomplete; no deployed promotion."
+    },
+    {
+      "id": "DEP-E06",
+      "target": "Timeout/429/503/schema/partial history and recovery",
+      "deployedStatus": "NOT_RUN",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "isolated:DEP-E06-http429.txt",
+        "isolated:DEP-E06-http429-recovery.txt",
+        "isolated:DEP-E06-http503.txt",
+        "isolated:DEP-E06-http503-recovery.txt",
+        "isolated:DEP-D17-open-receipt-preserved.txt",
+        "isolated:DEP-E06-timeout-observation.txt",
+        "isolated:DEP-E06-timeout-recovered.txt",
+        "isolated:DEP-E06-invalid-json.txt",
+        "isolated:DEP-E06-invalid-json-recovery.txt",
+        "isolated:DEP-E06-invalid-schema.txt",
+        "isolated:DEP-E06-invalid-schema-recovery.txt",
+        "isolated:DEP-E06-partial-detail.txt",
+        "isolated:DEP-E06-partial-detail-recovery.txt",
+        "source:frontend/tests/live-history.test.mjs",
+        "source:frontend/tests/performance-ui/snapshot-race.test.mjs",
+        "followup:check-after-timeout-tests.log",
+        "isolated:DEP-E06-timeout-followup.json",
+        "isolated:DEP-E06-timeout-loading-followup.txt",
+        "isolated:DEP-E06-timeout-terminal-followup.txt",
+        "isolated:DEP-E06-timeout-recovery-followup.txt"
+      ],
+      "next": "New isolated real-browser timeout subcase observes loading, terminal alert and recovery with sendCount0; older inconclusive attempt remains historical. Recovery control plus main-page refresh used; error-panel refresh click did not occur after background refresh removed it. Source retains20000ms deadline/retry1. This is not precise elapsed-time, complete fault-matrix or live AWS proof; deployed faults were not injected."
+    },
+    {
+      "id": "DEP-E07",
+      "target": "Drift, duplicates and exact replacement/event identity",
+      "deployedStatus": "NOT_RUN",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "source:frontend/tests/claim-runtime.test.mjs",
+        "source:frontend/tests/create-payment.test.mjs",
+        "source:frontend/tests/performance-ui/snapshot-race.test.mjs",
+        "isolated:DEP-E07-owner-drift-before.txt",
+        "isolated:DEP-E07-owner-drift-blocked.txt",
+        "isolated:DEP-E07-owner-drift-metrics.txt"
+      ],
+      "limits": "Actual local UI made a quote, then visible fixture control changed owner before execution; fresh RPC check rejected old API/quote ownership with changed=true/sendCount0/no transaction. This is one isolated owner-drift subcase; duplicate/replacement/event mutations are not real deployed-contract behavior or whole-case PASS."
+    },
+    {
+      "id": "DEP-E08",
+      "target": "Ambiguous/hashless reservations, recovery, restart and dismissal",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "evidence": [
+        "deployed:D19-B-hold.txt",
+        "isolated:DEP-D22-no-reseed-normal-reload.txt",
+        "isolated:DEP-D21-confirm-reconnect.txt",
+        "source:frontend/tests/claim-runtime.test.mjs"
+      ],
+      "next": "Actual restart/recovery evidence and human actions still required; do not clear B hold."
+    },
+    {
+      "id": "DEP-T01",
+      "target": "User rejects a required wallet prompt",
+      "deployedStatus": "PASS",
+      "localStatus": "NOT_APPLICABLE",
+      "evidence": [
+        "followup:ACT-T01-rejected.txt",
+        "followup:ACT-D24-rejection-notice-dismissed.txt",
+        "followup:ACT-T01-requote-after-rejection.txt"
+      ],
+      "limits": "Human rejected actual token-approval request; app rejected state/no hash or explorer link, then read-only requote succeeded. This is not merely rejecting account access and is not a creation/claim pass."
+    },
+    {
+      "id": "DEP-T02",
+      "target": "A exact-amount approval if needed, no automatic create",
+      "deployedStatus": "PASS",
+      "localStatus": "NOT_APPLICABLE",
+      "evidence": [
+        "followup:ACT-T02-approved.txt",
+        "followup:ACT-T02-approval-chain.json",
+        "followup:ACT-T03-awaiting-human-create.txt"
+      ],
+      "limits": "Human-signed approval hash0xfe034ca91fe085f0dd474c2dde0f3dc8d1efae56c1f503dd0e2cbaee00ad2f90; independent block11978060 exact Approval ownerA/spenderSTREAM/value1000000, allowance1000000, A9400000/C0 and nextStreamId5. No automatic creation; next creation needs separate human action."
+    },
+    {
+      "id": "DEP-T03",
+      "target": "A directly issues a fully funded payment NFT to C",
+      "deployedStatus": "PASS",
+      "localStatus": "NOT_APPLICABLE",
+      "evidence": [
+        "followup:ACT-T03-awaiting-human-create.txt",
+        "followup:ACT-T03-created.txt",
+        "followup:ACT-T03-creation-chain.json"
+      ],
+      "limits": "Human separately approved the actual wallet-wrapped create transaction. At11978080 exact StreamCreated5, A-to-escrow Transfer1000000, ownerC, deposited1000000, dates/cancelablefalse and withdrawn0 independently verified. A8400000/C0/allowance0; actual fee1754314515204059wei. No separate NFT purchase and no duplicate send."
+    },
+    {
+      "id": "DEP-T04",
+      "target": "C has no entitlement before verified start",
+      "deployedStatus": "NOT_RUN",
+      "localStatus": "NOT_APPLICABLE",
+      "evidence": [
+        "followup:ACT-T03-creation-chain.json"
+      ],
+      "limits": "Creation was verified before start, but C before-start UI/claimability was not observed. The window is past; do not infer this pass from creation alone."
+    },
+    {
+      "id": "DEP-T05",
+      "target": "C manually claims a partial-period entitlement",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "NOT_APPLICABLE",
+      "evidence": [
+        "followup:ACT-C-connected.txt",
+        "followup:ACT-C-assets-before-claim.txt",
+        "followup:ACT-T05-C-partial-review.txt",
+        "followup:ACT-T05-C-wallet-awaiting-fee-detail.txt",
+        "followup:ACT-T05-C-pending-market-fee-insufficient.txt",
+        "followup:ACT-T05-C-before-wallet-clarified.txt"
+      ],
+      "limits": "Archived partial-period quote/wallet preview, no approval/hash/receipt. Latest human says current app wallet-approval button was not pressed; DOM shows before-wallet review, superseding the assumption of a currently open prompt. No rejection or transaction inferred. End has passed; later receipt cannot prove partial-period execution."
+    },
+    {
+      "id": "DEP-T06",
+      "target": "C claims final remainder; raw total equals deposit",
+      "deployedStatus": "WAITING_USER",
+      "localStatus": "NOT_APPLICABLE",
+      "evidence": [
+        "followup:ACT-T05-C-pending-market-fee-insufficient.txt",
+        "followup:ACT-T05-C-before-wallet-clarified.txt",
+        "followup:released-wallet-lifecycle-2026-10-24/T06-C-fresh-final-review-after-reconnect.txt"
+      ],
+      "blockedBy": [
+        "fresh-C-session-and-onchain-conditions-with-existing-records-preserved",
+        "current-wallet-maximum-and-adequate-gas-review",
+        "per-action-human-wallet-confirmation"
+      ],
+      "limits": "New release C/A/C invalidated an old readonly quote. After picker cancel and explicit reconnect, fresh app review at11979063 showed final1MockUSDC and0.001ETH. Human asked to open one MetaMask preview only; current maximum/funds and separate final human action remain unverified. No claim hash/receipt, signature, duplicate request or pending cleanup inferred."
+    },
+    {
+      "id": "DEP-T07",
+      "target": "A/C same-block accounting and actual balance changes",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "NOT_APPLICABLE",
+      "evidence": [
+        "followup:ACT-T03-creation-chain.json",
+        "followup:ACT-T03-created.txt",
+        "followup:ACT-C-assets-before-claim.txt"
+      ],
+      "limits": "Creation same-block A8400000/C0/escrow3000000 and ownerC verified; C UI wallet0+remaining1=holdings1 observed. No post-claim balances or full A/C accounting reconciliation yet."
+    },
+    {
+      "id": "DEP-T08",
+      "target": "Exact receipt/applied checkpoint/UI recovery with no resend",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "NOT_APPLICABLE",
+      "evidence": [
+        "followup:ACT-T03-created.txt",
+        "followup:ACT-T03-creation-chain.json",
+        "followup:ACT-T05-C-pending-market-fee-insufficient.txt",
+        "followup:ACT-T05-C-before-wallet-clarified.txt"
+      ],
+      "limits": "Exact actual creation receipt/events and indexed UI observed. Latest C human/DOM state is app review before wallet approval, not current wallet-pending evidence. Claim receipt/indexing and actual restart recovery remain unexecuted; do not clear B or any C unresolved record."
+    }
+  ],
+  "postReleaseLocalChanges": {
+    "observedAt": "2026-10-23T22:04:16.402Z",
+    "status": "DEPLOYED_READY_READ_ONLY_SMOKE_PASS",
+    "report": "source:frontend/docs/post-release-local-fixes-2026-10-24.md",
+    "localProductAsset": "/assets/index-Bg3LFlH_.js",
+    "latestRecordedDeploymentId": "dpl_Dka5S4d6fW9QiMUEK262BfqVVttp",
+    "latestRecordedDeploymentAsset": "index-Bg3LFlH_.js",
+    "localVerification": {
+      "uiModel": 479,
+      "deployment": 8,
+      "loadSafety": 32,
+      "uiRegression": 180,
+      "loopbackIntegration": 11,
+      "focusedDraftContext": 6,
+      "focusedBReuse": 8,
+      "lintTypesQaBuild": "PASS",
+      "node": "v24.19.0"
+    },
+    "productManifest": "planning:work/demo-b-reuse-2026-10-24/product-manifest.json",
+    "sourceHashes": [
+      {
+        "path": "frontend/src/components/workspace/CreatePaymentAction.tsx",
+        "sha256": "8ffc5396112f31a3c8a3e896cdb58500a81e106a4787637f85fb6f632979fa97"
+      },
+      {
+        "path": "frontend/src/lib/create-payment-engine.ts",
+        "sha256": "7b3ef490fc550d4591c4772c8cb1dbb4ab329481f713ae9bb9333b7440c2f157"
+      },
+      {
+        "path": "frontend/src/lib/claim-policy.ts",
+        "sha256": "b6bc831990872c04e4f39af561d16badbd5c8460ea30f21c66ea9cb36d6d5c99"
+      },
+      {
+        "path": "frontend/public/locales/ko.json",
+        "sha256": "dd3dfc5c81e5a9d6e661e8488618bcc5cef725e166e1641328b3256cefc81454"
+      },
+      {
+        "path": "frontend/tests/notice-ui.test.mjs",
+        "sha256": "a84c59aff6506f39be77a04ed07a76d8b92f0679d0060316a25f491ff046d727"
+      },
+      {
+        "path": "frontend/tests/create-payment.test.mjs",
+        "sha256": "c125cd62fbde141ee467a010a679ce9a1e15eb8a362a1ef043ccc15322516290"
+      },
+      {
+        "path": "frontend/tests/claim-runtime.test.mjs",
+        "sha256": "9d9f3bfa040be8021c6c790d07652ff34c5de48b348b46beea51e41334b677aa"
+      },
+      {
+        "path": "frontend/tests/transaction-guard.test.mjs",
+        "sha256": "cd2c2a61e088442cdf8ca89863943dacd03a21bcc3fb4ce390603b8bcc0ee091"
+      },
+      {
+        "path": "frontend/tests/market-actions.test.mjs",
+        "sha256": "6a0afbca3c0995cef86ee0fba588d2fd74a057fa3b0cdedc78ab1ea53c329793"
+      },
+      {
+        "path": "frontend/tests/cancel-payment.test.mjs",
+        "sha256": "ea5fd51fa0fa52fada28d2597113b75cf21f21382234d4645b482902820f5fdc"
+      },
+      {
+        "path": "frontend/tests/mint-token.test.mjs",
+        "sha256": "b4ef5d79b1900e8e4185c1bd0b078d1d9b3958dd3c729ad8993e50919337e87b"
+      }
+    ],
+    "limits": "Later direct user approval authorized one frontend-only redeploy and original demo scope. No agent wallet send, new load run, AWS/DB/contract mutation, commit or push. Funding was human-reported and balances independently read; transaction receipts/hashes not yet supplied."
+  },
+  "authorizedBReuse": {
+    "latestDirectHumanInstruction": "B 그냥 다시 써",
+    "dateKst": "2026-10-24",
+    "scope": "Lift static account/deployment hold for demo reuse, not stored unresolved reservations",
+    "localStatus": "STATIC_HOLD_REMOVED",
+    "deployedStatus": "CODE_DELIVERED_EXACT_BUILD_MATCH_NOT_SIGNED_RUNTIME_PROOF",
+    "deploymentId": "dpl_Dka5S4d6fW9QiMUEK262BfqVVttp",
+    "legacyAttemptResolution": "NOT_PROVEN",
+    "pendingRecordsCleared": false,
+    "standardGuardsPreserved": true,
+    "source": "source:frontend/src/lib/claim-policy.ts",
+    "tests": [
+      "source:frontend/tests/create-payment.test.mjs",
+      "source:frontend/tests/claim-runtime.test.mjs",
+      "source:frontend/tests/transaction-guard.test.mjs",
+      "source:frontend/tests/market-actions.test.mjs",
+      "source:frontend/tests/cancel-payment.test.mjs",
+      "source:frontend/tests/mint-token.test.mjs"
+    ]
+  },
+  "demoPreparation": {
+    "status": "C_5000_VERIFIED_B_FIRST_MINT_REVERTED_NEW_100_REVIEW_PREPARED",
+    "plan": "source:frontend/docs/demo-recording-plan-2026-10-24.md",
+    "fundingEvidence": "followup:demo-preparation-2026-10-24/demo-balances-after-funding.json",
+    "fundingBlock": {
+      "number": "11979338",
+      "hash": "0xbf79f1f4cd199dcef873d69792ffbe86a6a6f7734a8b9dcdc0ef925c6fdfcd59",
+      "at": "2026-10-23T21:24:12.000Z"
+    },
+    "accounts": {
+      "A": {
+        "address": "0xe079002e5e40e691ab716df6a3686c0eb4da60ad",
+        "ethWei": "13251893889375750",
+        "mockUsdcRaw": "8400000",
+        "latestNonce": "69",
+        "pendingNonce": "69"
+      },
+      "B": {
+        "address": "0xbf9bf852225899b667aa4c73bb082e830abb9de1",
+        "ethWei": "3000000000000000",
+        "mockUsdcRaw": "0",
+        "latestNonce": "0",
+        "pendingNonce": "0"
+      },
+      "C": {
+        "address": "0x4ad967db096dc2b2a3a9f7fde7ae76fd877dbb9c",
+        "ethWei": "3000000000000000",
+        "mockUsdcRaw": "0",
+        "latestNonce": "0",
+        "pendingNonce": "0"
+      }
+    },
+    "originalOneSetDepositRaw": "6400000000",
+    "proposedScaledOneSetDepositRaw": "6400000",
+    "scaleProposalApproved": false,
+    "originalPlanAmountsConfirmed": true,
+    "selectedAToBEthWei": "2000000000000000",
+    "selectedAToCEthWei": "2000000000000000",
+    "fundTransfersApproved": true,
+    "fundingHumanReport": "완료했어",
+    "fundingReceiptsVerified": false,
+    "reDeploymentStatus": "COMPLETED_UNDER_LATER_EXPLICIT_APPROVAL",
+    "T0": null,
+    "recordingUrl": "http://127.0.0.1:8755",
+    "recordingState": "TWO_PREP_CLIPS_SAVED_POINTER_PLACEMENT_PREVIEW_RENDERED_MAIN_SHOOT_PENDING",
+    "recordingStarted": true,
+    "videoProduced": false,
+    "financialFinalAction": "HUMAN_ONLY",
+    "limits": "Original6400 one-set amounts retained. C human-approved retry minted5000, exact event and receipt-block balance verified; earlier C failure preserved with unknown detailed cause. B first100mint failed on-chain, new100read-only quote prepared. A target and all7new streams pending. Proposed08:00KST is only a prepared schedule, not a created stream. No agent signature, automated transaction, manual reservation clearing or cloud change. Final main/supplemental footage and calibrated actual-action cursor trace not yet produced.",
+    "preparationVideoProduced": true,
+    "recordingEvidence": {
+      "video": "followup:demo-preparation-2026-10-24/PREP-capture-2026-10-24.mp4",
+      "videoSha256": "3638302abcc307f69bbaa2e8ff3895761e1b899a87ad3647089dd7dd232bf68b",
+      "metadata": "followup:demo-preparation-2026-10-24/PREP-capture-2026-10-24.json",
+      "recordedElapsedMs": 401868,
+      "bytes": 10161118,
+      "displaySurface": "browser",
+      "dimensions": [
+        2560,
+        1440
+      ],
+      "frameRate": 30,
+      "audioRequested": false,
+      "cursorVerified": false,
+      "limits": "Preparation-only tab recording. Initial track settings2560x1440/30fps are not encoded media proof; first decoded frame2560x1200,duration401.47s observed. Separate MetaMask windows not established. Final demo not completed.",
+      "initialTrackSettings": {
+        "width": 2560,
+        "height": 1440,
+        "frameRate": 30,
+        "displaySurface": "browser"
+      }
+    },
+    "mintAttempt": {
+      "account": "C",
+      "requestedMockUsdcRaw": "5000000000",
+      "hash": "0x0c2d9775bb49903c6c3f126b8368b5788a554b1057a5fb7f9b3f20dcc8bc7ed4",
+      "receiptStatus": "reverted",
+      "block": "11979373",
+      "blockHash": "0x791a89a31ae599fc258496e814ba0bc6279f6bdada408656062e70b9be053545",
+      "at": "2026-10-23T21:31:12.000Z",
+      "type": "0x4",
+      "gasUsed": "251346",
+      "gasCostWei": "377019003770190",
+      "tokenTransferLogCount": 0,
+      "afterRead": {
+        "number": "11979399",
+        "hash": "0xd8bdf7829febe08cb4160ee4ad588f9cfa650930b9e58df3da0217b08e962daa",
+        "at": "2026-10-23T21:36:24.000Z"
+      },
+      "ethWei": "2622980996229810",
+      "mockUsdcRaw": "0",
+      "confirmedNonce": "2",
+      "pendingNonce": "2",
+      "appResultRestored": true,
+      "walletReconnected": true,
+      "retryState": "FRESH_READ_ONLY_REVIEW_NO_NEW_WALLET_REQUEST",
+      "detailedRevertCause": "NOT_ESTABLISHED",
+      "evidence": [
+        "followup:demo-preparation-2026-10-24/C-mint-receipt.json",
+        "followup:demo-preparation-2026-10-24/C-mint-failure-network-read.json",
+        "followup:demo-preparation-2026-10-24/C-mint-reverted-restored.txt",
+        "followup:demo-preparation-2026-10-24/C-mint-retry-review.txt"
+      ],
+      "limits": "Receipt-proven failure of one EIP7702 wallet wrapper. Nonce0 transaction plus authorization nonce1 explains confirmed nonce2; it is not evidence of two separate sends. No successful mint, stream, buy, sell or claim. App restored the exact failed transaction hash after human reconnect. No manual storage clearing."
+    },
+    "mintRetry": {
+      "humanApproved": true,
+      "verification": "PASS_EXACT_MINT_AND_RECEIPT_BLOCK_BALANCE",
+      "hash": "0xadadbf5a1b18fc2808d8010960f167bd1b6b4ea094811ff9bcaf38417ed9011a",
+      "receiptStatus": "success",
+      "block": "11979481",
+      "blockHash": "0x0aa021ab4f66aaefd4ca95ee6e2c2d39dfc91cd4d675b027d6d71190b3ac7e18",
+      "at": "2026-10-23T21:52:48.000Z",
+      "confirmations": "12",
+      "from": "0x4ad967db096dc2b2a3a9f7fde7ae76fd877dbb9c",
+      "to": "0xdb9b1e94b5b69df7e401ddbede43491141047db3",
+      "type": "0x2",
+      "nonce": "2",
+      "mintAmountRaw": "5000000000",
+      "logIndex": "6",
+      "mockUsdcAtReceiptRaw": "5000000000",
+      "ethWeiAtReceipt": "2092544990571826",
+      "gasUsed": "353624",
+      "gasCostWei": "530436005657984",
+      "evidence": [
+        "followup:demo-preparation-2026-10-24/C-mint-retry-success.json",
+        "followup:demo-preparation-2026-10-24/C-mint-retry-completed.txt",
+        "followup:demo-preparation-2026-10-24/C-mint-retry-completed.png"
+      ],
+      "limits": "New human-approved successful5000mint, distinct from the earlier failed hash. Same-block token balance and exact mint event verified. No automatic retry, claim, stream creation, sale or purchase. No stored reservation manually cleared. Both attempts used the wallet wrapper; the first detailed revert cause is still unknown."
+    },
+    "windowCapture": {
+      "video": "followup:demo-preparation-2026-10-24/PREP-window-capture-2026-10-24.mp4",
+      "metadata": "followup:demo-preparation-2026-10-24/PREP-window-capture-2026-10-24.json",
+      "recordedElapsedMs": 107069,
+      "bytes": 5456286,
+      "initialTrackSettings": {
+        "width": 2560,
+        "height": 1400,
+        "frameRate": 30,
+        "displaySurface": "window",
+        "cursor": "motion"
+      },
+      "finalDemoCompleted": false,
+      "limits": "Window share observed, cursor motion setting, not agent-pointer trace. Encoded frame geometry must be probed independently."
+    },
+    "pointerOverlay": {
+      "status": "LOCAL_RENDERER_AND_ILLUSTRATIVE_PREVIEW_ONLY",
+      "modelTests": 16,
+      "preview": "followup:demo-preparation-2026-10-24/agent-pointer-placement-preview.mp4",
+      "previewReport": "followup:demo-preparation-2026-10-24/agent-pointer-placement-preview.mp4.json",
+      "actualActionTraceRecorded": false,
+      "limits": "User requested the automation indicator, not physical cursor. Actual CUA action trace/calibration required for main filming. Placement preview is explicitly illustrative, not a transaction/click record. Human approvals are not agent actions."
+    },
+    "bMintAttempt": {
+      "hash": "0xbc3fd9ec79ef11cfcdf7d413e7529baa6e902b0a873a7cb8e074f262b688304f",
+      "receiptStatus": "reverted",
+      "block": "11979505",
+      "blockHash": "0x69b4005370276d298522a2057678562c15c6a30957208a8c7a8490306f198b84",
+      "at": "2026-10-23T21:57:36.000Z",
+      "type": "0x4",
+      "gasCostWei": "376966503769665",
+      "logCount": 0,
+      "retryState": "FRESH_READ_ONLY_REVIEW_WAITING_HUMAN",
+      "evidence": [
+        "followup:demo-preparation-2026-10-24/B-mint-first-failure.json",
+        "followup:demo-preparation-2026-10-24/B-mint-first-failure.txt",
+        "followup:demo-preparation-2026-10-24/B-mint-retry-review.png"
+      ],
+      "limits": "One human-approved failed100mint, not an old#3 claim retry. The previous failure is terminal. A new100quote is prepared; no new request or successful100mint inferred."
+    },
+    "proposedT0": "2026-10-24T08:00:00+09:00",
+    "preparedCreationPlan": "planning:work/demo-b-reuse-2026-10-24/creation-plan.json"
+  },
+  "planningEvidenceRoot": "C:/Users/AAAAA/OneDrive - 한양대학교/문서/ChatGPT/2026 졸업프로젝트"
+}

@@ -47,7 +47,7 @@
       "method": "editor-select-all-copy",
       "originalSha256": "d9700c361b81adea0ea1c1ed0133525797e0738a818ba52307ec21b1dfb138f3",
       "runtimePresent": true,
-      "runtimeSha256": "b5efdabc20e56913d26128b9cb1c4c8dc337fc9fbcb665b9048775c56f9b7a1d",
+      "runtimeSha256": "31d622915e455dbd51ea8e39267da9a246dab2320e444a7aac27603618120e24",
       "unchanged": false
     },
     {
@@ -137,7 +137,7 @@
       "method": "editor-select-all-copy",
       "originalSha256": "783876db767eac4171a248252e0dff3a5b31dfdded819ec5018a89288ba8a104",
       "runtimePresent": true,
-      "runtimeSha256": "1720473cf9bcbaf2d18c4ef17be3eebfd75dcc56995e384089182eeac5c87f63",
+      "runtimeSha256": "f3835ac78e4188dfc2138b3612b89e71754802e21f2b08f19b1ca08650be2b4f",
       "unchanged": false
     },
     {
@@ -191,7 +191,7 @@
       "method": "editor-select-all-copy",
       "originalSha256": "03f5fa6f53351c77f85864d4975f8a01f2e499f3216d6bd42e4fc59c854e4c33",
       "runtimePresent": true,
-      "runtimeSha256": "12d597bc99d31061ff2b2529e163ae61b6ea9f9767bfda59d5965f9a53a67fc9",
+      "runtimeSha256": "0d7f121c950af06908248bcb52bde3e3125e1e8c02a202f49bd0bcd1b9bf9189",
       "unchanged": false
     },
     {
@@ -227,8 +227,8 @@
       "method": "editor-select-all-copy",
       "originalSha256": "f5768f414651d2e390819871471ca9ce206d8a4049672277a2f1f2561a9954f9",
       "runtimePresent": true,
-      "runtimeSha256": "f5768f414651d2e390819871471ca9ce206d8a4049672277a2f1f2561a9954f9",
-      "unchanged": true
+      "runtimeSha256": "dce7bbae1f4f5b2f202d0643e5f346eadb81cb95fb19aae45280890318c53783",
+      "unchanged": false
     },
     {
       "path": "src/lib/tokens.ts",
@@ -245,7 +245,7 @@
       "method": "editor-select-all-copy",
       "originalSha256": "450a591d14a756663b01c645c28fece8dc1dc77a0cd02c8f3013319be63b3140",
       "runtimePresent": true,
-      "runtimeSha256": "99ad2e107a6a9c211530730e4b880a6f28f0b93c895772b333166685cacc0725",
+      "runtimeSha256": "7ac2d5529b4dc94d91a64a64c14777c14077bf30f1797590f0594e167ce668a6",
       "unchanged": false
     },
     {
@@ -605,7 +605,7 @@
       "method": "editor-select-all-copy",
       "originalSha256": "cc690eba66f239fdc385fb89b88454b8879c3ae7dd5d053f53a48443a1fadd6c",
       "runtimePresent": true,
-      "runtimeSha256": "4151a1bbda9dafe1724c7c2cdf58275babe0ddaccb2091acdbc1055b2cafcea7",
+      "runtimeSha256": "da3b0103a45ed4065cd952bf90b896273c7edbd3f74658c746a9bee240269357",
       "unchanged": false
     },
     {
@@ -776,8 +776,8 @@
       "method": "editor-select-all-copy",
       "originalSha256": "ca7d1ea4ba6ef52594fc649ae79b30323dac4e966c40c3e6cc85f358cc95bc28",
       "runtimePresent": true,
-      "runtimeSha256": "ca7d1ea4ba6ef52594fc649ae79b30323dac4e966c40c3e6cc85f358cc95bc28",
-      "unchanged": true
+      "runtimeSha256": "83fe7f706e915f236d9391913d295485665d3aa91be33ab3abaae02f562ea7cd",
+      "unchanged": false
     },
     {
       "path": "src/components/tx/TxStatusTimeline.tsx",
@@ -929,7 +929,7 @@
       "method": "editor-select-all-copy",
       "originalSha256": "2ae82ba3aa8e23c4e8b4092e6a608ce7ab3364c7f91cb78070416ae4aa0d78df",
       "runtimePresent": true,
-      "runtimeSha256": "40a8578ffbca0f194a16e4b7a83d4186c514e0ba62bdb27a02c40f7badf0af55",
+      "runtimeSha256": "dd3dfc5c81e5a9d6e661e8488618bcc5cef725e166e1641328b3256cefc81454",
       "unchanged": false
     },
     {

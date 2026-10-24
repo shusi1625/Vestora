@@ -1,0 +1,2373 @@
+{
+  "schemaVersion": 1,
+  "auditedAt": "2026-10-23T22:04:16.432Z",
+  "goal": "deployed-followup-2026-10-23",
+  "result": "INCOMPLETE",
+  "scope": "100 historical cases reconciled to40 current environment-specific cases; not140 passes and not a new test execution",
+  "inputs": {
+    "legacyPlan": {
+      "path": "work/vestora-test-plan-2026-10-22.md",
+      "sha256": "839b26c80a25bf487fa59b4af7413cb0e0ee9247ef00bb1a18a59e1891f54671"
+    },
+    "legacyResults": {
+      "path": "work/vestora-manual-results-2026-10-22.md",
+      "sha256": "44463f272599cb0b0473ea5932ed0266e011ee5b5fe1965c80bf7e777741832a"
+    },
+    "currentLedger": {
+      "path": "frontend/docs/deployed-qa-ledger-2026-10-23.json",
+      "sha256": "323bc0506654a80831606ce2d675fa1aa58db131016982fc4afaaabaa6851645"
+    }
+  },
+  "legacyCounts": {
+    "UI": 63,
+    "PARTIAL": 7,
+    "FAIL": 1,
+    "UNIT_ONLY": 12,
+    "UI_AND_UNIT": 3,
+    "DISCONNECTED_HOLD": 6,
+    "PERFORMANCE_FOLLOWUP": 8
+  },
+  "legacyCases": [
+    {
+      "id": "F01",
+      "priority": "P1",
+      "declaredEnvironment": "UI",
+      "procedure": "지갑 미연결로 /market 열기",
+      "expected": "조회 가능, 거래는 제한, 가짜 개인 잔액 없음",
+      "historicalStatus": "UI",
+      "historicalObservation": "미연결 마켓 4건 조회, 구매 검토 비활성, 개인 잔액 없음",
+      "relatedFollowupCases": [
+        "DEP-D01",
+        "DEP-D18"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F02",
+      "priority": "P1",
+      "declaredEnvironment": "UI/FIX",
+      "procedure": "토큰·취소 가능·지급 단계 필터 조합",
+      "expected": "표시 매물과 건수가 모든 조건의 교집합과 일치",
+      "historicalStatus": "UI",
+      "historicalObservation": "USDC 3건, USDC+취소 가능+지급 중 2건, 취소됨 0건, mWETH 1건",
+      "relatedFollowupCases": [
+        "DEP-D05"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F03",
+      "priority": "P1",
+      "declaredEnvironment": "UI/FIX",
+      "procedure": "동일 토큰에서 가격·미청구액·종료일 정렬, 필터 초기화",
+      "expected": "옵션에 맞는 순서, 초기화 정책과 실제 URL 상태 일치",
+      "historicalStatus": "UI",
+      "historicalObservation": "기존 가격/종료순 관측에 더해 production fixture에서 토큰 선택 후 미청구액 #12→#3, 초기화 후 기본조건/목록보기 유지·버튼 비활성화. BigInt 정밀값/동률 안정성 회귀",
+      "relatedFollowupCases": [
+        "DEP-D06"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F04",
+      "priority": "P1",
+      "declaredEnvironment": "UI",
+      "procedure": "매물 상세 진입 후 뒤로 가기",
+      "expected": "동일 지급의 정보 표시, 필터·정렬·스크롤 복원 확인",
+      "historicalStatus": "UI",
+      "historicalObservation": "QA-07 수정 후 Back은 마켓에서 상세만 닫고 필터/정렬·scrollY917 유지, Forward/새로고침/table 보기 복원. 직접 URL 닫기도 마켓 유지",
+      "relatedFollowupCases": [
+        "DEP-D03",
+        "DEP-D06",
+        "DEP-D07"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F05",
+      "priority": "P0",
+      "declaredEnvironment": "UI/LIVE",
+      "procedure": "A의 지급 관리와 B의 내 자산에서 #3 조회",
+      "expected": "발행인과 현재 소유자 기준으로 각각 정확히 노출",
+      "historicalStatus": "UI",
+      "historicalObservation": "실제 A 지급 관리/B 내 자산 #3 분리·예치/청구 가능 1 대조. Sepolia #11965176 ownerOf=B. 청구 전 관측이며 이후 소유권·잔액은 재확인 필요",
+      "relatedFollowupCases": [
+        "DEP-D12",
+        "DEP-T03",
+        "DEP-T07"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F06",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "A가 발행만 한 지급과 소유한 지급을 따로 배치",
+      "expected": "발행만 한 예치금을 A의 수취 자산에 더하지 않음",
+      "historicalStatus": "UI",
+      "historicalObservation": "샘플 A 발행 지급과 A 소유 지급 분리, 발행 예치금이 수취 자산에 혼입되지 않음",
+      "relatedFollowupCases": [
+        "DEP-D09",
+        "DEP-D12",
+        "DEP-D13"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F07",
+      "priority": "P0",
+      "declaredEnvironment": "UI/FIX",
+      "procedure": "토큰별 자산 숫자·원형 그래프·합계 대조",
+      "expected": "금액 보존, 원형 비율 합 100%, 중복 가산 없음",
+      "historicalStatus": "UI",
+      "historicalObservation": "USDC 합계 2816.055555=1420.5+625.936890+769.618665, mWETH 7.34 분리. 표시 %는 반올림 오차 허용",
+      "relatedFollowupCases": [
+        "DEP-D09",
+        "DEP-D13"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F08",
+      "priority": "P1",
+      "declaredEnvironment": "UI/FIX",
+      "procedure": "보유 수취권 상태 필터를 각각 선택",
+      "expected": "청구 가능·예정·판매·완료의 표시 정책과 목록 일치",
+      "historicalStatus": "UI",
+      "historicalObservation": "기존 판매중/토큰 전환에 더해 production fixture 예정 #3/#6/#9/#12와 종료 #4/#7/#10 정확. 다른소유자/취소상태 제외는 회귀로 대조",
+      "relatedFollowupCases": [
+        "DEP-D10"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F09",
+      "priority": "P0",
+      "declaredEnvironment": "UI/FIX",
+      "procedure": "지급 관리 요약과 상세 행 합계 비교",
+      "expected": "최초 예치액·남은 청구액·예정액이 동일 기준으로 일치",
+      "historicalStatus": "UI",
+      "historicalObservation": "예치 5000=청구 1410+반환 560+남은 3030. 남은 3030=청구 가능 709.822887+미발생 2320.177113",
+      "relatedFollowupCases": [
+        "DEP-D13"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F10",
+      "priority": "P1",
+      "declaredEnvironment": "UI",
+      "procedure": "지급 이름 설정·변경 후 새로고침·다른 화면 이동",
+      "expected": "동일 계정·지급의 로컬 이름 유지, 온체인 저장으로 안내하지 않음",
+      "historicalStatus": "UI",
+      "historicalObservation": "저장·새로고침·샘플 재연결 유지, 같은 origin 두 탭의 A 이름 변경이 목록/상세에 동기화. 테스트 이름 복원",
+      "relatedFollowupCases": [
+        "DEP-D14",
+        "DEP-E04"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F11",
+      "priority": "P0",
+      "declaredEnvironment": "UI/FIX",
+      "procedure": "직접 수취와 구매·이전 수취의 획득 정보 비교",
+      "expected": "확인된 구매가·개인 청구 이력만 사용, 추정 구매가 없음",
+      "historicalStatus": "UI",
+      "historicalObservation": "샘플 B #1048 구매 380/개인 청구 50이 거래 내역과 일치. A 실패 청구 50은 실제 수취에 미합산",
+      "relatedFollowupCases": [
+        "DEP-D11"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F12",
+      "priority": "P1",
+      "declaredEnvironment": "UI/LIVE",
+      "procedure": "지급 생성 폼 입력 후 검토, 수정, 다시 검토",
+      "expected": "주소·금액·시각·취소 조건이 최종 입력과 일치",
+      "historicalStatus": "UI",
+      "historicalObservation": "이름·B 주소·1 USDC·시작/종료·취소 체크를 수정하고 검토 값 일치, 실제 발행 버튼 비활성",
+      "relatedFollowupCases": [
+        "DEP-D15",
+        "DEP-E01",
+        "DEP-E02",
+        "DEP-E03"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F13",
+      "priority": "P0",
+      "declaredEnvironment": "LIVE/UNIT",
+      "procedure": "allowance 부족 상태에서 사용 승인",
+      "expected": "정확한 spender·금액 승인, 지급 생성은 자동 실행되지 않음",
+      "historicalStatus": "UI",
+      "historicalObservation": "실제 A의1 USDC 승인 영수증/allowance 확인 후 별도 생성 검토·사용자 생성, 두 거래 분리. 자동 생성 없음",
+      "relatedFollowupCases": [
+        "DEP-T02"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F14",
+      "priority": "P0",
+      "declaredEnvironment": "LIVE/UNIT",
+      "procedure": "allowance 충분 상태에서 조건 확인",
+      "expected": "불필요한 승인 없이 생성 검토, 별도 사용자 승인 필요",
+      "historicalStatus": "UI",
+      "historicalObservation": "실제 allowance1000000 확인 후 추가 승인 없이 create 검토 진입·사용자 생성 성공, allowance0으로 소진. ±1 경계는 기존 UNIT",
+      "relatedFollowupCases": [
+        "DEP-T02",
+        "DEP-E05"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F15",
+      "priority": "P0",
+      "declaredEnvironment": "LIVE",
+      "procedure": "사용자가 검토한 조건으로 지급 생성 승인",
+      "expected": "정확한 StreamCreated 이벤트에서 ID 확정, 성공 영수증 확인",
+      "historicalStatus": "UI",
+      "historicalObservation": "실제 #4 StreamCreated의 정확한 A/B/1 USDC/기간/취소불가, ownerB·예치 Transfer·exact API 적용 확인",
+      "relatedFollowupCases": [
+        "DEP-T03",
+        "DEP-T08"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F16",
+      "priority": "P0",
+      "declaredEnvironment": "UI/LIVE",
+      "procedure": "생성 후 A·B 화면과 해당 상세 조회",
+      "expected": "A 발행 기록·B NFT 소유권·예치금이 맞고 별도 구매 불필요",
+      "historicalStatus": "PARTIAL",
+      "historicalObservation": "실제 A 지급 관리와 B 주소 조회 내 자산의 #4/직접 수취/별도구매없음/권리 분리 일치. 실제 B 지갑 연결 후 확인은 별도",
+      "relatedFollowupCases": [
+        "DEP-D12",
+        "DEP-T03",
+        "DEP-T07"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F17",
+      "priority": "P0",
+      "declaredEnvironment": "LIVE/UNIT",
+      "procedure": "B 소유의 양수 청구 가능 지급 조건 확인",
+      "expected": "검토는 조회만 수행, 최신 소유권·금액 검증",
+      "historicalStatus": "FAIL",
+      "historicalObservation": "실제 B 검토 통과 뒤 지갑 최대 가스 비용 부족으로 전송 실패. QA-03/04, 해시 없음, 재전송 금지",
+      "relatedFollowupCases": [
+        "DEP-T05",
+        "DEP-E05"
+      ],
+      "interpretation": "Original real B-specific case remains unresolved. C follow-up does not pass B or release its hard hold."
+    },
+    {
+      "id": "F18",
+      "priority": "P0",
+      "declaredEnvironment": "LIVE",
+      "procedure": "사용자가 청구 승인 후 영수증·잔액 대조",
+      "expected": "실제 이벤트 금액만큼 토큰 지급, 남은 권리 정확히 감소",
+      "historicalStatus": "PARTIAL",
+      "historicalObservation": "사용자가 실제 청구 요청 실행, 가스 오류로 미완료. 격리 직접/래퍼 청구의 영수증 기반 완료는 확인",
+      "relatedFollowupCases": [
+        "DEP-T05",
+        "DEP-T06"
+      ],
+      "interpretation": "Original real B-specific case remains unresolved. C follow-up does not pass B or release its hard hold."
+    },
+    {
+      "id": "F19",
+      "priority": "P0",
+      "declaredEnvironment": "UI/LIVE",
+      "procedure": "청구 후 A·B 화면 및 거래 이력 확인",
+      "expected": "동일 hash·ID·금액으로 반영, 거래를 중복 집계하지 않음",
+      "historicalStatus": "PARTIAL",
+      "historicalObservation": "수정된 격리 서버에서 2+1=3→3+0=3 및 개인 청구 1 확인. 실제 완료/발행인 대조는 미완료",
+      "relatedFollowupCases": [
+        "DEP-D17",
+        "DEP-T07",
+        "DEP-T08"
+      ],
+      "interpretation": "Original real B-specific case remains unresolved. C follow-up does not pass B or release its hard hold."
+    },
+    {
+      "id": "F20",
+      "priority": "P0",
+      "declaredEnvironment": "UI/UNIT",
+      "procedure": "hash가 있는 처리 중 상태에서 새로고침",
+      "expected": "기존 hash 추적 복원, 새 거래 자동 전송 없음",
+      "historicalStatus": "UI",
+      "historicalObservation": "격리 pending 저장→새로고침→기존 영수증 재검증→반영 대기→복구 완료, sendCount=1. 실환경 완료 증거 아님",
+      "relatedFollowupCases": [
+        "DEP-D22",
+        "DEP-E08"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F21",
+      "priority": "P0",
+      "declaredEnvironment": "UI/FIX",
+      "procedure": "완료·인덱서 반영 중 안내의 X 닫기",
+      "expected": "안내만 닫힘, 추적·갱신·실행 차단 상태는 유지",
+      "historicalStatus": "UI",
+      "historicalObservation": "격리 반영 대기 알림 닫기 후 통신 복구·자동 polling으로 완료 재노출, sendCount=1",
+      "relatedFollowupCases": [
+        "DEP-D24",
+        "DEP-T08"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F22",
+      "priority": "P1",
+      "declaredEnvironment": "UI/FIX",
+      "procedure": "stale 안내 닫기·새 거래/새 경고 발생",
+      "expected": "최신성 배지는 유지, 다른 ID/상태의 새 안내는 다시 노출",
+      "historicalStatus": "UI",
+      "historicalObservation": "닫은 stale 안내와 독립적으로 새 영수증 반영 대기 안내 노출, 닫은 뒤 API 복구/재로딩 시 완료. 새 ID/자동 갱신 관측·UNIT도 별도 보유",
+      "relatedFollowupCases": [
+        "DEP-D02",
+        "DEP-D24"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F23",
+      "priority": "P0",
+      "declaredEnvironment": "UI/LIVE",
+      "procedure": "계정 전환 A → B → A",
+      "expected": "잔액·소유권·이력·보류 거래가 계정별로 분리",
+      "historicalStatus": "PARTIAL",
+      "historicalObservation": "샘플/격리 A↔B 금액 분리, B unknown이 A에 안 보이고 B 복귀 시 복원. 실제 MetaMask pending 계정 전환은 별도",
+      "relatedFollowupCases": [
+        "DEP-D19"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F24",
+      "priority": "P0",
+      "declaredEnvironment": "UI",
+      "procedure": "보기 전용 주소로 조회 후 실행 시도",
+      "expected": "연결된 서명 계정으로 취급하지 않고 전송 차단",
+      "historicalStatus": "UI",
+      "historicalObservation": "실제 B 조회 전용 표시, 청구 대신 지갑 연결 필요 안내, 서명/전송 없음",
+      "relatedFollowupCases": [
+        "DEP-D18"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F25",
+      "priority": "P1",
+      "declaredEnvironment": "UI/FIX",
+      "procedure": "잘못된 네트워크 안내·사용자 전환·재검토",
+      "expected": "Sepolia 확인 뒤 최신 조건을 다시 확인, 자동 전송 없음",
+      "historicalStatus": "UI",
+      "historicalObservation": "격리 검토 후 잘못된 체인→Sepolia 전환→새 조건 확인 필요. 이전 승인 버튼 재사용 안 됨",
+      "relatedFollowupCases": [
+        "DEP-D20"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F26",
+      "priority": "P1",
+      "declaredEnvironment": "UI/FIX",
+      "procedure": "키보드 Tab·Enter·Escape로 메뉴·모달·X 사용",
+      "expected": "포커스 이동·복귀 가능, X가 폼 제출하지 않고 이름 제공",
+      "historicalStatus": "UI",
+      "historicalObservation": "QA-02 수정 후 Escape/Close 전환 완료 시 각각 원래 상세 버튼으로 복귀. 정밀값 Enter 열기/Escape 닫기. 전체 메뉴/모든 보조기기 검증은 아님",
+      "relatedFollowupCases": [
+        "DEP-D07",
+        "DEP-D23"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F27",
+      "priority": "P2",
+      "declaredEnvironment": "UI/FIX",
+      "procedure": "데스크톱/모바일에서 긴 경고·빈 목록·많은 상태 비교",
+      "expected": "수치·버튼 위치 예측 가능, 겹침·가로 넘침·푸터 불필요 이동 없음",
+      "historicalStatus": "UI",
+      "historicalObservation": "대표 정상/미청구0/내 매물/빈 시장을 카드·표·390/1280px에서 확인. 카드436/액션Y315 고정, QA-08 뒤 빈 보기 전환 footer 절대Y 동일. 전체 언어/모든 조합 보장 아님",
+      "relatedFollowupCases": [
+        "DEP-D04",
+        "DEP-D23"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "F28",
+      "priority": "P0",
+      "declaredEnvironment": "UI",
+      "procedure": "판매·구매·지급 취소 버튼의 실행 가능 여부 확인",
+      "expected": "비활성 기능은 실제 지갑 요청을 열지 않으며 완료를 가장하지 않음",
+      "historicalStatus": "UI",
+      "historicalObservation": "live-mode fixture 구매/판매 등록 취소 disabled, 발행 상세 미연결 안내, 구형 sell URL 직접 진입도 /assets로 redirect. sendCount=0. 미연결 실기능은 D 보류",
+      "relatedFollowupCases": [
+        "DEP-D08",
+        "DEP-D16"
+      ],
+      "interpretation": "Historical disabled-action expectation superseded for local source by explicit later feature-restoration request. Its old PASS does not test the newly enabled actions."
+    },
+    {
+      "id": "B01",
+      "priority": "P0",
+      "declaredEnvironment": "UI/UNIT",
+      "procedure": "금액 빈 문자열·공백·0·0.000000",
+      "expected": "검토/전송 차단, 필수/양수 오류",
+      "historicalStatus": "UI",
+      "historicalObservation": "빈 값 필수 입력 차단, 공백/0/0.000000 검토 차단",
+      "relatedFollowupCases": [
+        "DEP-E01"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B02",
+      "priority": "P0",
+      "declaredEnvironment": "UI/UNIT",
+      "procedure": "금액 -1·+1·1e3·1,000·NaN·Infinity",
+      "expected": "허용된 십진 입력이 아니면 거절, 의도하지 않은 수치 변환 없음",
+      "historicalStatus": "UI",
+      "historicalObservation": "-1,+1,1e3,1,000,NaN,Infinity 거절",
+      "relatedFollowupCases": [
+        "DEP-E01"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B03",
+      "priority": "P0",
+      "declaredEnvironment": "UI/UNIT",
+      "procedure": "0.000001 MockUSDC",
+      "expected": "양수 최소 단위로 보존, 표시에 0.00이 나와도 실제 0과 구분·정밀값 확인 가능",
+      "historicalStatus": "UI",
+      "historicalObservation": "QA-01 수정 후 최소 MockUSDC 1 raw가 0.000001로 표시. 데스크톱·390px 검토 확인, 18자리 mWETH 최소 단위도 샘플에서 표시",
+      "relatedFollowupCases": [
+        "DEP-E01",
+        "DEP-D23"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B04",
+      "priority": "P0",
+      "declaredEnvironment": "UI/UNIT",
+      "procedure": "0.0000001·1.1234567",
+      "expected": "소수 6자리 초과 거절, 자동 절삭·반올림 송금 금지",
+      "historicalStatus": "UI",
+      "historicalObservation": "0.0000001,1.1234567 거절",
+      "relatedFollowupCases": [
+        "DEP-E01"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B05",
+      "priority": "P0",
+      "declaredEnvironment": "UI/UNIT",
+      "procedure": "1·1.0·1.000000",
+      "expected": "모두 raw 1000000, 재검토에서 금액 변형 없음",
+      "historicalStatus": "UI",
+      "historicalObservation": "1,1.0,1.000000 모두 aria 정밀값 1.000000",
+      "relatedFollowupCases": [
+        "DEP-E01"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B06",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "잔액 L에 대해 L-1 raw·L·L+1 raw",
+      "expected": "앞 두 값은 다른 조건 충족 시 허용, 초과는 거절",
+      "historicalStatus": "UI",
+      "historicalObservation": "샘플 잔액 1420.5 기준 -1 raw/동일 검토 가능, +1 raw 거절",
+      "relatedFollowupCases": [
+        "DEP-E01",
+        "DEP-E05"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B07",
+      "priority": "P0",
+      "declaredEnvironment": "UNIT",
+      "procedure": "금액 2^256-1 및 2^256",
+      "expected": "모델 상한까지 정수 검증, 초과 거절. 잔액·시뮬레이션까지 성공한다는 뜻 아님",
+      "historicalStatus": "UNIT_ONLY",
+      "historicalObservation": "uint256 최대 값 허용·pending 정밀값 왕복, 최대+1 거절. 모델 정수 검증이며 잔액/실거래 성공 아님",
+      "relatedFollowupCases": [
+        "DEP-E01"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B08",
+      "priority": "P0",
+      "declaredEnvironment": "UNIT",
+      "procedure": "2^53-1·2^53·2^53+1 raw",
+      "expected": "BigInt 정확도 유지, 합산·비교 과정에서 Number 손실 없음",
+      "historicalStatus": "UNIT_ONLY",
+      "historicalObservation": "2^53-1/동일/+1 raw의 지갑·권리·합산값을 BigInt로 구별",
+      "relatedFollowupCases": [
+        "DEP-D09",
+        "DEP-D13",
+        "DEP-E01"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B09",
+      "priority": "P1",
+      "declaredEnvironment": "UI",
+      "procedure": "금액 문자열 99·100·101자 입력/붙여넣기",
+      "expected": "입력 길이 제한, 멈춤·지수 표기 변환·부분 송금 없음",
+      "historicalStatus": "UI",
+      "historicalObservation": "금액 99자→100자, 추가 실제 키 입력은 100자 유지. 큰 수 검토는 잔액 부족으로 차단",
+      "relatedFollowupCases": [
+        "DEP-E01"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B10",
+      "priority": "P0",
+      "declaredEnvironment": "UI/UNIT",
+      "procedure": "주소 빈 값·39/40/41 hex·비 hex",
+      "expected": "정확한 20바이트 형식만 통과",
+      "historicalStatus": "UI",
+      "historicalObservation": "빈 값/39/41 hex/nonhex 거절, 유효 40 hex 통과",
+      "relatedFollowupCases": [
+        "DEP-E02"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B11",
+      "priority": "P0",
+      "declaredEnvironment": "UI/UNIT",
+      "procedure": "0x000...000·유효 주소 양끝 공백",
+      "expected": "zero 주소 거절, 공백 정리 후 정확한 주소 유지",
+      "historicalStatus": "UI",
+      "historicalObservation": "zero 주소 거절, 양끝 공백 정리 후 B 주소 그대로 검토",
+      "relatedFollowupCases": [
+        "DEP-E02"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B12",
+      "priority": "P1",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "동일 주소 대소문자 변형",
+      "expected": "주소 식별·계정 이력·권리 판정이 대소문자로 갈리지 않음",
+      "historicalStatus": "UNIT_ONLY",
+      "historicalObservation": "주소 대소문자별 소유/발행 조회 동일. 실제 지갑 입력 수락 정책과 구분",
+      "relatedFollowupCases": [
+        "DEP-D19",
+        "DEP-E02"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B13",
+      "priority": "P1",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "자기 자신을 수취인으로 지정",
+      "expected": "계약 시뮬레이션과 UI 정책 일치, 발행/소유 중복 합산 없음. 금지 정책이 있다면 명시",
+      "historicalStatus": "UNIT_ONLY",
+      "historicalObservation": "모델 자기 수취 중복 가산 없음. 로컬 EVM 자기 수취 NFT 소유·예치·청구 후 원금 보존 통과",
+      "relatedFollowupCases": [
+        "DEP-D09",
+        "DEP-D12",
+        "DEP-E02"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B14",
+      "priority": "P1",
+      "declaredEnvironment": "UI/UNIT",
+      "procedure": "지급 이름 0·1·59·60·61 UTF-16 code unit",
+      "expected": "빈 이름 대체 표시, 60까지 저장, 초과 입력/모델 검증 차단",
+      "historicalStatus": "UI_AND_UNIT",
+      "historicalObservation": "이름 0/1/59/60 UI 확인, 실제 61번째 키 입력 제한. UTF-16 길이·이모지 포함 0/1/59/60/61 모델 검증 통과",
+      "relatedFollowupCases": [
+        "DEP-D14",
+        "DEP-E04"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B15",
+      "priority": "P1",
+      "declaredEnvironment": "UI/FIX",
+      "procedure": "이름 공백·한글·이모지·<script> 텍스트",
+      "expected": "공백 정리 정책 일치, 스크립트 실행 없음, 문자 길이 정책 확인",
+      "historicalStatus": "UI",
+      "historicalObservation": "공백 이름 대체, 한글/이모지/태그 문자열은 텍스트로 표시. 60자 한글 이름 320px 상세에서 줄바꿈·편집 버튼·가로 넘침 없음",
+      "relatedFollowupCases": [
+        "DEP-D14",
+        "DEP-E04",
+        "DEP-D23"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B16",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "시작 시각 = 체인 기준 T-1초·T·T+1초",
+      "expected": "과거 거절, 같음/미래는 현재 quote 정책과 계약 시뮬레이션 일치; 전송 직전 재검토",
+      "historicalStatus": "UNIT_ONLY",
+      "historicalObservation": "실제 quote 어댑터에 고정 체인 T, 시작 T-1 거절/T/T+1 검토 허용. 실제 블록 경과 중 채굴 성공 보장 아님",
+      "relatedFollowupCases": [
+        "DEP-E03"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B17",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "종료 = 시작-1초·시작·시작+1초",
+      "expected": "앞 두 경우 거절, 1초 기간은 계약·정수 계산 기준으로 확인",
+      "historicalStatus": "UI_AND_UNIT",
+      "historicalObservation": "종료 시작-1분/동일 거절, +1분 UI 검토 통과. 종료 S-1/S/S+1초 모델 검증 통과",
+      "relatedFollowupCases": [
+        "DEP-E03"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B18",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "이름/조건 검토 후 승인 기다리는 사이 시작 시각 경과",
+      "expected": "과거가 된 조건은 재검토 요구, 몰래 시간 이동하지 않음",
+      "historicalStatus": "UNIT_ONLY",
+      "historicalObservation": "review 뒤 체인 시각을 시작+1로 변경하면 execute에서 startPassed, wallet send 0/예약 없음",
+      "relatedFollowupCases": [
+        "DEP-E03",
+        "DEP-E07"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B19",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "평가 시각 S-1·S·S+1초",
+      "expected": "시작 전/시작 경계 수취액 정확, 음수·조기 수취 없음",
+      "historicalStatus": "UNIT_ONLY",
+      "historicalObservation": "S-1/S/S+1 초에서 모델 및 실제 로컬 EVM의 vested/claimable 일치",
+      "relatedFollowupCases": [
+        "DEP-D13",
+        "DEP-T04"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B20",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "평가 시각 E-1·E·E+1초",
+      "expected": "E부터 예정액 0, 잔여 반올림분 처리 정확, 종료≠청구 완료",
+      "historicalStatus": "UNIT_ONLY",
+      "historicalObservation": "E-1/E/E+1 초, 예정 0 경계·미청구 잔존·최종 청구의 정수 보존. 모델/로컬 EVM",
+      "relatedFollowupCases": [
+        "DEP-D13",
+        "DEP-T06"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B21",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "예치 1 raw·나누어떨어지지 않는 금액/기간",
+      "expected": "선형 지급의 정수 절삭 정확, 누적 오차 없이 종료 시 총액 보존",
+      "historicalStatus": "UNIT_ONLY",
+      "historicalObservation": "1 raw/1001 raw의 3초 분배 절삭, 종료 총액 정확, 모델/로컬 EVM",
+      "relatedFollowupCases": [
+        "DEP-D13",
+        "DEP-E01"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B22",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "청구 가능액 0·1 raw·전액",
+      "expected": "0 전송 차단, 1 raw 소실 없음, 전액 청구 후 이중 청구 없음",
+      "historicalStatus": "UI",
+      "historicalObservation": "FIX의 0 raw 차단, 1 raw 검토/영수증 수취0.000001/개인 청구·정밀 지갑2.000001/잔여0, 두 번째 검토 차단(send1), 일반 전액 완료. Sepolia 최소 단위 실거래 아님",
+      "relatedFollowupCases": [
+        "DEP-D08",
+        "DEP-E01",
+        "DEP-T06"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B23",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "allowance = 필요액-1·필요액·필요액+1 raw",
+      "expected": "부족할 때만 승인 단계, 초과 allowance라고 추가 승인하지 않음",
+      "historicalStatus": "UI_AND_UNIT",
+      "historicalObservation": "실제 quote 어댑터 -1/동일/+1 선택, 모의 UI 부족 승인→동일 생성 검토. 실제 지갑 거래 증거 아님",
+      "relatedFollowupCases": [
+        "DEP-T02",
+        "DEP-E05"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B24",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "ETH 가스 잔액 0·예상비용-1·예상비용·+1 wei",
+      "expected": "견적 기준 부족 차단, 시뮬레이션 성공과 채굴 성공은 구분; fee 변동 오류 안전 처리",
+      "historicalStatus": "PARTIAL",
+      "historicalObservation": "격리 계산비 0/-1 wei 차단, 동일/+1 검토 통과. 실지갑 최대 비용 차이 결함은 F17 참조",
+      "relatedFollowupCases": [
+        "DEP-E05"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B25",
+      "priority": "P1",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "지급·매물·이력 개수 0·1·2",
+      "expected": "빈 상태/단수/복수·요약·그래프 정상, 0으로 나누지 않음",
+      "historicalStatus": "UI",
+      "historicalObservation": "소유 지급·매물·이력 0/1/2건 확인. 합계0 그래프0%, 1건 지갑2.05+권리0.95=3, 2건2.10+1.90=4/서로 다른 청구2행",
+      "relatedFollowupCases": [
+        "DEP-D05",
+        "DEP-D09",
+        "DEP-D10",
+        "DEP-D16",
+        "DEP-D17"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B26",
+      "priority": "P1",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "필터 결과 0·1, 같은 가격/종료시각",
+      "expected": "조건 없음과 필터 결과 없음 구분, 같은 값에서 새로고침 시 불필요 순서 흔들림 확인",
+      "historicalStatus": "UI",
+      "historicalObservation": "필터0/1건·동률 정렬 3회 유지, QA-08 수정 후 전체 매물 없음/필터 결과 없음 문구 분리",
+      "relatedFollowupCases": [
+        "DEP-D05",
+        "DEP-D06"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B27",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "applied checkpoint = receipt block-1·동일·+1",
+      "expected": "이전은 반영 대기, 이후도 정확한 이벤트 일치 없이는 완료 금지",
+      "historicalStatus": "UNIT_ONLY",
+      "historicalObservation": "applied receipt-1/동일/+1, hash/계정/ID/금액/logIndex 각각 불일치면 완료 금지",
+      "relatedFollowupCases": [
+        "DEP-E07",
+        "DEP-T08"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B28",
+      "priority": "P1",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "데이터 경과 119999·120000·120001ms",
+      "expected": "현재 구현의 >120000 stale 기준 경계대로 표시. 기준 시각 불명은 0원으로 대체하지 않음",
+      "historicalStatus": "UNIT_ONLY",
+      "historicalObservation": "실제 useLiveSnapshot hook을 고정 clock/query로 실행, 119999/120000 normal,120001 stale",
+      "relatedFollowupCases": [
+        "DEP-D02",
+        "DEP-E06"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B29",
+      "priority": "P1",
+      "declaredEnvironment": "UI/FIX",
+      "procedure": "320·390·768·1280·1440px, 텍스트 확대 200%",
+      "expected": "금액/주소/버튼 식별 가능, 겹침 없음, 필요한 줄바꿈 및 키보드 접근 유지",
+      "historicalStatus": "PARTIAL",
+      "historicalObservation": "주요 5페이지×320/390/1280px 및 사용자 확인 Chrome 실제200% 검사. 마켓/자산/판매100건, 발행지급10건, 모달 내부스크롤·키보드 접근/가로넘침 없음. 거래 내역은 빈 상태만 확인, 전체 경고·최대금액 조합은 미검증. human-measurement-recovery 문서 참조",
+      "relatedFollowupCases": [
+        "DEP-D23"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "B30",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "취소시각 S 이전·S·중간·E·E 이후, 이미 청구한 경우 포함",
+      "expected": "반환액/남은 권리 보존식 성립. 실제 취소 허용 범위는 계약 정책과 구분",
+      "historicalStatus": "UNIT_ONLY",
+      "historicalObservation": "S이전/S/중간/E/E이후, 가능한 선청구 조합에서 환불/미청구 보존. 모델 및 실제 로컬 EVM",
+      "relatedFollowupCases": [
+        "DEP-D13",
+        "DEP-E07"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E01",
+      "priority": "P1",
+      "declaredEnvironment": "FIX",
+      "procedure": "최초 /streams 요청 timeout·오프라인",
+      "expected": "빈 시장 성공으로 가장하지 않고 오류/재시도 표시",
+      "historicalStatus": "UI",
+      "historicalObservation": "격리 API 응답 21초 지연, 실제 20초 timeout 및 재시도 뒤 오류/새로고침. 빈 목록 성공으로 표시 안 함",
+      "relatedFollowupCases": [
+        "DEP-E06"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E02",
+      "priority": "P1",
+      "declaredEnvironment": "FIX",
+      "procedure": "기존 정상 데이터 후 다음 갱신 실패",
+      "expected": "이전 데이터와 오래됨 표시, 최신 확정값으로 안내하지 않음",
+      "historicalStatus": "UI",
+      "historicalObservation": "격리 정상 로딩 후 API 500 주입·새로고침, 기존 금액/목록과 stale 안내·배지 유지",
+      "relatedFollowupCases": [
+        "DEP-D02",
+        "DEP-E06"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E03",
+      "priority": "P1",
+      "declaredEnvironment": "FIX",
+      "procedure": "HTTP 429·500·502·비 JSON·필수 필드 누락",
+      "expected": "오류 구분 가능, 무한/즉시 재시도 폭주 없음",
+      "historicalStatus": "UI",
+      "historicalObservation": "격리 429/500/502/non-JSON/schema 불일치 각각 최종 오류. 성공 빈 목록 아님",
+      "relatedFollowupCases": [
+        "DEP-E06"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E04",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "다른 chainId/syncId·잘못된 주소·불가능한 금액 반환",
+      "expected": "검증 실패, 잘못된 네트워크/회계 데이터를 정상으로 사용하지 않음",
+      "historicalStatus": "UI",
+      "historicalObservation": "다른 chainId/syncId·주소 형식·불가능한 회계 응답 차단, 미지원 토큰 주소는 제외 안내와 함께 합산하지 않음",
+      "relatedFollowupCases": [
+        "DEP-E05",
+        "DEP-E06"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E05",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "목록 성공, 잔액 RPC만 실패",
+      "expected": "잔액 확인 불가 표시, 0원으로 확정하지 않고 잔액 필요한 실행 차단",
+      "historicalStatus": "UI",
+      "historicalObservation": "격리 잔액 RPC 실패 시 0으로 표시하지 않고 잔액 확인 실패, 수취권 목록 유지",
+      "relatedFollowupCases": [
+        "DEP-E05"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E06",
+      "priority": "P0",
+      "declaredEnvironment": "FIX",
+      "procedure": "목록 성공, 상세 이력 한 개 또는 trades 실패",
+      "expected": "이력 불완전 안내, 누락 이력을 0원 개인 수취액으로 단정하지 않음",
+      "historicalStatus": "UI",
+      "historicalObservation": "trades 실패와 일부 detail 실패 각각 개인 구매/청구 확인 불가 표시, 지갑/권리 요약 유지",
+      "relatedFollowupCases": [
+        "DEP-D01",
+        "DEP-D11",
+        "DEP-D17",
+        "DEP-E06"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E07",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "projection 시각 null·수집만 전진·applied 지연",
+      "expected": "반영 대기/확인 불가 표시, 벽시계로 미확인 수취액 생성하지 않음",
+      "historicalStatus": "UI",
+      "historicalObservation": "null/not_started·projection 또는 computed 시각 불일치 실패. 수집만 전진한 applied 지연은 기존 기준 금액/반영 대기 안내",
+      "relatedFollowupCases": [
+        "DEP-D02",
+        "DEP-E06"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E08",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "RPC 체인 불일치·견적 시뮬레이션 revert",
+      "expected": "지갑 전송 전에 차단, 사용자에게 성공 안내 없음",
+      "historicalStatus": "UI",
+      "historicalObservation": "RPC chainId 불일치 및 eth_call revert 각각 검토 실패, 지갑 승인 버튼 없음",
+      "relatedFollowupCases": [
+        "DEP-E07"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E09",
+      "priority": "P1",
+      "declaredEnvironment": "FIX/UI",
+      "procedure": "provider 없음·늦게 주입·연결 요청 거절",
+      "expected": "오류/연결 상태 일관, 늦은 응답이 이미 끊은 계정을 복구하지 않음",
+      "historicalStatus": "UI",
+      "historicalObservation": "provider 없음/연결 거절 안내, 주소 조회 선택 유지. 지연 모의 주입 후 명시적 연결로 B 주소/자산 복구 및 오류 해제 확인",
+      "relatedFollowupCases": [
+        "DEP-D18",
+        "DEP-D19",
+        "DEP-D21"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E10",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "검토 후 account/chain 변경 또는 provider가 이벤트 없이 변경",
+      "expected": "마지막 실행 직전 가드가 전송 차단",
+      "historicalStatus": "UI",
+      "historicalObservation": "검토 후 체인 변경 및 A→B 왕복 시 기존 검토 무효화, 재검토 필요, 전송 안 함",
+      "relatedFollowupCases": [
+        "DEP-D19",
+        "DEP-D20",
+        "DEP-E07"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E11",
+      "priority": "P0",
+      "declaredEnvironment": "UI/LIVE",
+      "procedure": "사용자가 승인·생성·청구 중 요청 거절",
+      "expected": "거절 표시, 검증된 미전송 상태만 예약 해제, 자동 재요청 없음",
+      "historicalStatus": "UI",
+      "historicalObservation": "모의 provider 4001 거절은 승인 취소, 거래 완료 아님, 모의 sendCount=0",
+      "relatedFollowupCases": [
+        "DEP-T01"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E12",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "전송 요청 후 hash 없이 provider 오류",
+      "expected": "미전송으로 단정하지 않고 unknown/복구 상태 유지, 재전송 차단",
+      "historicalStatus": "UI",
+      "historicalObservation": "응답 유실 후 unknown/재전송 차단, 잘못된 해시 실패, 올바른 기존 해시만 검증·복구, sendCount=1",
+      "relatedFollowupCases": [
+        "DEP-E08"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E13",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "localStorage 접근/쓰기 실패 또는 navigator.locks 없음",
+      "expected": "전송 전에 실패, 중복 방지 없이 거래 진행하지 않음",
+      "historicalStatus": "UI",
+      "historicalObservation": "QA-05 수정 후 저장 실패를 error/미전송으로 표시, 해시 복구 요구 없음, 전송 0. 생성/승인 분기도 UNIT, locks 없음 차단",
+      "relatedFollowupCases": [
+        "DEP-E08"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E14",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "저장된 pending JSON 손상·다른 계정/배포/chain 기록",
+      "expected": "오류 격리, 다른 거래를 복구하거나 예약을 조용히 삭제하지 않음",
+      "historicalStatus": "UI",
+      "historicalObservation": "손상 JSON 및 버전·계정·계약·체인 불일치 각각 복구 기록 오류로 차단. 다른 거래 복구/자동 삭제 없음",
+      "relatedFollowupCases": [
+        "DEP-E08"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E15",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "같은 버튼 연속 클릭·두 탭 청구/생성 동시 실행",
+      "expected": "동일 계정 잠금 범위 내 전송은 한 번만; 별도 프로필까지 보장한다고 주장하지 않음",
+      "historicalStatus": "UI",
+      "historicalObservation": "dblclick 및 같은 브라우저 두 탭 동시 실행, 첫 탭 완료/두 번째 tabBusy/전체 sendCount=1",
+      "relatedFollowupCases": [
+        "DEP-E07"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E16",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "검토 후 타인이 청구·NFT 이전·잔액/allowance 변경",
+      "expected": "최신 조건 차이 감지 후 재검토/차단, 오래된 견적 전송 금지",
+      "historicalStatus": "UI",
+      "historicalObservation": "검토 후 소유자/withdrawn 변경과 생성 balance/allowance 감소 각각 최종 가드가 차단, wallet send 0",
+      "relatedFollowupCases": [
+        "DEP-E07"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E17",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "receipt timeout 뒤 새로고침·재진입",
+      "expected": "hash 유지·조회 복원, 자동 재전송 없음",
+      "historicalStatus": "UI",
+      "historicalObservation": "실제 120초보다 긴 영수증 대기·재로딩·같은 hash 추적·통신 복구 후 완료,sendCount=1. 자동 재조회로 submitted 재표시 가능",
+      "relatedFollowupCases": [
+        "DEP-E08"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E18",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "동일 의도의 수수료 상향으로 hash 교체",
+      "expected": "새 hash 추적, receipt와 정확한 이벤트 검증 후 성공",
+      "historicalStatus": "UI",
+      "historicalObservation": "실제 viem watcher의 동일 nonce fee 상향 탐지→새 hash→정확한 이벤트/API 완료",
+      "relatedFollowupCases": [
+        "DEP-E07"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E19",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "다른 거래 또는 nonce 취소로 대체",
+      "expected": "기존 청구/생성을 성공으로 표시하지 않음",
+      "historicalStatus": "UI",
+      "historicalObservation": "직접 다른 calldata는 대체됨, 동일 nonce 자기 주소 취소는 새 hash unknown/이벤트 확인 실패로 보존. 둘 다 원 청구 성공 아님. terminal 취소 UX는 선택 개선",
+      "relatedFollowupCases": [
+        "DEP-E07"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E20",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "채굴 영수증 reverted",
+      "expected": "실패 표시, 토큰 지급/생성 성공 없음, 가스비 가능성 구분",
+      "historicalStatus": "UI",
+      "historicalObservation": "모의 status=0 영수증은 온체인 실행 실패/가스 안내. 청구 성공으로 표시 안 함",
+      "relatedFollowupCases": [
+        "DEP-E07"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E21",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "wrapper 거래·정확한 deployed-contract 이벤트 1개",
+      "expected": "바깥 to 주소가 달라도 정확한 sender/chain/value/이벤트 검증 후 성공",
+      "historicalStatus": "UI",
+      "historicalObservation": "다른 to/input의 wallet wrapper라도 정확한 배포 contract event/계정/금액으로 완료. 실지갑 wrapper 성공 아님",
+      "relatedFollowupCases": [
+        "DEP-E07"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E22",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "wrapper의 다른 ID/수취인/금액·위조 발행 계약·중복/누락 이벤트",
+      "expected": "성공 판정 금지, 검토 금액만 보고 성공 추론 금지",
+      "historicalStatus": "UI",
+      "historicalObservation": "wrapper의 다른 ID/수취인/0 금액/다른 발행 계약/누락/중복 이벤트 각각 성공 금지·unknown, 전송1회. 검토 금액에서 성공 추론 없음",
+      "relatedFollowupCases": [
+        "DEP-E07"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E23",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "실제 성공 확인 후 API/RPC 장애",
+      "expected": "이미 확인한 성공을 실패로 내리지 않음, 화면 반영 지연 안내",
+      "historicalStatus": "UI",
+      "historicalObservation": "영수증 확인 후 API/RPC 오류에도 검증 증거 유지, 잔액 미확인을 0으로 처리하지 않음. 복구 후 3+0=3·전송1회",
+      "relatedFollowupCases": [
+        "DEP-D17",
+        "DEP-D24",
+        "DEP-E06",
+        "DEP-T08"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E24",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "적용 블록은 충분하지만 hash/logIndex/생성 조건 다름",
+      "expected": "인덱서 반영 완료로 표시하지 않음",
+      "historicalStatus": "UI",
+      "historicalObservation": "applied #102 > receipt #101이나 API claim tx hash가 다르면 완료 아님, 원장 성공/반영 대기 유지",
+      "relatedFollowupCases": [
+        "DEP-E07",
+        "DEP-T08"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E25",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UNIT",
+      "procedure": "복구에 무관한 hash·잘못된 길이·타인 hash 입력",
+      "expected": "기존 pending 보존, 잘못된 거래로 덮어쓰기/전송 없음",
+      "historicalStatus": "UI",
+      "historicalObservation": "짧은/없는/타 계정/다른 ID mined/pending 해시 거절. 기존 요청은 원래 해시로만 복구·완료, 새 전송 없음",
+      "relatedFollowupCases": [
+        "DEP-E08"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E26",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UI",
+      "procedure": "A 요청이 늦게 끝나는 동안 B로 전환",
+      "expected": "늦은 A 데이터가 B 화면·개인 이력을 덮지 않음",
+      "historicalStatus": "UI",
+      "historicalObservation": "A 잔액/이력 응답 1.8초 지연 중 B 복귀, 지연 이후에도 B의 #3/잔액 2/합계 3 유지",
+      "relatedFollowupCases": [
+        "DEP-D19",
+        "DEP-E07"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E27",
+      "priority": "P1",
+      "declaredEnvironment": "FIX/UI",
+      "procedure": "탭 숨김→복귀·브라우저 재시작·계정 연결 해제",
+      "expected": "조회/복구만 재개, 사용자 승인 없이 새 서명 요청 없음",
+      "historicalStatus": "PARTIAL",
+      "historicalObservation": "격리 권한 해제→재연결/새 탭 복원 기존 증거 + 사용자 전체Chrome 재실행 후 hashless#3 유지,청구조건 버튼 비활성,sendCount0. 재부팅 자동seed 해제(normal) 후 검증. OS 전원중단·실제 확장 복구 미검증",
+      "relatedFollowupCases": [
+        "DEP-D21",
+        "DEP-D22",
+        "DEP-E08"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "E28",
+      "priority": "P0",
+      "declaredEnvironment": "FIX/UI",
+      "procedure": "결과 불명·서명 대기 알림 닫기 시도, 새 warning 발생",
+      "expected": "필수 상태는 유지, 닫은 완료 알림과 다른 경고는 재노출",
+      "historicalStatus": "UI",
+      "historicalObservation": "unknown/wallet/submitted 안내 닫기0·completed 닫기1, 닫은 성공 안내와 새 완료/경고 재노출. 추적/예약은 별개로 유지",
+      "relatedFollowupCases": [
+        "DEP-D24",
+        "DEP-E08"
+      ],
+      "interpretation": "Historical evidence only; mapping expresses related behavior, never an automatic pass or identical identity."
+    },
+    {
+      "id": "D01",
+      "priority": "P0",
+      "declaredEnvironment": "HOLD",
+      "procedure": "NFT 소유자가 정확한 가격으로 판매 등록/해제",
+      "expected": "등록 상태·서명 권한 정확, 해제 후 구매 불가",
+      "historicalStatus": "DISCONNECTED_HOLD",
+      "historicalObservation": "실제 기능 미연결",
+      "relatedFollowupCases": [
+        "DEP-D16",
+        "DEP-E07"
+      ],
+      "interpretation": "Historical disconnected hold retained. Feature surface is now deployed, but actual signed lifecycle and all named legacy variants remain unverified; release/read-only smoke is not full-case success."
+    },
+    {
+      "id": "D02",
+      "priority": "P0",
+      "declaredEnvironment": "HOLD",
+      "procedure": "타 계정이 구매",
+      "expected": "결제 토큰·가격·NFT 소유권·양쪽 이력 일치",
+      "historicalStatus": "DISCONNECTED_HOLD",
+      "historicalObservation": "실제 기능 미연결",
+      "relatedFollowupCases": [
+        "DEP-D08",
+        "DEP-D11",
+        "DEP-D16",
+        "DEP-D17"
+      ],
+      "interpretation": "Historical disconnected hold retained. Feature surface is now deployed, but actual signed lifecycle and all named legacy variants remain unverified; release/read-only smoke is not full-case success."
+    },
+    {
+      "id": "D03",
+      "priority": "P0",
+      "declaredEnvironment": "HOLD",
+      "procedure": "등록 후 동시 청구·가격 변경·소유권 변경·중복 구매",
+      "expected": "실행 직전 원장 조건 재검증, stale 매물 구매 차단",
+      "historicalStatus": "DISCONNECTED_HOLD",
+      "historicalObservation": "실제 기능 미연결",
+      "relatedFollowupCases": [
+        "DEP-D08",
+        "DEP-E07"
+      ],
+      "interpretation": "Historical disconnected hold retained. Feature surface is now deployed, but actual signed lifecycle and all named legacy variants remain unverified; release/read-only smoke is not full-case success."
+    },
+    {
+      "id": "D04",
+      "priority": "P0",
+      "declaredEnvironment": "HOLD",
+      "procedure": "자기 매물 구매·미청구액 0·지원하지 않는 토큰",
+      "expected": "지갑 요청 전 차단",
+      "historicalStatus": "DISCONNECTED_HOLD",
+      "historicalObservation": "실제 기능 미연결",
+      "relatedFollowupCases": [
+        "DEP-D08",
+        "DEP-E05"
+      ],
+      "interpretation": "Historical disconnected hold retained. Feature surface is now deployed, but actual signed lifecycle and all named legacy variants remain unverified; release/read-only smoke is not full-case success."
+    },
+    {
+      "id": "D05",
+      "priority": "P0",
+      "declaredEnvironment": "HOLD",
+      "procedure": "시작 전/진행 중 지급 취소 후 수취인 청구",
+      "expected": "미발생액만 발행인 반환, 발생 미청구액은 현 소유자 청구 가능",
+      "historicalStatus": "DISCONNECTED_HOLD",
+      "historicalObservation": "실제 기능 미연결",
+      "relatedFollowupCases": [
+        "DEP-D12",
+        "DEP-D13",
+        "DEP-E07"
+      ],
+      "interpretation": "Historical disconnected hold retained. Feature surface is now deployed, but actual signed lifecycle and all named legacy variants remain unverified; release/read-only smoke is not full-case success."
+    },
+    {
+      "id": "D06",
+      "priority": "P0",
+      "declaredEnvironment": "HOLD",
+      "procedure": "판매 등록 중 취소·비취소형 취소·타인 취소·취소 후 재취소",
+      "expected": "계약상 정책대로 제한; 판매 중 취소 정책은 계약 코드와 대조 후 기대 결과 확정",
+      "historicalStatus": "DISCONNECTED_HOLD",
+      "historicalObservation": "실제 기능 미연결/계약 정책 대조 필요",
+      "relatedFollowupCases": [
+        "DEP-D13",
+        "DEP-E07"
+      ],
+      "interpretation": "Historical disconnected hold retained. Feature surface is now deployed, but actual signed lifecycle and all named legacy variants remain unverified; release/read-only smoke is not full-case success."
+    },
+    {
+      "id": "P01",
+      "priority": "PERF/UI",
+      "declaredEnvironment": "로컬 모의 API/RPC, 10·100·1000개 지급, 각 1개 Chrome 클라이언트, 각 5회",
+      "procedure": "최초 사용 가능 시간·필터/정렬 p95·긴 작업·DOM/메모리·오류. 확장 상한 탐색이며 1000개 통과를 미리 가정하지 않음",
+      "historicalStatus": "PERFORMANCE_FOLLOWUP",
+      "historicalObservation": "부분 실행: production10/100행 각5회,1000행1회. 사람조작 상세열기22/닫기21/자산필터28 표본 확보(p95열기29ms/닫기215.1ms).40/s fixture제한/자동화간섭/이벤트누락 구분.1000행 추가반복·메모리·실API연계 검증 남음",
+      "relatedFollowupCases": [],
+      "interpretation": "Separate performance scope: retain original incomplete result and later G1/G2/G3 report; no new load run approved or executed by this audit."
+    },
+    {
+      "id": "P02",
+      "priority": "PERF",
+      "declaredEnvironment": "API smoke: 1 요청/초 60초, 지급 100개",
+      "procedure": "경로·스키마·금액/계정 정확성 100%, 오류율 0. 하네스 자체 오류부터 제거",
+      "historicalStatus": "PERFORMANCE_FOLLOWUP",
+      "historicalObservation": "격리하네스10건smoke+60/360/600 단계1020건 완료,누락/HTTP·DTO오류0,공유계수1030일치·중단후429/전송0.첫실행누락5 보존·고정50ms 대기수정/32개안전테스트.실API부하와UI동시측정은별도",
+      "relatedFollowupCases": [],
+      "interpretation": "Separate performance scope: retain original incomplete result and later G1/G2/G3 report; no new load run approved or executed by this audit."
+    },
+    {
+      "id": "P03",
+      "priority": "PERF",
+      "declaredEnvironment": "로컬 실 backend: 1→5→10→20→50 요청/초, 단계별 60초 + 회복 60초",
+      "procedure": "각 API별 p50/p95/p99·처리량·에러·timeout·중도 포기/미실행 요청·CPU/RAM/DB pool. 전체 합산만으로 느린 상세 API를 숨기지 않음",
+      "historicalStatus": "PERFORMANCE_FOLLOWUP",
+      "historicalObservation": "격리 실제Fastify/Prisma/PostgreSQL100행+RPC head stub로1/5/10/20/50rps와회복각60초.계획5220/완료5205,HTTP·DTO오류0,50rps발행누락15로목표미달/exit1.각구간HTTP p95 10.08~12.42ms,회복10.93ms.동시UI/실AWS/EVM미검증.[상세](vestora-local-backend-load-progress-2026-10-23.md)",
+      "relatedFollowupCases": [],
+      "interpretation": "Separate performance scope: retain original incomplete result and later G1/G2/G3 report; no new load run approved or executed by this audit."
+    },
+    {
+      "id": "P04",
+      "priority": "PERF/UI",
+      "declaredEnvironment": "로컬 API/RPC에 실제 프론트 polling, N=10·100·1000, 탭/클라이언트 1부터 증가",
+      "procedure": "주기당 API/RPC 수·동시성·늦은 요청·취소·계정 전환 응답. 전체 요청 50/s 초과 예상 시 클라이언트 증가 금지, 장치 제한 포함",
+      "historicalStatus": "PERFORMANCE_FOLLOWUP",
+      "historicalObservation": "부분 실행: 초기준비까지 N10/100/1000에서 API12/102/1002 및RPC4 관측. 다중클라이언트·오류·취소·정확한주기별계수 별도",
+      "relatedFollowupCases": [],
+      "interpretation": "Separate performance scope: retain original incomplete result and later G1/G2/G3 report; no new load run approved or executed by this audit."
+    },
+    {
+      "id": "P05",
+      "priority": "PERF",
+      "declaredEnvironment": "로컬 backend burst: 1→20 요청/초 30초→1 요청/초 60초",
+      "procedure": "오류/DB 대기열 증가 및 정상 지연 회복. 의도적으로 장애 한계까지 밀지 않음",
+      "historicalStatus": "PERFORMANCE_FOLLOWUP",
+      "historicalObservation": "미실행",
+      "relatedFollowupCases": [],
+      "interpretation": "Separate performance scope: retain original incomplete result and later G1/G2/G3 report; no new load run approved or executed by this audit."
+    },
+    {
+      "id": "P06",
+      "priority": "PERF",
+      "declaredEnvironment": "로컬 backend 5 요청/초 20분, 브라우저 1개 화면 전환/조회 반복 별도",
+      "procedure": "메모리·connection·pending 요청이 안정화되는지, 종료 뒤 기준치 회복. 장기 운영 안정성 증명 아님",
+      "historicalStatus": "PERFORMANCE_FOLLOWUP",
+      "historicalObservation": "미실행",
+      "relatedFollowupCases": [],
+      "interpretation": "Separate performance scope: retain original incomplete result and later G1/G2/G3 report; no new load run approved or executed by this audit."
+    },
+    {
+      "id": "P07",
+      "priority": "PERF/FIX",
+      "declaredEnvironment": "모의 429·500·2초/20초 지연을 제한된 비율로 주입, 1~5 요청/초 2분",
+      "procedure": "재시도 폭주 없음·데이터 안전성·실패 중 사용자 조작 가능. 의도 주입 오류와 비의도 오류 따로 집계",
+      "historicalStatus": "PERFORMANCE_FOLLOWUP",
+      "historicalObservation": "미실행",
+      "relatedFollowupCases": [],
+      "interpretation": "Separate performance scope: retain original incomplete result and later G1/G2/G3 report; no new load run approved or executed by this audit."
+    },
+    {
+      "id": "P08",
+      "priority": "PERF",
+      "declaredEnvironment": "로컬 체인+전용 DB의 테스트 이벤트 1·10·100개 묶음; 테스트 전용 계정·자금만 사용",
+      "procedure": "receipt block→applied checkpoint→API 노출→UI 갱신 각 지연·중복/누락·금액 보존. 운영 writer/커서에 손대지 않음",
+      "historicalStatus": "PERFORMANCE_FOLLOWUP",
+      "historicalObservation": "미실행",
+      "relatedFollowupCases": [],
+      "interpretation": "Separate performance scope: retain original incomplete result and later G1/G2/G3 report; no new load run approved or executed by this audit."
+    }
+  ],
+  "followupCases": [
+    {
+      "id": "DEP-D01",
+      "target": "Connected list and complete personal history",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Corrected release renders actual B empty history and A four-record history with ordinary refresh/polling. User reported A load failure during connection attempts; not reproduced/captured in this observation. Revalidate after real account selection; do not claim sustained reliability or an established live HTTP cause. New parity release actual connected A4/C0 history observed through C/A/C, with no old-account leakage. Healthy observations do not establish sustained reliability or original HTTP cause.",
+      "relatedNextGroups": [
+        "RELEASE"
+      ],
+      "evidenceCount": 9
+    },
+    {
+      "id": "DEP-D02",
+      "target": "Verified basis block/time and freshness",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "API block11977613 and captured UI block11977614 timestamps now independently match chain. API status was lagging with applied/equal checkpoints and age45.552s; exact raw freshness-status cohort for UI11977614 was not captured. Full freshness-state transitions remain unverified; no wall-clock valuation fallback.",
+      "relatedNextGroups": [
+        "LOCAL-MATRIX"
+      ],
+      "evidenceCount": 8
+    },
+    {
+      "id": "DEP-D03",
+      "target": "Direct route, reload and create-close behavior",
+      "deployedStatus": "PASS",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Observed on existing deployed release with actual B: all six routes resolve on direct navigation and hard reload; create Escape closes to issued. Route resolution PASS does not pass history/data reliability or unsubmitted creation execution. No new deployment.",
+      "relatedNextGroups": [],
+      "evidenceCount": 15
+    },
+    {
+      "id": "DEP-D04",
+      "target": "Card/table preserves values and view state",
+      "deployedStatus": "PASS",
+      "localStatus": "PASS",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Deployed observation had one listing, not large-data performance evidence.",
+      "relatedNextGroups": [],
+      "evidenceCount": 2
+    },
+    {
+      "id": "DEP-D05",
+      "target": "Market filters, counts and empty states",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PASS",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "All48 local combinations across normal/cancelled datasets match IDs and counts, including verified empty matches. They are one D05 matrix, not48 whole/deployed cases. Actual positive cancellation variants remain absent.",
+      "relatedNextGroups": [
+        "LIVE-POSITIVE-DATA"
+      ],
+      "evidenceCount": 9
+    },
+    {
+      "id": "DEP-D06",
+      "target": "Token-safe stable sort, reset and navigation",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Actual market Back/Forward/X preserves token/sort. Two-row isolated sort is not deployed multirow/tie/pagination evidence.",
+      "relatedNextGroups": [
+        "LOCAL-MATRIX"
+      ],
+      "evidenceCount": 8
+    },
+    {
+      "id": "DEP-D07",
+      "target": "Detail open/close, keyboard trap, focus and scroll restoration",
+      "deployedStatus": "PASS",
+      "localStatus": "PASS",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Actual deployed assets: Enter/Tab/Shift+Tab/Escape and focus restoration; Escape restored362px to362px at temporary1440x900. Explicit X closed and restored focus; its second-opening scrollTop was292px, not the exact362px assertion. Market detail URL/Back/Forward/X also verified. No real zoom, physical-device or transaction action claim.",
+      "relatedNextGroups": [],
+      "evidenceCount": 12
+    },
+    {
+      "id": "DEP-D08",
+      "target": "Own/zero/foreign-right purchase guards",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Feature-parity source is now deployed with protected-buy paths. Actual current listing2 has zero remaining rights and correctly disables buy. This is one zero-rights subcase; own/foreign drift and positive signed buy still need actual evidence. Earlier disabled-build observation remains historical.",
+      "relatedNextGroups": [
+        "RELEASE"
+      ],
+      "evidenceCount": 5
+    },
+    {
+      "id": "DEP-D09",
+      "target": "Token-separated holdings and no double count",
+      "deployedStatus": "PASS",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "PASS for actual B and current supported MockUSDC dataset at captured UI block11977614: nextStreamId5 and ownerOf1..4 establish owned IDs3/4; each has1000000 raw remaining/claimable, future0; wallet0; holding2000000 exactly matches UI. No later-mint, other-token, price or wallet-authority claim.",
+      "relatedNextGroups": [],
+      "evidenceCount": 6
+    },
+    {
+      "id": "DEP-D10",
+      "target": "Asset filters distinguish empty from errors",
+      "deployedStatus": "PASS",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Deployed PASS applies to observed A filter dataset. Local cancelled #3 with0.35 remaining stays claimable but is not normally completed; this is not a real cancellation.",
+      "relatedNextGroups": [],
+      "evidenceCount": 6
+    },
+    {
+      "id": "DEP-D11",
+      "target": "Unknown history must not assert acquisition or personal amounts",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PASS",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Earlier readiness correction deployed; actual known history correctly shows A#1 purchased0.40/claims1.00, A#2 direct/claims5.00, B direct/zero. Later local journal-consumer regression corrected and2tests fail-before/pass-after; actual local UI keeps diagnostic rows out of projection accounting and preserves unknown-history behavior. New source is now deployed; live unavailable-history transition still absent. No forced live fault. New parity release normal actual A/C acquisition and personal amounts observed; unavailable-history transitions still require their own evidence.",
+      "relatedNextGroups": [
+        "RELEASE"
+      ],
+      "evidenceCount": 9
+    },
+    {
+      "id": "DEP-D12",
+      "target": "Issuer versus current recipient selection",
+      "deployedStatus": "PASS",
+      "localStatus": "PASS",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "PASS applies to the observed A/B four-payment dataset, not a newly created C payment.",
+      "relatedNextGroups": [],
+      "evidenceCount": 3
+    },
+    {
+      "id": "DEP-D13",
+      "target": "Deposit and remaining-right accounting identities",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Actual API/chain11977613 A totals8=6+2+0+0. New read-only local cancellation/streaming UI conserves3=0.10+1.35+1.00+0.55 and remaining2.35=1.35+1.00; cancellation leaves0.35 claimable. Actual future-positive and cancellation/refund transactions remain absent.",
+      "relatedNextGroups": [
+        "LIVE-POSITIVE-DATA"
+      ],
+      "evidenceCount": 9
+    },
+    {
+      "id": "DEP-D14",
+      "target": "Name save/reload/account separation",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Repeat account-isolated names on deployed wallet accounts. Local natural-role A/B UI passed; B has no issued rows, so this does not prove same-id hook collisions.",
+      "relatedNextGroups": [
+        "LOCAL-MATRIX"
+      ],
+      "evidenceCount": 7
+    },
+    {
+      "id": "DEP-D15",
+      "target": "Creation form/review/back/close without implicit send",
+      "deployedStatus": "PASS",
+      "localStatus": "PASS",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Actual A public watch-only form accepts B/1MockUSDC/native-valid dates, shows exact review and wallet-required denial, Back retains inputs and Escape returns to issued; B connection restored. No quote/approval/send, no actual issuer-wallet session, and no T-case pass. The dated disposable draft must not be reused for a later transaction.",
+      "relatedNextGroups": [],
+      "evidenceCount": 7
+    },
+    {
+      "id": "DEP-D16",
+      "target": "Sales count/value/status distinctions",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Corrected false absence assumption: actual watch-only A has SOLD#1 at0.40 and ACTIVE#2 at4.00; all table has both, active asking total4.00 stays separate from completed price. #1 seller=buyer=A is a self-purchase, not external net income. Unlisted/invalidated tabs are empty; their positive actual variants remain absent.",
+      "relatedNextGroups": [
+        "RELEASE",
+        "LIVE-POSITIVE-DATA"
+      ],
+      "evidenceCount": 10
+    },
+    {
+      "id": "DEP-D17",
+      "target": "History rows, receipt and refresh recovery",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Actual #2 receipt/hash stays open while corrected-release projection advances11977966 to11977969. Healthy polling is not a live failure/recovery test; that branch remains isolated evidence.",
+      "relatedNextGroups": [
+        "RELEASE"
+      ],
+      "evidenceCount": 6
+    },
+    {
+      "id": "DEP-D18",
+      "target": "Watch-only address is not wallet authority",
+      "deployedStatus": "PASS",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Actual A watch-only client review explicitly requires issuer wallet before creation. No permission or claim authority inferred from an address; ordinary connect restores full B, not a MetaMask A/B account-switch test.",
+      "relatedNextGroups": [],
+      "evidenceCount": 4
+    },
+    {
+      "id": "DEP-D19",
+      "target": "Actual A/B round trip clears stale account state",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "New parity release actual C readonly quote -> A -> C verified with full connected addresses, role/account data separation and old quote invalidation. Human picker cancellation observed app disconnect, not expected C retention; this explicit expectation remains NOT_MET. Explicit C reconnect recovered assets. Original same-release A/B, open receipt across switch and revoke remain incomplete; no whole-case PASS.",
+      "relatedNextGroups": [
+        "WALLET-LIFECYCLE"
+      ],
+      "evidenceCount": 14
+    },
+    {
+      "id": "DEP-D20",
+      "target": "Wrong network blocks and Sepolia restores",
+      "deployedStatus": "NOT_RUN",
+      "localStatus": "PASS",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Actual wrong-network transition remains NOT_RUN. User reconfirmed the available MetaMask UI could not perform the requested switch. Do not repeat the same request or guess menus without newly verified UI evidence. Isolated PASS is separate and does not establish actual Mainnet/Sepolia behavior.",
+      "relatedNextGroups": [
+        "WALLET-LIFECYCLE"
+      ],
+      "evidenceCount": 2
+    },
+    {
+      "id": "DEP-D21",
+      "target": "Disconnect cancel/confirm/reconnect preserves records",
+      "deployedStatus": "NOT_RUN",
+      "localStatus": "PASS",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Actual wallet permission revoke/reconnect requires human-approved action.",
+      "relatedNextGroups": [
+        "WALLET-LIFECYCLE"
+      ],
+      "evidenceCount": 3
+    },
+    {
+      "id": "DEP-D22",
+      "target": "Reload/full restart preserves unresolved reservations",
+      "deployedStatus": "NOT_RUN",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Human full Chrome restart and deployed origin still required; isolated normal reload does not prove them.",
+      "relatedNextGroups": [
+        "WALLET-LIFECYCLE"
+      ],
+      "evidenceCount": 2
+    },
+    {
+      "id": "DEP-D23",
+      "target": "Desktop/mobile, keyboard, real zoom and devices",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Selected modal/market keyboard paths now have deployed evidence. Real 200% zoom, wider keyboard coverage and physical device are not replaced by viewport overrides.",
+      "relatedNextGroups": [
+        "LOCAL-MATRIX",
+        "VISUAL-HUMAN"
+      ],
+      "evidenceCount": 6
+    },
+    {
+      "id": "DEP-D24",
+      "target": "Dismiss notices without changing unresolved transaction state",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Actual stale-detail X and modal-scoped rejected-approval X observed without clearing tracking; read-only requote worked. Archived C pending UI remains historical; latest human clarification/current DOM show before-wallet review, not current pending prompt. Completed/indexing dismissal remains unobserved; attempted success dismissal after account switch is inconclusive, not PASS.",
+      "relatedNextGroups": [
+        "C-FINAL-CLAIM"
+      ],
+      "evidenceCount": 9
+    },
+    {
+      "id": "DEP-E01",
+      "target": "Amount/precision/balance/integer boundaries",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "New actual connected-A form with valid02:15/02:30 native dates rejected0,0.0000001 and9.400001 against9.4 balance, before quote/wallet. Other boundaries remain unexecuted in production. Earlier date-blocked attempts remain historically inconclusive. New isolated native date/100-character follow-up has10 passing subcases and2 automation inconclusives, not whole-case or deployed proof. That edited-draft display finding was subsequently reproduced, corrected and included in the later approved release; actual production error-transition retest remains separate.",
+      "relatedNextGroups": [
+        "LOCAL-MATRIX"
+      ],
+      "evidenceCount": 12
+    },
+    {
+      "id": "DEP-E02",
+      "target": "Recipient zero/malformed/case/self/third-party",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Actual valid-date/amount1 form rejects zero address and accepts supplied C into review. Remaining recipient variants retain their actual evidence layer; historical date-blocked attempts are not retroactively passed.",
+      "relatedNextGroups": [
+        "LOCAL-MATRIX"
+      ],
+      "evidenceCount": 6
+    },
+    {
+      "id": "DEP-E03",
+      "target": "Date requirements, period ordering and chain-time drift",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Actual valid future native dates reach chain quote11978033. Missing/equal/reversed/past/drift branches remain separate isolated evidence, not actual browser passes. New isolated native date/100-character follow-up has10 passing subcases and2 automation inconclusives, not whole-case or deployed proof. That edited-draft display finding was subsequently reproduced, corrected and included in the later approved release; actual production error-transition retest remains separate.",
+      "relatedNextGroups": [
+        "LOCAL-MATRIX"
+      ],
+      "evidenceCount": 8
+    },
+    {
+      "id": "DEP-E04",
+      "target": "Name 0/1/59/60/61 UTF-16 units and persistence",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Deployed cross-account saved-name separation remains pending.",
+      "relatedNextGroups": [
+        "LOCAL-MATRIX"
+      ],
+      "evidenceCount": 4
+    },
+    {
+      "id": "DEP-E05",
+      "target": "Unknown token/balance, allowance and fee uncertainty",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Exact actual A approval/creation and fees observed. Public-RPC quote is not a wallet cost cap. Archived C Market0.001043711ETH exceeded last verified0.001ETH; current review is before wallet approval per human/DOM, not a prompt to reject. Fresh maximum/funds review remains needed. Combined fault and independently isolated ETH-only/token-balance-only UI/adapter/recovery subcases now pass with no sends. Existing all-unsupported-token UI exclusion/recovery and separate adapter rejection now have isolated evidence. Whole E05, mixed/unknown-decimal and actual fee/funding combinations remain incomplete; no deployed promotion.",
+      "relatedNextGroups": [
+        "C-FINAL-CLAIM"
+      ],
+      "evidenceCount": 14
+    },
+    {
+      "id": "DEP-E06",
+      "target": "Timeout/429/503/schema/partial history and recovery",
+      "deployedStatus": "NOT_RUN",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "New isolated real-browser timeout subcase observes loading, terminal alert and recovery with sendCount0; older inconclusive attempt remains historical. Recovery control plus main-page refresh used; error-panel refresh click did not occur after background refresh removed it. Source retains20000ms deadline/retry1. This is not precise elapsed-time, complete fault-matrix or live AWS proof; deployed faults were not injected.",
+      "relatedNextGroups": [
+        "LOCAL-MATRIX"
+      ],
+      "evidenceCount": 20
+    },
+    {
+      "id": "DEP-E07",
+      "target": "Drift, duplicates and exact replacement/event identity",
+      "deployedStatus": "NOT_RUN",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Actual local UI made a quote, then visible fixture control changed owner before execution; fresh RPC check rejected old API/quote ownership with changed=true/sendCount0/no transaction. This is one isolated owner-drift subcase; duplicate/replacement/event mutations are not real deployed-contract behavior or whole-case PASS.",
+      "relatedNextGroups": [
+        "LOCAL-MATRIX",
+        "LIVE-POSITIVE-DATA"
+      ],
+      "evidenceCount": 6
+    },
+    {
+      "id": "DEP-E08",
+      "target": "Ambiguous/hashless reservations, recovery, restart and dismissal",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "PARTIAL",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Actual restart/recovery evidence and human actions still required; do not clear B hold.",
+      "relatedNextGroups": [
+        "WALLET-LIFECYCLE"
+      ],
+      "evidenceCount": 4
+    },
+    {
+      "id": "DEP-T01",
+      "target": "User rejects a required wallet prompt",
+      "deployedStatus": "PASS",
+      "localStatus": "NOT_APPLICABLE",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Human rejected actual token-approval request; app rejected state/no hash or explorer link, then read-only requote succeeded. This is not merely rejecting account access and is not a creation/claim pass.",
+      "relatedNextGroups": [],
+      "evidenceCount": 3
+    },
+    {
+      "id": "DEP-T02",
+      "target": "A exact-amount approval if needed, no automatic create",
+      "deployedStatus": "PASS",
+      "localStatus": "NOT_APPLICABLE",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Human-signed approval hash0xfe034ca91fe085f0dd474c2dde0f3dc8d1efae56c1f503dd0e2cbaee00ad2f90; independent block11978060 exact Approval ownerA/spenderSTREAM/value1000000, allowance1000000, A9400000/C0 and nextStreamId5. No automatic creation; next creation needs separate human action.",
+      "relatedNextGroups": [],
+      "evidenceCount": 3
+    },
+    {
+      "id": "DEP-T03",
+      "target": "A directly issues a fully funded payment NFT to C",
+      "deployedStatus": "PASS",
+      "localStatus": "NOT_APPLICABLE",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Human separately approved the actual wallet-wrapped create transaction. At11978080 exact StreamCreated5, A-to-escrow Transfer1000000, ownerC, deposited1000000, dates/cancelablefalse and withdrawn0 independently verified. A8400000/C0/allowance0; actual fee1754314515204059wei. No separate NFT purchase and no duplicate send.",
+      "relatedNextGroups": [],
+      "evidenceCount": 3
+    },
+    {
+      "id": "DEP-T04",
+      "target": "C has no entitlement before verified start",
+      "deployedStatus": "NOT_RUN",
+      "localStatus": "NOT_APPLICABLE",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Creation was verified before start, but C before-start UI/claimability was not observed. The window is past; do not infer this pass from creation alone.",
+      "relatedNextGroups": [
+        "MISSED-TIME-WINDOW"
+      ],
+      "evidenceCount": 1
+    },
+    {
+      "id": "DEP-T05",
+      "target": "C manually claims a partial-period entitlement",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "NOT_APPLICABLE",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Archived partial-period quote/wallet preview, no approval/hash/receipt. Latest human says current app wallet-approval button was not pressed; DOM shows before-wallet review, superseding the assumption of a currently open prompt. No rejection or transaction inferred. End has passed; later receipt cannot prove partial-period execution.",
+      "relatedNextGroups": [
+        "MISSED-TIME-WINDOW"
+      ],
+      "evidenceCount": 6
+    },
+    {
+      "id": "DEP-T06",
+      "target": "C claims final remainder; raw total equals deposit",
+      "deployedStatus": "WAITING_USER",
+      "localStatus": "NOT_APPLICABLE",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "New release C/A/C invalidated an old readonly quote. After picker cancel and explicit reconnect, fresh app review at11979063 showed final1MockUSDC and0.001ETH. Human asked to open one MetaMask preview only; current maximum/funds and separate final human action remain unverified. No claim hash/receipt, signature, duplicate request or pending cleanup inferred.",
+      "relatedNextGroups": [
+        "C-FINAL-CLAIM"
+      ],
+      "evidenceCount": 3
+    },
+    {
+      "id": "DEP-T07",
+      "target": "A/C same-block accounting and actual balance changes",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "NOT_APPLICABLE",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Creation same-block A8400000/C0/escrow3000000 and ownerC verified; C UI wallet0+remaining1=holdings1 observed. No post-claim balances or full A/C accounting reconciliation yet.",
+      "relatedNextGroups": [
+        "C-FINAL-CLAIM"
+      ],
+      "evidenceCount": 3
+    },
+    {
+      "id": "DEP-T08",
+      "target": "Exact receipt/applied checkpoint/UI recovery with no resend",
+      "deployedStatus": "PARTIAL",
+      "localStatus": "NOT_APPLICABLE",
+      "completion": "NOT_PROVEN_FOR_FULL_CURRENT_GOAL",
+      "remaining": "Exact actual creation receipt/events and indexed UI observed. Latest C human/DOM state is app review before wallet approval, not current wallet-pending evidence. Claim receipt/indexing and actual restart recovery remain unexecuted; do not clear B or any C unresolved record.",
+      "relatedNextGroups": [
+        "C-FINAL-CLAIM"
+      ],
+      "evidenceCount": 4
+    }
+  ],
+  "nextGroups": [
+    {
+      "id": "LOCAL-MATRIX",
+      "approval": "existing isolated-only scope",
+      "disposition": "INCOMPLETE_USER_SKIPPED_FOR_RELEASE_FIRST",
+      "targets": [
+        "DEP-D02",
+        "DEP-D06",
+        "DEP-D14",
+        "DEP-D23",
+        "DEP-E01",
+        "DEP-E02",
+        "DEP-E03",
+        "DEP-E04",
+        "DEP-E06",
+        "DEP-E07"
+      ],
+      "next": "Finish remaining declared freshness/sort/name/boundary variants and selected keyboard paths in the existing loopback app. Preserve explicit subcase coverage; no real wallet or actual zoom/restart inferred. User skipped the remaining native matrix to release first; its41 partial records remain incomplete, not passes."
+    },
+    {
+      "id": "RELEASE",
+      "approval": "explicit frontend-only release approval consumed for dpl_3maxBhcQspcZUaTSrpuQgbei2YyL",
+      "disposition": "COMPLETED_FRONTEND_RELEASE_ONLY",
+      "targets": [
+        "DEP-D01",
+        "DEP-D08",
+        "DEP-D11",
+        "DEP-D16",
+        "DEP-D17"
+      ],
+      "next": "READY, exact JS equality, Node22-configured hosting build and actual API/Chrome smoke verified. No automatically authorized repeat release, wallet send or whole-case promotion."
+    },
+    {
+      "id": "WALLET-LIFECYCLE",
+      "approval": "human account/network/permission actions",
+      "disposition": "WAITING_HUMAN_ACTION",
+      "targets": [
+        "DEP-D19",
+        "DEP-D20",
+        "DEP-D21",
+        "DEP-D22",
+        "DEP-E08"
+      ],
+      "next": "C/A/C and quote invalidation verified on new release. Picker cancel disconnects app rather than retaining C; initial retention expectation NOT_MET, reconnect observed. Actual A/B, open receipt across switch, revoke/full restart remain. Do not repeat unavailable network-switch UI instructions without new evidence."
+    },
+    {
+      "id": "VISUAL-HUMAN",
+      "approval": "human foreground/real Chrome200% and broader device coverage",
+      "disposition": "WAITING_HUMAN_ACTION",
+      "targets": [
+        "DEP-D23"
+      ],
+      "next": "Repeat selected populated pages, long amounts and pending/error dialogs at real200%, preserving viewport/zoom distinction. Old B29 partial evidence remains historical."
+    },
+    {
+      "id": "C-FINAL-CLAIM",
+      "approval": "fresh conditions, current max fee/funds and individual human wallet action",
+      "disposition": "WAITING_HUMAN_TRANSACTION",
+      "targets": [
+        "DEP-T06",
+        "DEP-T07",
+        "DEP-T08",
+        "DEP-E05",
+        "DEP-D24"
+      ],
+      "next": "Current #5 app is before wallet request per latest human clarification. Do not ask to reject a nonexistent prompt. Any final claim must use fresh on-chain review and exact receipt/accounting; no signature/resend/record clearing by agent. Inspect completed/indexing-notice dismissal only after actual evidence exists."
+    },
+    {
+      "id": "MISSED-TIME-WINDOW",
+      "approval": "new exact small A-to-C payment terms, funding and separate approvals/signatures",
+      "disposition": "WAITING_HUMAN_TRANSACTION",
+      "targets": [
+        "DEP-T04",
+        "DEP-T05"
+      ],
+      "next": "The #5 before-start/partial-period windows cannot be recovered. A separately authorized new cohort with enough approval runway is needed; keep missed #5 attempts historical, do not backdate or silently shift schedules."
+    },
+    {
+      "id": "LIVE-POSITIVE-DATA",
+      "approval": "explicit independent controlled data/transaction scope after deployment",
+      "disposition": "WAITING_HUMAN_SCOPE",
+      "targets": [
+        "DEP-D05",
+        "DEP-D13",
+        "DEP-D16",
+        "DEP-E07"
+      ],
+      "next": "Positive actual unlisted/invalidated/cancelled/future cases remain absent. Do not fabricate production fixtures, cancel existing payments or sign market actions to manufacture coverage."
+    },
+    {
+      "id": "POST-RELEASE-LOCAL-FIXES",
+      "approval": "Later direct user approval for B/date frontend-only release, consumed once",
+      "disposition": "READY_EXACT_ASSET_AND_SMOKE_VERIFIED",
+      "targets": [
+        "DEP-E03",
+        "DEP-D19",
+        "DEP-E08"
+      ],
+      "next": "Keep stored reservations and historical failures. Observe actual B runtime/account data and fresh demo terms without inferring a signed success from deployment. Demo recording remains a separate new-cohort deliverable."
+    }
+  ],
+  "codeFingerprints": [
+    {
+      "path": "frontend/src/lib/workspace-model.ts",
+      "sha256": "9373471df8172d25c5d00d0ab8de8afb16540f0e29b11f81cac7104e0ca745d2"
+    },
+    {
+      "path": "frontend/src/hooks/use-live-snapshot.ts",
+      "sha256": "3d500a95297c532578f8652b4dba2c36205206f14bee5cdbbc4457ca74e2a964"
+    },
+    {
+      "path": "frontend/src/lib/claim-engine.ts",
+      "sha256": "476c6f753e7474ea5ffe7b158fb1443fc96c6192a06cdd0732a826f3697ddc21"
+    },
+    {
+      "path": "frontend/src/lib/create-payment-engine.ts",
+      "sha256": "7b3ef490fc550d4591c4772c8cb1dbb4ab329481f713ae9bb9333b7440c2f157"
+    },
+    {
+      "path": "frontend/src/lib/transaction-guard.ts",
+      "sha256": "6b9dd8015b62064b5d06ea60f13acccc09de8bafb7050305652de952c492d20a"
+    },
+    {
+      "path": "frontend/tests/workspace-model.test.mjs",
+      "sha256": "e5bf3a872161c03763ecdaca8051fa70afde8754f5a97c0e347d0f09f2d28013"
+    },
+    {
+      "path": "frontend/src/components/workspace/CreatePaymentAction.tsx",
+      "sha256": "8ffc5396112f31a3c8a3e896cdb58500a81e106a4787637f85fb6f632979fa97"
+    },
+    {
+      "path": "frontend/src/lib/claim-policy.ts",
+      "sha256": "b6bc831990872c04e4f39af561d16badbd5c8460ea30f21c66ea9cb36d6d5c99"
+    },
+    {
+      "path": "frontend/public/locales/ko.json",
+      "sha256": "dd3dfc5c81e5a9d6e661e8488618bcc5cef725e166e1641328b3256cefc81454"
+    },
+    {
+      "path": "frontend/tests/notice-ui.test.mjs",
+      "sha256": "a84c59aff6506f39be77a04ed07a76d8b92f0679d0060316a25f491ff046d727"
+    },
+    {
+      "path": "frontend/tests/create-payment.test.mjs",
+      "sha256": "c125cd62fbde141ee467a010a679ce9a1e15eb8a362a1ef043ccc15322516290"
+    },
+    {
+      "path": "frontend/tests/claim-runtime.test.mjs",
+      "sha256": "9d9f3bfa040be8021c6c790d07652ff34c5de48b348b46beea51e41334b677aa"
+    },
+    {
+      "path": "frontend/tests/transaction-guard.test.mjs",
+      "sha256": "cd2c2a61e088442cdf8ca89863943dacd03a21bcc3fb4ce390603b8bcc0ee091"
+    },
+    {
+      "path": "frontend/tests/market-actions.test.mjs",
+      "sha256": "6a0afbca3c0995cef86ee0fba588d2fd74a057fa3b0cdedc78ab1ea53c329793"
+    },
+    {
+      "path": "frontend/tests/cancel-payment.test.mjs",
+      "sha256": "ea5fd51fa0fa52fada28d2597113b75cf21f21382234d4645b482902820f5fdc"
+    },
+    {
+      "path": "frontend/tests/mint-token.test.mjs",
+      "sha256": "b4ef5d79b1900e8e4185c1bd0b078d1d9b3958dd3c729ad8993e50919337e87b"
+    }
+  ],
+  "checks": {
+    "check": {
+      "path": "work/demo-b-reuse-2026-10-24/check.log",
+      "sha256": "0e0b24c12af71cfd7690d106781b81c9e9aa01225f4390aa8ad473b638f09fa7",
+      "verifiedMarkers": [
+        "tests 479",
+        "pass 479",
+        "tests 8",
+        "missingImports"
+      ],
+      "scope": "Current local source on Node24; not live load, wallet, Node22 full tests or deployment"
+    },
+    "loadSafety": {
+      "path": "work/demo-b-reuse-2026-10-24/test-load-safety.log",
+      "sha256": "1cf80385491c6d754c5ccaf52f17fb519cf8a70e0c68bfe08c3ca756010d4d71",
+      "verifiedMarkers": [
+        "tests 32",
+        "pass 32"
+      ],
+      "scope": "Current local source on Node24; not live load, wallet, Node22 full tests or deployment"
+    },
+    "uiRegression": {
+      "path": "work/demo-b-reuse-2026-10-24/test-ui-performance.log",
+      "sha256": "1ee232372ed05965208bede37f1c80e133ca945a5d6bf9c31ab82d1313410038",
+      "verifiedMarkers": [
+        "tests 180",
+        "pass 180"
+      ],
+      "scope": "Current local source on Node24; not live load, wallet, Node22 full tests or deployment"
+    },
+    "qaTypes": {
+      "path": "work/demo-b-reuse-2026-10-24/qa-ui-typecheck.log",
+      "sha256": "bc803b33d4bae30f9f706b36cc673c4bcfe2e9b7bb5c8b604e12ea29f19d5ff3",
+      "verifiedMarkers": [
+        "tsc -p tests/performance-ui/tsconfig.json --noEmit"
+      ],
+      "scope": "Current local source on Node24; not live load, wallet, Node22 full tests or deployment"
+    },
+    "build": {
+      "path": "work/demo-b-reuse-2026-10-24/build-prod.log",
+      "sha256": "9a74d93586823761d909400e2a53dfe5ddba407d589274cce1bc5c05762513df",
+      "verifiedMarkers": [
+        "index-Bg3LFlH_.js",
+        "built in"
+      ],
+      "scope": "Current local source on Node24; not live load, wallet, Node22 full tests or deployment"
+    },
+    "loopback": {
+      "path": "work/demo-b-reuse-2026-10-24/loopback.log",
+      "sha256": "8249f887838f9d9108c0a75a0ee1b52c12862794e8b9f4e906cb2fe8351f21ce",
+      "verifiedMarkers": [
+        "tests 11",
+        "pass 11",
+        "\"outsideAttempts\":0",
+        "\"walletAttempts\":0"
+      ],
+      "scope": "Current local source on Node24; not live load, wallet, Node22 full tests or deployment"
+    }
+  },
+  "safety": {
+    "goalComplete": false,
+    "productionDeploymentAuthorized": false,
+    "newLoadAuthorized": false,
+    "agentWalletSend": false,
+    "pendingRecordsCleared": false,
+    "bHoldUnchanged": false,
+    "completedAuthorizedRelease": "dpl_Dka5S4d6fW9QiMUEK262BfqVVttp",
+    "bHoldChange": {
+      "authorizedByLatestHumanInstruction": "B 그냥 다시 써",
+      "includedInApprovedDeployment": "dpl_Dka5S4d6fW9QiMUEK262BfqVVttp",
+      "pendingRecordsCleared": false,
+      "oldAttemptSettlementProven": false
+    }
+  },
+  "limits": [
+    "Crosswalk mappings are semantic links, not replacement of named original accounts or expected results.",
+    "Historical visual/model/unit observations are not current production evidence.",
+    "Local full suites are Node24. Hosting Node22-configured build passed; that is not a Node22 full test run, actual wallet maximum, AWS operational proof or full scenario completion.",
+    "Safe local work remains; this audit alone is not a blocked determination."
+  ],
+  "previousSnapshot": {
+    "path": "work/post-release-reconcile-2026-10-24/before/frontend/docs/deployed-qa-completion-audit-2026-10-24.json",
+    "sha256": "d4c672c19f72ff503285dc4864dfdd2d7a2fd0388576faecd3c3b316d4b342e8"
+  },
+  "releasedFollowup": {
+    "deploymentId": "dpl_3maxBhcQspcZUaTSrpuQgbei2YyL",
+    "releaseReport": "frontend/docs/frontend-parity-release-2026-10-24.md",
+    "walletEvidence": "followup:released-wallet-lifecycle-2026-10-24/session.json",
+    "status": "INCOMPLETE",
+    "noCaseStatusesPromoted": true
+  },
+  "additionalChecks": {
+    "unsupportedToken": {
+      "path": "work/unsupported-token-2026-10-24/focused-test.log",
+      "sha256": "1256073fbd1a3a7fe952e9d9e671c8002d7d3ddc03dc3fe1cde4911d9398e6de",
+      "verifiedMarkers": [
+        "viem adapter pins reads",
+        "live token identification",
+        "tests 2",
+        "pass 2"
+      ],
+      "scope": "Existing memory-backed2-test subset, not new full suite/build or live proof"
+    },
+    "nativeBoundarySubset": {
+      "path": "work/boundary-followup-2026-10-24/focused-test.log",
+      "sha256": "606cb60bbc2bae5475ff356e87dafa233ccf5f899e87874794aa87aa72da6f2d",
+      "verifiedMarkers": [
+        "B07 uint256",
+        "B14 names",
+        "B16 start",
+        "B17 end",
+        "B18 time",
+        "tests 5",
+        "pass 5"
+      ],
+      "scope": "Existing5-test subset on Node24, not new full check/build, EVM or actual wallet evidence"
+    },
+    "draftContextRed": {
+      "path": "work/draft-review-context-2026-10-24/red.log",
+      "sha256": "370855700845e797ee78545ae75d9dc307b2987cf0c2cbe4b231347dc3f1c154",
+      "verifiedMarkers": [
+        "tests 6",
+        "fail 3"
+      ],
+      "scope": "Expected pre-fix3failure/3pass reproduction, not a current test failure"
+    },
+    "draftContextGreen": {
+      "path": "work/draft-review-context-2026-10-24/green.log",
+      "sha256": "0d0b14113573199de2cb3756f44d1f11640d3b55266dc576f60afda8d20318dc",
+      "verifiedMarkers": [
+        "tests 6",
+        "pass 6"
+      ],
+      "scope": "Current local source on Node24; not live load, wallet, Node22 full tests or deployment"
+    },
+    "bReuseRed": {
+      "path": "work/demo-b-reuse-2026-10-24/red.log",
+      "sha256": "edc3e0fa527b2844fd7ecbc53256832e2073c5b712c697057afa0cc83cd36898",
+      "verifiedMarkers": [
+        "tests 8",
+        "fail 8"
+      ],
+      "scope": "Expected8pre-change policy mismatches; no real wallet"
+    },
+    "bReuseGreen": {
+      "path": "work/demo-b-reuse-2026-10-24/green.log",
+      "sha256": "8a0a9986a12d015cac9c06191b986c420c88876b612cd8bb267864ae2c8193a8",
+      "verifiedMarkers": [
+        "tests 8",
+        "pass 8"
+      ],
+      "scope": "Current local source on Node24; not live load, wallet, Node22 full tests or deployment"
+    },
+    "latestApprovedRelease": {
+      "path": "work/demo-b-reuse-2026-10-24/post-smoke.json",
+      "sha256": "3eadf70621c48036f033814a05063e7b80d0700c9ce3422ccc134729a39a9a79",
+      "verifiedMarkers": [
+        "\"status\": \"PASS\"",
+        "\"matchesLocalBuild\": true",
+        "\"translationKeys\": 1130"
+      ],
+      "scope": "16serialGET reads/exact delivered JS and locale; not wallet, blockchain settlement or load test"
+    }
+  },
+  "historicalChecksBeforeLocalFixes": {
+    "check": {
+      "path": "work/history-provenance-2026-10-24/check.log",
+      "sha256": "5054620aaec487b83cf52a859235f7cf1a625316c808bd5a870ff74522507d5c",
+      "verifiedMarkers": [
+        "tests 473",
+        "pass 473",
+        "tests 8",
+        "missingImports"
+      ],
+      "scope": "local-only; marker inspection is not operational production proof"
+    },
+    "loadSafety": {
+      "path": "work/history-provenance-2026-10-24/test-load-safety.log",
+      "sha256": "bad55f4b7be4c7821f355ec10a88d97b03fdce3ae58af15562cb72f9f4d4a0c8",
+      "verifiedMarkers": [
+        "tests 32",
+        "pass 32"
+      ],
+      "scope": "local-only; marker inspection is not operational production proof"
+    },
+    "uiRegression": {
+      "path": "work/history-provenance-2026-10-24/test-ui-performance.log",
+      "sha256": "41db87f7b6edb9cf27729b824d2503017dd2f0fd8c6cbe6558aead66b4012cfa",
+      "verifiedMarkers": [
+        "tests 180",
+        "pass 180"
+      ],
+      "scope": "local-only; marker inspection is not operational production proof"
+    },
+    "qaTypes": {
+      "path": "work/history-provenance-2026-10-24/qa-ui-typecheck.log",
+      "sha256": "bc803b33d4bae30f9f706b36cc673c4bcfe2e9b7bb5c8b604e12ea29f19d5ff3",
+      "verifiedMarkers": [
+        "tsc -p tests/performance-ui/tsconfig.json --noEmit"
+      ],
+      "scope": "local-only; marker inspection is not operational production proof"
+    },
+    "build": {
+      "path": "work/history-provenance-2026-10-24/build-prod.log",
+      "sha256": "88ee586bff86d0edc7e01a78b746acd661fe3313cfba3df323430415d1ade19c",
+      "verifiedMarkers": [
+        "index-BiUzrgH2.js",
+        "built in"
+      ],
+      "scope": "local-only; marker inspection is not operational production proof"
+    },
+    "loopback": {
+      "path": "work/history-provenance-2026-10-24/loopback.log",
+      "sha256": "982b901491274da16eb9d2388a94b67bedcf5ad4519837e9c71750e5a3b8bf17",
+      "verifiedMarkers": [
+        "tests 11",
+        "pass 11",
+        "\"outsideAttempts\":0"
+      ],
+      "scope": "local-only; marker inspection is not operational production proof"
+    }
+  },
+  "currentSourceManifest": {
+    "path": "work/demo-b-reuse-2026-10-24/product-manifest.json",
+    "sha256": "0a34b681a232d674ee2f6c45117e4dd7cc6917fa1c4f48c22834a4cdeb0467e0",
+    "productFiles": 167,
+    "localAsset": "/assets/index-Bg3LFlH_.js"
+  },
+  "userRequestedDemo": {
+    "plan": "frontend/docs/demo-recording-plan-2026-10-24.md",
+    "status": "C_5000_VERIFIED_B_FIRST_MINT_REVERTED_NEW_100_REVIEW_PREPARED",
+    "videoProduced": false,
+    "preparationVideoProduced": true,
+    "mintAttempt": {
+      "account": "C",
+      "requestedMockUsdcRaw": "5000000000",
+      "hash": "0x0c2d9775bb49903c6c3f126b8368b5788a554b1057a5fb7f9b3f20dcc8bc7ed4",
+      "receiptStatus": "reverted",
+      "block": "11979373",
+      "blockHash": "0x791a89a31ae599fc258496e814ba0bc6279f6bdada408656062e70b9be053545",
+      "at": "2026-10-23T21:31:12.000Z",
+      "type": "0x4",
+      "gasUsed": "251346",
+      "gasCostWei": "377019003770190",
+      "tokenTransferLogCount": 0,
+      "afterRead": {
+        "number": "11979399",
+        "hash": "0xd8bdf7829febe08cb4160ee4ad588f9cfa650930b9e58df3da0217b08e962daa",
+        "at": "2026-10-23T21:36:24.000Z"
+      },
+      "ethWei": "2622980996229810",
+      "mockUsdcRaw": "0",
+      "confirmedNonce": "2",
+      "pendingNonce": "2",
+      "appResultRestored": true,
+      "walletReconnected": true,
+      "retryState": "FRESH_READ_ONLY_REVIEW_NO_NEW_WALLET_REQUEST",
+      "detailedRevertCause": "NOT_ESTABLISHED",
+      "evidence": [
+        "followup:demo-preparation-2026-10-24/C-mint-receipt.json",
+        "followup:demo-preparation-2026-10-24/C-mint-failure-network-read.json",
+        "followup:demo-preparation-2026-10-24/C-mint-reverted-restored.txt",
+        "followup:demo-preparation-2026-10-24/C-mint-retry-review.txt"
+      ],
+      "limits": "Receipt-proven failure of one EIP7702 wallet wrapper. Nonce0 transaction plus authorization nonce1 explains confirmed nonce2; it is not evidence of two separate sends. No successful mint, stream, buy, sell or claim. App restored the exact failed transaction hash after human reconnect. No manual storage clearing."
+    },
+    "recordingEvidence": {
+      "video": "followup:demo-preparation-2026-10-24/PREP-capture-2026-10-24.mp4",
+      "videoSha256": "3638302abcc307f69bbaa2e8ff3895761e1b899a87ad3647089dd7dd232bf68b",
+      "metadata": "followup:demo-preparation-2026-10-24/PREP-capture-2026-10-24.json",
+      "recordedElapsedMs": 401868,
+      "bytes": 10161118,
+      "displaySurface": "browser",
+      "dimensions": [
+        2560,
+        1440
+      ],
+      "frameRate": 30,
+      "audioRequested": false,
+      "cursorVerified": false,
+      "limits": "Preparation-only tab recording. Initial track settings2560x1440/30fps are not encoded media proof; first decoded frame2560x1200,duration401.47s observed. Separate MetaMask windows not established. Final demo not completed.",
+      "initialTrackSettings": {
+        "width": 2560,
+        "height": 1440,
+        "frameRate": 30,
+        "displaySurface": "browser"
+      }
+    },
+    "mintRetry": {
+      "humanApproved": true,
+      "verification": "PASS_EXACT_MINT_AND_RECEIPT_BLOCK_BALANCE",
+      "hash": "0xadadbf5a1b18fc2808d8010960f167bd1b6b4ea094811ff9bcaf38417ed9011a",
+      "receiptStatus": "success",
+      "block": "11979481",
+      "blockHash": "0x0aa021ab4f66aaefd4ca95ee6e2c2d39dfc91cd4d675b027d6d71190b3ac7e18",
+      "at": "2026-10-23T21:52:48.000Z",
+      "confirmations": "12",
+      "from": "0x4ad967db096dc2b2a3a9f7fde7ae76fd877dbb9c",
+      "to": "0xdb9b1e94b5b69df7e401ddbede43491141047db3",
+      "type": "0x2",
+      "nonce": "2",
+      "mintAmountRaw": "5000000000",
+      "logIndex": "6",
+      "mockUsdcAtReceiptRaw": "5000000000",
+      "ethWeiAtReceipt": "2092544990571826",
+      "gasUsed": "353624",
+      "gasCostWei": "530436005657984",
+      "evidence": [
+        "followup:demo-preparation-2026-10-24/C-mint-retry-success.json",
+        "followup:demo-preparation-2026-10-24/C-mint-retry-completed.txt",
+        "followup:demo-preparation-2026-10-24/C-mint-retry-completed.png"
+      ],
+      "limits": "New human-approved successful5000mint, distinct from the earlier failed hash. Same-block token balance and exact mint event verified. No automatic retry, claim, stream creation, sale or purchase. No stored reservation manually cleared. Both attempts used the wallet wrapper; the first detailed revert cause is still unknown."
+    },
+    "windowCapture": {
+      "video": "followup:demo-preparation-2026-10-24/PREP-window-capture-2026-10-24.mp4",
+      "metadata": "followup:demo-preparation-2026-10-24/PREP-window-capture-2026-10-24.json",
+      "recordedElapsedMs": 107069,
+      "bytes": 5456286,
+      "initialTrackSettings": {
+        "width": 2560,
+        "height": 1400,
+        "frameRate": 30,
+        "displaySurface": "window",
+        "cursor": "motion"
+      },
+      "finalDemoCompleted": false,
+      "limits": "Window share observed, cursor motion setting, not agent-pointer trace. Encoded frame geometry must be probed independently."
+    },
+    "pointerOverlay": {
+      "status": "LOCAL_RENDERER_AND_ILLUSTRATIVE_PREVIEW_ONLY",
+      "modelTests": 16,
+      "preview": "followup:demo-preparation-2026-10-24/agent-pointer-placement-preview.mp4",
+      "previewReport": "followup:demo-preparation-2026-10-24/agent-pointer-placement-preview.mp4.json",
+      "actualActionTraceRecorded": false,
+      "limits": "User requested the automation indicator, not physical cursor. Actual CUA action trace/calibration required for main filming. Placement preview is explicitly illustrative, not a transaction/click record. Human approvals are not agent actions."
+    },
+    "bMintAttempt": {
+      "hash": "0xbc3fd9ec79ef11cfcdf7d413e7529baa6e902b0a873a7cb8e074f262b688304f",
+      "receiptStatus": "reverted",
+      "block": "11979505",
+      "blockHash": "0x69b4005370276d298522a2057678562c15c6a30957208a8c7a8490306f198b84",
+      "at": "2026-10-23T21:57:36.000Z",
+      "type": "0x4",
+      "gasCostWei": "376966503769665",
+      "logCount": 0,
+      "retryState": "FRESH_READ_ONLY_REVIEW_WAITING_HUMAN",
+      "evidence": [
+        "followup:demo-preparation-2026-10-24/B-mint-first-failure.json",
+        "followup:demo-preparation-2026-10-24/B-mint-first-failure.txt",
+        "followup:demo-preparation-2026-10-24/B-mint-retry-review.png"
+      ],
+      "limits": "One human-approved failed100mint, not an old#3 claim retry. The previous failure is terminal. A new100quote is prepared; no new request or successful100mint inferred."
+    },
+    "proposedT0": "2026-10-24T08:00:00+09:00",
+    "preparedCreationPlan": "planning:work/demo-b-reuse-2026-10-24/creation-plan.json"
+  }
+}
